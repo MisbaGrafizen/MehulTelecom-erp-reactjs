@@ -27,6 +27,7 @@ import {
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
 import { useNavigate } from "react-router-dom"
+import { ApiDelete, ApiGet, ApiPut } from "../../helper/axios"
 
 function cn(...a) {
     return a.filter(Boolean).join(" ")
@@ -42,7 +43,7 @@ function formatINR(n) {
 
 function formatDate(d) {
     const dt = typeof d === "string" ? new Date(d) : d
-    return dt.toLocaleDateString("en-GB")
+    return dt?.toLocaleDateString("en-GB")
 }
 
 function toISODate(d) {
@@ -312,7 +313,8 @@ function Toast({ message, onDismiss }) {
 }
 
 export default function Purchasemain() {
-    const [rows, setRows] = useState(demoRows)
+    const [rows, setRows] = useState([])
+    const [loading, setLoading] = useState(false)
     const [period, setPeriod] = useState("thisMonth") // today|thisWeek|thisMonth|custom
     const [from, setFrom] = useState(toISODate(startOfMonth(new Date())))
     const [to, setTo] = useState(toISODate(endOfMonth(new Date())))
@@ -327,12 +329,87 @@ export default function Purchasemain() {
     const [confirmRow, setConfirmRow] = useState(null)
 
 
+    useEffect(() => {
+        const fetchPurchases = async () => {
+            try {
+                setLoading(true)
+                const res = await ApiGet("/admin/purchase")
+                console.log('res', res)
+                if (res?.data) {
+                    setRows(res.data)
+                }
+            } catch (error) {
+                console.error("❌ Error fetching purchases:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchPurchases()
+    }, [])
+
+    const filtered = useMemo(() => {
+        let result = [...rows]
+
+        if (firm) {
+            result = result.filter(r => r.firmName?.toLowerCase() === firm.toLowerCase())
+        }
+        if (user) {
+            result = result.filter(r => r.userName?.toLowerCase() === user.toLowerCase())
+        }
+        if (payFilter) {
+            result = result.filter(r => r.paymentType?.toLowerCase() === payFilter.toLowerCase())
+        }
+
+        const search = searchTerm.trim().toLowerCase()
+        if (search) {
+            result = result.filter(r =>
+                `${r.invoiceNo} ${r.partyName} ${r.transactionType}`.toLowerCase().includes(search)
+            )
+        }
+
+        // Date filter
+        const fDate = new Date(from)
+        const tDate = new Date(to)
+        result = result.filter(r => {
+            const d = new Date(r.billDate)
+            return d >= fDate && d <= tDate
+        })
+
+        return result
+    }, [rows, from, to, firm, user, payFilter, searchTerm])
+
+
+    const handleDelete = async (id) => {
+        try {
+            await ApiDelete(`/admin/purchase/${id}`)
+            setRows(prev => prev.filter(r => r._id !== id))
+            setConfirmRow(null)
+            setToast("Purchase deleted successfully")
+        } catch (error) {
+            console.error("❌ Error deleting purchase:", error)
+        }
+    }
+
+
+    const handleSaveEdit = async (updated) => {
+        try {
+            await ApiPut(`/admin/purchase/${updated._id}`, updated)
+            setRows(prev => prev.map(r => r._id === updated._id ? updated : r))
+            setEditRow(null)
+            setToast("Purchase updated successfully")
+        } catch (error) {
+            console.error("❌ Error updating purchase:", error)
+        }
+    }
+
+
 
 
     const navigate = useNavigate()
 
 
-    const handleCreate = ()=>{
+    const handleCreate = () => {
         navigate("/purches-invoice")
     }
     // Period shortcuts
@@ -354,31 +431,24 @@ export default function Purchasemain() {
         }
     }, [period])
 
-    const filtered = useMemo(() => {
-        const s = searchTerm.trim().toLowerCase()
-        const fDate = new Date(from)
-        const tDate = addDays(new Date(to), 1) // inclusive
-        return rows.filter((r) => {
-            const d = new Date(r.date)
-            if (!(d >= fDate && d < tDate)) return false
-            if (firm && r.firm !== firm) return false
-            if (user && r.user !== user) return false
-            if (payFilter && r.paymentType !== payFilter) return false
-            if (!s) return true
-            const bucket = `${r.invoiceNo} ${r.partyName} ${r.paymentType} ${r.transaction}`.toLowerCase()
-            return bucket.includes(s)
-        })
-    }, [rows, from, to, firm, user, payFilter, searchTerm])
-
     const totals = useMemo(() => {
-        let paid = 0
-        let unpaid = 0
+        let paid = 0;
+        let unpaid = 0;
+        let total = 0;
+
         filtered.forEach((r) => {
-            if (r.isPaid && r.balance === 0) paid += r.amount
-            else unpaid += r.amount - (r.amount - r.balance)
-        })
-        return { paid, unpaid, total: paid + unpaid }
-    }, [filtered])
+            const totalAmt = Number(r.totalAmount) || 0;
+            const paidAmt = Number(r.paidAmount) || 0;
+            const unpaidAmt = Number(r.unpaidAmount) || Math.max(totalAmt - paidAmt, 0);
+
+            total += totalAmt;
+            paid += paidAmt;
+            unpaid += unpaidAmt;
+        });
+
+        return { paid, unpaid, total };
+    }, [filtered]);
+
 
     function exportCSV() {
         const headers = ["Date", "Invoice No", "Party", "Transaction", "Payment", "Amount", "Balance", "Firm", "User"].join(
@@ -415,26 +485,26 @@ export default function Purchasemain() {
         window.print()
     }
 
-    function handleSaveEdit(updated) {
-        setRows((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)))
-        setEditRow(null)
-        setToast("Transaction updated")
-    }
+    // function handleSaveEdit(updated) {
+    //     setRows((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)))
+    //     setEditRow(null)
+    //     setToast("Transaction updated")
+    // }
 
-    function handleDelete(id) {
-        setRows((prev) => prev.filter((r) => r.id !== id))
-        setConfirmRow(null)
-        setToast("Transaction deleted")
-    }
+    // function handleDelete(id) {
+    //     setRows((prev) => prev.filter((r) => r.id !== id))
+    //     setConfirmRow(null)
+    //     setToast("Transaction deleted")
+    // }
 
     // Row form for edit
     function EditForm({ row }) {
         const [form, setForm] = useState({
-            id: row.id,
-            date: row.date,
-            partyName: row.partyName,
+            id: row._id,
+            date: row.billDate,
+            partyName: row.partyId?.partyName,
             paymentType: row.paymentType,
-            amount: row.amount,
+            amount: row.totalAmount,
             isPaid: row.isPaid,
         })
         return (
@@ -521,7 +591,7 @@ export default function Purchasemain() {
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
-                  
+
                                     {/* Filters row */}
                                     <div className=" flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
                                         <Dropdown
@@ -576,7 +646,7 @@ export default function Purchasemain() {
                                         </div>
                                         <div className="flex-1" />
                                         <div className="flex items-center gap-2">
-                                          <button className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700" onClick={handleCreate}>
+                                            <button className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700" onClick={handleCreate}>
                                                 <Plus size={16} />
                                                 Add Purchase
                                             </button>
@@ -710,19 +780,19 @@ export default function Purchasemain() {
                                                             <AnimatePresence initial={false}>
                                                                 {filtered.map((r) => (
                                                                     <motion.tr
-                                                                        key={r.id}
+                                                                        key={r._id}
                                                                         initial={{ opacity: 0, y: 8 }}
                                                                         animate={{ opacity: 1, y: 0 }}
                                                                         exit={{ opacity: 0, y: -6 }}
                                                                         transition={{ duration: 0.2 }}
                                                                         className="hover:bg-gray-50"
                                                                     >
-                                                                        <td className="px-3 py-2">{formatDate(r.date)}</td>
-                                                                        <td className="px-3 py-2">{r.invoiceNo}</td>
-                                                                        <td className="px-3 py-2">{r.partyName}</td>
+                                                                        <td className="px-3 py-2">{formatDate(r.billDate)}</td>
+                                                                        <td className="px-3 py-2">{r.billNumber}</td>
+                                                                        <td className="px-3 py-2">{r.partyId?.partyName}</td>
                                                                         <td className="px-3 py-2">{r.transaction}</td>
                                                                         <td className="px-3 py-2">{r.paymentType}</td>
-                                                                        <td className="px-3 py-2 text-right">{formatINR(r.amount)}</td>
+                                                                        <td className="px-3 py-2 text-right">{formatINR(r.totalAmount)}</td>
                                                                         <td className="px-3 py-2 text-right">{r.balance}</td>
                                                                         <td className="px-2 py-2">
                                                                             <div className="flex items-center justify-center gap-1">
@@ -775,7 +845,7 @@ export default function Purchasemain() {
                                                             <div className="text-gray-500">Payment</div>
                                                             <div className="text-gray-800">{r.paymentType}</div>
                                                             <div className="text-gray-500">Amount</div>
-                                                            <div className="text-gray-800">{formatINR(r.amount)}</div>
+                                                            <div className="text-gray-800">{formatINR(r.totalAmount)}</div>
                                                             <div className="text-gray-500">Balance</div>
                                                             <div className="text-gray-800">{r.balance}</div>
                                                         </div>

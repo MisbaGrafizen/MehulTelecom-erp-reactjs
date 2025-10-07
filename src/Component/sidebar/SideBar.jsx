@@ -18,7 +18,7 @@ export default function SideBar() {
     // { name: "Day Book ", icon: expan, path: "/daybook" },
     // { name: "Inventory", icon: inventory, path: "/inventory" },
     // { name: "Stock", icon: sales,path: "/add-stock"  },
-    { name: "Purchases", icon: purches, path: "/purches-List" },
+    { name: "Purchases", icon: purches, path: "/purches-list" },
     // { name: "Sales", icon: newsales, path: "/sales-invoice" },
     // { name: "Settings", icon: settings, path: "/create-account" },
     // { name: "Labour", icon: reports, path: "/labour" },

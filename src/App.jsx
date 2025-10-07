@@ -22,7 +22,7 @@ function App() {
         <Routes>
         
           <Route path="/" element={<Login />} />
-          <Route path="/purches-List" element={<Purchasemain />} />
+          <Route path="/purches-list" element={<Purchasemain />} />
 
        
           <Route path="/purches-invoice" element={<PurchesInvoice />} />
