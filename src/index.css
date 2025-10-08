@@ -107,6 +107,13 @@ font-family:"Jersey 25", ;
   z-index: 10;
 }
 
+
+.bs-giri{
+  background: linear-gradient(160deg,
+      #0a03d7f3 50.15%,
+      #9b4fabfb 70.48%) !important;
+
+}
 .input-box1 input:valid~span,
 .input-box1 input:focus~span {
   color: var(--bs-bluee);

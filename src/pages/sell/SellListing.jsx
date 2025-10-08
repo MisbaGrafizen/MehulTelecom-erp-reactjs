@@ -312,7 +312,7 @@ function Toast({ message, onDismiss }) {
     )
 }
 
-export default function Purchasemain() {
+export default function SellListing() {
     const [rows, setRows] = useState([])
     const [loading, setLoading] = useState(false)
     const [period, setPeriod] = useState("thisMonth") // today|thisWeek|thisMonth|custom
@@ -410,7 +410,7 @@ export default function Purchasemain() {
 
 
     const handleCreate = () => {
-        navigate("/purches-invoice")
+        navigate("/sells-invoice")
     }
     // Period shortcuts
     useEffect(() => {
@@ -585,14 +585,14 @@ export default function Purchasemain() {
         <>
             <section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
                 <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
-                    <Header pageName="Purchase" />
+                    <Header pageName="Sales" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
                         <SideBar />
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
 
-                                    {/* Filters row */}
+                              
                                     <div className=" flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
                                         <Dropdown
                                             label={
@@ -646,9 +646,9 @@ export default function Purchasemain() {
                                         </div>
                                         <div className="flex-1" />
                                         <div className="flex items-center gap-2">
-                                            <button className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700" onClick={handleCreate}>
+                                            <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white" onClick={handleCreate}>
                                                 <Plus size={16} />
-                                                Add Purchase
+                                               Create Sell
                                             </button>
                                             <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2">
                                                 <FileSpreadsheet size={16} />

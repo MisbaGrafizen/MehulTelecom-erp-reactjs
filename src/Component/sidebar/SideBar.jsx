@@ -17,17 +17,17 @@ export default function SideBar() {
     // { name: "Dashboard", icon: dashboard, path: "/dashboard" },
     // { name: "Day Book ", icon: expan, path: "/daybook" },
     // { name: "Inventory", icon: inventory, path: "/inventory" },
-    // { name: "Stock", icon: sales,path: "/add-stock"  },
+    { name: "Sells", icon: sales,path: "/sells"  },
     { name: "Purchases", icon: purches, path: "/purches-list" },
-    // { name: "Sales", icon: newsales, path: "/sales-invoice" },
-    // { name: "Settings", icon: settings, path: "/create-account" },
+    { name: "Company", icon: newsales, path: "/company-listing" },
+    { name: "Settings", icon: settings, path: "/create-account" },
     // { name: "Labour", icon: reports, path: "/labour" },
 
   ];
 
   return (
     <>
-      <div className="flex min-w-[110px] max-w-[120px] overflow-y-auto rounded-[10px] py-[10px]   bg-[#00f] h-[86vh]">
+      <div className="flex min-w-[110px] max-w-[120px] overflow-y-auto rounded-[10px] py-[10px]  bs-giri h-[86vh]">
         <div className="flex flex-col gap-[7px] w-[100%]">
           {menuItems.map((item, index) => (
             <div

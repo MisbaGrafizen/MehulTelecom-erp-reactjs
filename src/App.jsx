@@ -10,6 +10,10 @@ import LoginPage from "./pages/authPage/LoginPage";
 import PurchesInvoice from "./pages/purches/PurchesInvoice";
 import Login from "./pages/authPage/Login";
 import Purchasemain from "./pages/purches/Purchasemain";
+import ComapnyListing from "./pages/companyManage/ComapnyListing";
+import SellListing from "./pages/sell/SellListing";
+import SellsInvoice from "./pages/sell/SellsInvoice";
+// import CreateCompany from "./pages/companyManage/CreateCompany";
 
 
 
@@ -20,13 +24,22 @@ function App() {
       <ScrollToTop />
       <div className="w-100 ease-soft-spring h-[100%]  !bg-[#F6FAFB]  duration-1000 ">
         <Routes>
-        
+
           <Route path="/" element={<Login />} />
           <Route path="/purches-list" element={<Purchasemain />} />
 
-       
+
           <Route path="/purches-invoice" element={<PurchesInvoice />} />
-        
+          {/* <Route path ="/create-account" element={<CreateCompany />} /> */}
+
+          <Route path="/company-listing" element={<ComapnyListing />} />
+
+
+
+
+
+          <Route path="/sells" element={<SellListing />} />
+          <Route path="/sells-invoice" element={<SellsInvoice />} />
         </Routes>
       </div>
     </>
