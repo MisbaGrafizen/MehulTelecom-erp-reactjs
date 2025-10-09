@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Header from "../../Component/header/Header";
 import SideBar from "../../Component/sidebar/SideBar";
-import { ApiGet } from "../../helper/axios";
+import { ApiDelete, ApiGet, ApiPost, ApiPut } from "../../helper/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaPlus } from "react-icons/fa";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
 import FloatingInput from "../../Component/inputFelleds/FloatingInput";
 import FloatingTextarea from "../../Component/inputFelleds/FloatingTextarea";
+import { accordionDetailsClasses } from "@mui/material";
 
 export default function CompanyListing() {
   const [activeTab, setActiveTab] = useState(true);
@@ -39,11 +40,29 @@ export default function CompanyListing() {
       setCompanies([]);
     } finally {
       setLoading(false);
+    } accordionDetailsClasses
+  };
+
+  const fetchBranches = async () => {
+    try {
+      setLoading(true);
+      const res = await ApiGet("/admin/branch");
+      console.log('res', res)
+      if (res?.status && Array.isArray(res.data)) {
+        setBranches(res.data);
+      } else {
+        setBranches([]);
+      }
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCompanyData();
+    fetchBranches();
   }, []);
 
   // ✅ Handlers
@@ -55,36 +74,69 @@ export default function CompanyListing() {
     setBranchData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveBranch = () => {
-    if (!branchData.name || !branchData.company || !branchData.address) {
-      alert("Please fill all fields.");
-      return;
-    }
+  const handleSaveBranch = async () => {
+    // if (!branchData.name || !branchData.company || !branchData.address) {
+    //   alert("Please fill all fields.");
+    //   return;
+    // }
 
-    if (editIndex !== null) {
-      const updated = [...branches];
-      updated[editIndex] = branchData;
-      setBranches(updated);
+    try {
+      const companyObj = companies.find(c => c.firmName === branchData.company);
+      if (!companyObj?._id) {
+        alert("Invalid company selected.");
+        return;
+      }
+
+      const payload = {
+        name: branchData.name,
+        company: companyObj._id,
+        address: branchData.address,
+      };
+
+      if (editIndex !== null && branches[editIndex]?._id) {
+        // ✅ Update branch
+        await ApiPut(`/admin/branch/${branches[editIndex]._id}`, payload);
+      } else {
+        // ✅ Create new branch
+        await ApiPost("/admin/branch", payload);
+      }
+
+      await fetchBranches(); // Refresh after save
+      setBranchData({ name: "", company: "", address: "" });
+      setModalOpen(false);
       setEditIndex(null);
-    } else {
-      setBranches([...branches, branchData]);
+    } catch (error) {
+      console.error("Error saving branch:", error);
+      alert(error?.response?.data?.error || "Failed to save branch.");
     }
-
-    setBranchData({ name: "", company: "", address: "" });
-    setModalOpen(false);
   };
 
+
   const handleEditBranch = (index) => {
+    const b = branches[index];
     setEditIndex(index);
-    setBranchData(branches[index]);
+    setBranchData({
+      name: b.name || "",
+      company: b.company?.firmName || "",
+      address: b.address || "",
+    });
     setModalOpen(true);
   };
 
-  const handleDeleteBranch = (index) => {
-    if (window.confirm("Are you sure you want to delete this branch?")) {
-      setBranches(branches.filter((_, i) => i !== index));
+
+  const handleDeleteBranch = async (index) => {
+    if (!window.confirm("Are you sure you want to delete this branch?")) return;
+
+    try {
+      const id = branches[index]?._id;
+      if (id) await ApiDelete(`/admin/branch/${id}`);
+      await fetchBranches(); // refresh after delete
+    } catch (error) {
+      console.error("Error deleting branch:", error);
+      alert("Failed to delete branch");
     }
   };
+
 
   // ✅ Framer Motion Dropdown Component
   const MotionDropdown = ({ label, options, value, onChange }) => {
@@ -178,8 +230,8 @@ export default function CompanyListing() {
             <div className="relative flex shadow1-blue rounded-[10px] border-[#122f97] w-fit p-1 bg-gray-200">
               <div
                 className={`absolute top-0 left-0 h-full w-[130px] rounded-[8px] transition-transform duration-300 ${activeTab
-                    ? "translate-x-0 bg-[#28c723]"
-                    : "bg-[#ff8000] translate-x-[120px]"
+                  ? "translate-x-0 bg-[#28c723]"
+                  : "bg-[#ff8000] translate-x-[120px]"
                   }`}
               ></div>
               <button
@@ -260,7 +312,7 @@ export default function CompanyListing() {
                           {branch.name}
                         </h3>
                         <p className="text-[13px] text-gray-700 mt-1">
-                          <b>Company:</b> {branch.company}
+                          <b>Company:</b> {branch.company?.firmName}
                         </p>
                         <p className="text-[13px] text-gray-700">
                           <b>Address:</b> {branch.address}
@@ -300,6 +352,7 @@ export default function CompanyListing() {
           <ModalBody className="flex flex-col gap-[23px] font-Poppins">
             <FloatingInput
               label="Name"
+              name="name"
               value={branchData.name}
               onChange={handleInputChange}
 
@@ -316,8 +369,11 @@ export default function CompanyListing() {
 
             <FloatingTextarea
               label="Address"
+              name="address"
               value={branchData.address}
-              onChange={handleInputChange}
+              onChange={(value) =>
+                setBranchData((prev) => ({ ...prev, address: value }))
+              }
             />
 
             <button

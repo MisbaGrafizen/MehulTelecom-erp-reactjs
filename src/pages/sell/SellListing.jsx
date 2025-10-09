@@ -246,6 +246,42 @@ export default function SellListing() {
     const [toast, setToast] = useState("")
     const [editRow, setEditRow] = useState(null)
     const [confirmRow, setConfirmRow] = useState(null)
+    const [firms, setFirms] = useState([])
+    const [users, setUsers] = useState([])
+    const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
+
+
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true)
+
+                const salesRes = await ApiGet("/admin/sale")
+                if (salesRes) setRows(salesRes)
+
+                const companyRes = await ApiGet("/admin/info")
+                console.log('companyRes', companyRes)
+                if (companyRes?.data) {
+                    const firmNames = companyRes.data?.map(c => c.firmName)
+                    setFirms(firmNames)
+                }
+
+                const userRes = await ApiGet("/admin/party")
+                console.log('userRes', userRes)
+                if (userRes?.data) {
+                    const userNames = userRes.data.map(u => u.partyName)
+                    setUsers(userNames)
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
 
 
     useEffect(() => {
@@ -258,7 +294,7 @@ export default function SellListing() {
                     setRows(res)
                 }
             } catch (error) {
-                console.error("❌ Error fetching purchases:", error)
+                console.error("Error fetching purchases:", error)
             } finally {
                 setLoading(false)
             }
@@ -270,20 +306,27 @@ export default function SellListing() {
     const filtered = useMemo(() => {
         let result = [...rows]
 
-        if (firm) {
-            result = result.filter(r => r.firmName?.toLowerCase() === firm.toLowerCase())
-        }
-        if (user) {
-            result = result.filter(r => r.userName?.toLowerCase() === user.toLowerCase())
-        }
+   if (firm) {
+  result = result.filter((r) => {
+    const firmName = r.companyId?.firmName || r.firmName || ""
+    return firmName.toLowerCase() === firm.toLowerCase()
+  })
+}
+
+if (user) {
+  result = result.filter((r) => {
+    const userName = r.partyId?.partyName || r.userName || ""
+    return userName.toLowerCase() === user.toLowerCase()
+  })
+}
         if (payFilter) {
             result = result.filter(r => r.paymentType?.toLowerCase() === payFilter.toLowerCase())
         }
 
-        const search = searchTerm.trim().toLowerCase()
+        const search = searchTerm.trim()?.toLowerCase()
         if (search) {
             result = result.filter(r =>
-                `${r.invoiceNo} ${r.partyName} ${r.transactionType}`.toLowerCase().includes(search)
+              `${r.billNumber} ${r.partyId?.partyName} ${r.paymentType}`.toLowerCase().includes(search)
             )
         }
 
@@ -511,7 +554,7 @@ export default function SellListing() {
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
 
-                              
+
                                     <div className=" flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
                                         <Dropdown
                                             label={
@@ -567,7 +610,7 @@ export default function SellListing() {
                                         <div className="flex items-center gap-2">
                                             <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white" onClick={handleCreate}>
                                                 <Plus size={16} />
-                                               Create Sell
+                                                Create Sell
                                             </button>
                                             <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2">
                                                 <FileSpreadsheet size={16} />

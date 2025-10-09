@@ -24,6 +24,7 @@ import { loadTransfers, removeTransfer, updateTransfer } from "../../lib/transfe
 import { useNavigate } from "react-router-dom"
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
+import { ApiGet } from "../../helper/axios"
 
 function formatINR(n) {
     try {
@@ -116,17 +117,68 @@ export default function StockTransferList() {
     const [viewRow, setViewRow] = useState(null)
     const [editRow, setEditRow] = useState(null)
     const [confirmRow, setConfirmRow] = useState(null)
+    const [companies, setCompanies] = useState([])
+    const [branches, setBranches] = useState([])
 
+
+    // ✅ Fetch companies and branches
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const companyRes = await ApiGet("/admin/info")
+                if (companyRes?.data) {
+                    setCompanies(companyRes.data)
+                }
+
+                const branchRes = await ApiGet("/admin/branch")
+                if (branchRes?.data) {
+                    setBranches(branchRes.data)
+                }
+            } catch (error) {
+                console.error("Error loading filter data:", error)
+                setToast("Failed to load company/branch data")
+            }
+        }
+
+        fetchFilters()
+    }, [])
 
     const handleAdd = () => {
 
-        navigate("/stock-transfer")
+        navigate("/new-transfer")
     }
 
 
     useEffect(() => {
-        setList(loadTransfers())
-    }, [])
+        const fetchTransfers = async () => {
+            try {
+                const queryParams = new URLSearchParams();
+
+                if (from) queryParams.append("from", from);
+                if (to) queryParams.append("to", to);
+                if (company) queryParams.append("company", company);
+                if (branch) queryParams.append("branch", branch);
+
+                const url = queryParams.toString()
+                    ? `/admin/stock-transfer?${queryParams.toString()}`
+                    : `/admin/stock-transfer`;
+
+                const res = await ApiGet(url);
+                console.log('res', res)
+                if (res?.data) {
+                    setList(res.data);
+                }
+            } catch (error) {
+                console.error("Error fetching transfers:", error);
+                setToast("Failed to load transfers");
+            }
+        };
+
+        fetchTransfers();
+    }, [from, to, company, branch]);
+
+    console.log('list', list)
+
 
     useEffect(() => {
         if (period === "custom") return
@@ -151,10 +203,10 @@ export default function StockTransferList() {
         const f = new Date(from)
         const t = addDays(new Date(to), 1)
         return list.filter((r) => {
-            const d = new Date(r.date)
+            const d = new Date(r.transferDate)
             if (!(d >= f && d < t)) return false
-            if (company && r.company?.id !== company) return false
-            if (branch && r.fromBranch?.id !== branch && r.toBranch?.id !== branch) return false
+            if (company && r.companyId?._id !== company) return false
+            if (branch && r.fromBranchId?._id !== branch && r.toBranchId?._id !== branch) return false
             if (!s) return true
             const hay = `${r.transferNo} ${r.company?.name} ${r.fromBranch?.name} ${r.toBranch?.name} ${r.items
                 .map((i) => `${i.type} ${i.name} ${i.imei || i.serial || ""}`)
@@ -177,7 +229,7 @@ export default function StockTransferList() {
         const lines = filtered
             .map((r) =>
                 [
-                    formatDate(r.date),
+                    formatDate(r.transferDate),
                     r.transferNo,
                     r.company?.name,
                     r.fromBranch?.name,
@@ -297,20 +349,43 @@ export default function StockTransferList() {
                                                 />
                                             </div>
 
+                                            {/* ✅ Company Dropdown (from API) */}
                                             <Dropdown
-                                                label={company ? companies.find((c) => c.id === company)?.name : "All Companies"}
-                                                options={companies.map((c) => ({ label: c.name, value: c.id }))}
+                                                label={
+                                                    company
+                                                        ? companies.find((c) => c._id === company)?.firmName || "Select Company"
+                                                        : "All Companies"
+                                                }
+                                                options={companies.map((c) => ({
+                                                    label: c.firmName,
+                                                    value: c._id,
+                                                }))}
                                                 value={company}
-                                                onChange={(v) => setCompany(v)}
+                                                onChange={(v) => {
+                                                    setCompany(v)
+                                                    setBranch(null) // reset branch when company changes
+                                                }}
                                                 leadingIcon={<Building2 size={16} className="text-slate-600" />}
                                             />
+
+                                            {/* ✅ Branch Dropdown (filtered by company) */}
                                             <Dropdown
-                                                label={branch ? companies.flatMap((c) => c.branches).find((b) => b.id === branch)?.name : "All Branches"}
-                                                options={companies.flatMap((c) => c.branches).map((b) => ({ label: b.name, value: b.id }))}
+                                                label={
+                                                    branch
+                                                        ? branches.find((b) => b._id === branch)?.name || "Select Branch"
+                                                        : "All Branches"
+                                                }
+                                                options={branches
+                                                    .filter((b) => !company || b.company?._id === company)
+                                                    .map((b) => ({
+                                                        label: b.name,
+                                                        value: b._id,
+                                                    }))}
                                                 value={branch}
                                                 onChange={(v) => setBranch(v)}
                                                 leadingIcon={<MapPin size={16} className="text-slate-600" />}
                                             />
+
 
 
 
@@ -429,13 +504,13 @@ export default function StockTransferList() {
                                                                     transition={{ duration: 0.2 }}
                                                                     className="hover:bg-slate-50"
                                                                 >
-                                                                    <td className="px-3 py-2">{formatDate(r.date)}</td>
-                                                                    <td className="px-3 py-2">{r.transferNo}</td>
-                                                                    <td className="px-3 py-2">{r.company?.name}</td>
-                                                                    <td className="px-3 py-2">{r.fromBranch?.name}</td>
-                                                                    <td className="px-3 py-2">{r.toBranch?.name}</td>
+                                                                    <td className="px-3 py-2 text-left">{formatDate(r.transferDate)}</td>
+                                                                    <td className="px-3 py-2 text-left">{r.transferNo}</td>
+                                                                    <td className="px-3 py-2 text-left">{r.companyId?.firmName}</td>
+                                                                    <td className="px-3 py-2 text-left">{r.fromBranchId?.name}</td>
+                                                                    <td className="px-3 py-2 text-left">{r.toBranchId?.name}</td>
                                                                     <td className="px-3 py-2 text-right">{r.items.length}</td>
-                                                                    <td className="px-3 py-2 text-right">{formatINR(r.total || 0)}</td>
+                                                                    <td className="px-3 py-2 text-right">{formatINR(r.totalAmount || 0)}</td>
                                                                     <td className="px-2 py-2">
                                                                         <div className="flex items-center justify-center gap-1">
                                                                             <Badge
@@ -492,9 +567,9 @@ export default function StockTransferList() {
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div>
-                                                            <div className="text-xs text-slate-500">{formatDate(r.date)}</div>
+                                                            <div className="text-xs text-slate-500">{formatDate(r.transferDate)}</div>
                                                             <div className="text-sm font-[600]">{r.transferNo}</div>
-                                                            <div className="text-xs text-slate-500">{r.company?.name}</div>
+                                                            <div className="text-xs text-slate-500">{r.company?.firmName}</div>
                                                         </div>
                                                         <Badge tone={r.status === "Transferred" ? "green" : r.status === "Received" ? "blue" : "amber"}>
                                                             {r.status || "Draft"}
@@ -508,7 +583,7 @@ export default function StockTransferList() {
                                                         <div className="text-slate-500">Items</div>
                                                         <div className="text-slate-800">{r.items.length}</div>
                                                         <div className="text-slate-500">Total</div>
-                                                        <div className="text-slate-800">{formatINR(r.total || 0)}</div>
+                                                        <div className="text-slate-800">{formatINR(r.totalAmount || 0)}</div>
                                                     </div>
                                                     <div className="mt-3 flex items-center justify-end gap-1">
                                                         <button className="rounded p-1.5 hover:bg-gray-100" onClick={() => setViewRow(r)} title="View">
@@ -539,7 +614,7 @@ export default function StockTransferList() {
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <div className="text-slate-500">Date</div>
-                                                    <div className="font-semibold">{formatDate(viewRow.date)}</div>
+                                                    <div className="font-semibold">{formatDate(viewRow.transferDate)}</div>
                                                 </div>
                                                 <div>
                                                     <div className="text-slate-500">Transfer No</div>
@@ -547,7 +622,7 @@ export default function StockTransferList() {
                                                 </div>
                                                 <div>
                                                     <div className="text-slate-500">Company</div>
-                                                    <div className="font-semibold">{viewRow.company?.name}</div>
+                                                    <div className="font-semibold">{viewRow.company?.firmName}</div>
                                                 </div>
                                                 <div>
                                                     <div className="text-slate-500">Status</div>

@@ -72,87 +72,6 @@ function endOfMonth(d = new Date()) {
     return dt
 }
 
-const demoRows = [
-    {
-        id: "TXN-001",
-        date: "2025-10-01",
-        invoiceNo: "INV/001",
-        partyName: "MT GARIYADHAR",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 10400,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Amit",
-        isPaid: true,
-    },
-    {
-        id: "TXN-002",
-        date: "2025-10-01",
-        invoiceNo: "INV/002",
-        partyName: "MT ROLEXROAD",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 86000,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Riya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-003",
-        date: "2025-10-02",
-        invoiceNo: "INV/003",
-        partyName: "LERIESH MOBILE",
-        transaction: "Purchase",
-        paymentType: "Bank",
-        amount: 1123500,
-        balance: 0,
-        firm: "Branch A",
-        user: "Amit",
-        isPaid: true,
-    },
-    {
-        id: "TXN-004",
-        date: "2025-10-02",
-        invoiceNo: "INV/004",
-        partyName: "BHUPATBHAI VAKARTAR",
-        transaction: "Purchase",
-        paymentType: "UPI",
-        amount: 11000,
-        balance: 0,
-        firm: "Branch B",
-        user: "Priya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-005",
-        date: "2025-10-03",
-        invoiceNo: "INV/005",
-        partyName: "RAHULBHAI KAVA",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 15500,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Riya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-006",
-        date: "2025-10-04",
-        invoiceNo: "INV/006",
-        partyName: "SAGAR ENTERPRISE",
-        transaction: "Purchase",
-        paymentType: "Bank",
-        amount: 52000,
-        balance: 12000,
-        firm: "Branch A",
-        user: "Amit",
-        isPaid: false,
-    },
-]
-
 const firms = ["Main Firm", "Branch A", "Branch B"]
 const users = ["Amit", "Riya", "Priya"]
 const paymentTypes = ["Cash", "UPI", "Bank"]
@@ -327,19 +246,64 @@ export default function Purchasemain() {
     const [toast, setToast] = useState("")
     const [editRow, setEditRow] = useState(null)
     const [confirmRow, setConfirmRow] = useState(null)
+    const [firms, setFirms] = useState([])
+    const [users, setUsers] = useState([])
+    const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
+
+
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true)
+
+                const purchaseRes = await ApiGet("/admin/purchase")
+                console.log('purchaseRes', purchaseRes)
+                if (purchaseRes?.data && Array.isArray(purchaseRes.data)) {
+                    setRows(purchaseRes.data)
+                } else if (Array.isArray(purchaseRes)) {
+                    setRows(purchaseRes)
+                } else {
+                    setRows([])
+                }
+
+
+                const companyRes = await ApiGet("/admin/info")
+                console.log('companyRes', companyRes)
+                if (companyRes?.data) {
+                    const firmNames = companyRes.data?.map(c => c.firmName)
+                    setFirms(firmNames)
+                }
+
+                const userRes = await ApiGet("/admin/party")
+                console.log('userRes', userRes)
+                if (userRes?.data) {
+                    const userNames = userRes.data.map(u => u.partyName)
+                    setUsers(userNames)
+                }
+
+            } catch (error) {
+                console.error("Error fetching data:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
 
 
     useEffect(() => {
         const fetchPurchases = async () => {
             try {
                 setLoading(true)
-                const res = await ApiGet("/admin/purchase")
+                const res = await ApiGet("/admin/sale")
                 console.log('res', res)
-                if (res?.data) {
-                    setRows(res.data)
+                if (res) {
+                    setRows(res)
                 }
             } catch (error) {
-                console.error("❌ Error fetching purchases:", error)
+                console.error("Error fetching purchases:", error)
             } finally {
                 setLoading(false)
             }
@@ -352,19 +316,26 @@ export default function Purchasemain() {
         let result = [...rows]
 
         if (firm) {
-            result = result.filter(r => r.firmName?.toLowerCase() === firm.toLowerCase())
+            result = result.filter((r) => {
+                const firmName = r.companyId?.firmName || r.firmName || ""
+                return firmName.toLowerCase() === firm.toLowerCase()
+            })
         }
+
         if (user) {
-            result = result.filter(r => r.userName?.toLowerCase() === user.toLowerCase())
+            result = result.filter((r) => {
+                const userName = r.partyId?.partyName || r.userName || ""
+                return userName.toLowerCase() === user.toLowerCase()
+            })
         }
         if (payFilter) {
             result = result.filter(r => r.paymentType?.toLowerCase() === payFilter.toLowerCase())
         }
 
-        const search = searchTerm.trim().toLowerCase()
+        const search = searchTerm.trim()?.toLowerCase()
         if (search) {
             result = result.filter(r =>
-                `${r.invoiceNo} ${r.partyName} ${r.transactionType}`.toLowerCase().includes(search)
+                `${r.billNumber} ${r.partyId?.partyName} ${r.paymentType}`.toLowerCase().includes(search)
             )
         }
 
@@ -410,7 +381,7 @@ export default function Purchasemain() {
 
 
     const handleCreate = () => {
-        navigate("/purches-invoice")
+        navigate("/sells-invoice")
     }
     // Period shortcuts
     useEffect(() => {
@@ -585,14 +556,14 @@ export default function Purchasemain() {
         <>
             <section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
                 <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
-                    <Header pageName="Purchase" />
+                    <Header pageName="Sales" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
                         <SideBar />
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
 
-                                    {/* Filters row */}
+
                                     <div className=" flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
                                         <Dropdown
                                             label={
@@ -646,9 +617,9 @@ export default function Purchasemain() {
                                         </div>
                                         <div className="flex-1" />
                                         <div className="flex items-center gap-2">
-                                            <button className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700" onClick={handleCreate}>
+                                            <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white" onClick={handleCreate}>
                                                 <Plus size={16} />
-                                                Add Purchase
+                                                Create Sell
                                             </button>
                                             <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2">
                                                 <FileSpreadsheet size={16} />
