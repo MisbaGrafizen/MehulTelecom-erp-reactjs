@@ -13,6 +13,8 @@ import ComapnyListing from "./pages/companyManage/ComapnyListing";
 import SellListing from "./pages/sell/SellListing";
 import SellsInvoice from "./pages/sell/SellsInvoice";
 import CreateCompany from "./pages/companyManage/CreateCompany";
+import StockTransferList from "./pages/stockTransferFolder/StockTransferList";
+import NewStockTransferPage from "./pages/stockTransferFolder/NewStockTransferPage";
 
 
 
@@ -39,6 +41,13 @@ function App() {
 
           <Route path="/sells" element={<SellListing />} />
           <Route path="/sells-invoice" element={<SellsInvoice />} />
+          <Route path="/stock-transfer" element={<StockTransferList />} />
+          <Route path="/new-transfer" element={<NewStockTransferPage />} />
+
+
+
+
+
         </Routes>
       </div>
     </>
