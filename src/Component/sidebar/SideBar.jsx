@@ -17,7 +17,7 @@ export default function SideBar() {
     // { name: "Dashboard", icon: dashboard, path: "/dashboard" },
     // { name: "Day Book ", icon: expan, path: "/daybook" },
     // { name: "Inventory", icon: inventory, path: "/inventory" },
-    { name: "Sells", icon: sales,path: "/sells"  },
+    { name: "Sales", icon: sales,path: "/sells"  },
     { name: "Purchases", icon: purches, path: "/purches-list" },
     { name: "Company", icon: newsales, path: "/company-listing" },
     { name: "Settings", icon: settings, path: "/create-account" },

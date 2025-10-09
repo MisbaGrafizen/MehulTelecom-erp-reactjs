@@ -72,87 +72,6 @@ function endOfMonth(d = new Date()) {
     return dt
 }
 
-const demoRows = [
-    {
-        id: "TXN-001",
-        date: "2025-10-01",
-        invoiceNo: "INV/001",
-        partyName: "MT GARIYADHAR",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 10400,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Amit",
-        isPaid: true,
-    },
-    {
-        id: "TXN-002",
-        date: "2025-10-01",
-        invoiceNo: "INV/002",
-        partyName: "MT ROLEXROAD",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 86000,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Riya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-003",
-        date: "2025-10-02",
-        invoiceNo: "INV/003",
-        partyName: "LERIESH MOBILE",
-        transaction: "Purchase",
-        paymentType: "Bank",
-        amount: 1123500,
-        balance: 0,
-        firm: "Branch A",
-        user: "Amit",
-        isPaid: true,
-    },
-    {
-        id: "TXN-004",
-        date: "2025-10-02",
-        invoiceNo: "INV/004",
-        partyName: "BHUPATBHAI VAKARTAR",
-        transaction: "Purchase",
-        paymentType: "UPI",
-        amount: 11000,
-        balance: 0,
-        firm: "Branch B",
-        user: "Priya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-005",
-        date: "2025-10-03",
-        invoiceNo: "INV/005",
-        partyName: "RAHULBHAI KAVA",
-        transaction: "Purchase",
-        paymentType: "Cash",
-        amount: 15500,
-        balance: 0,
-        firm: "Main Firm",
-        user: "Riya",
-        isPaid: true,
-    },
-    {
-        id: "TXN-006",
-        date: "2025-10-04",
-        invoiceNo: "INV/006",
-        partyName: "SAGAR ENTERPRISE",
-        transaction: "Purchase",
-        paymentType: "Bank",
-        amount: 52000,
-        balance: 12000,
-        firm: "Branch A",
-        user: "Amit",
-        isPaid: false,
-    },
-]
-
 const firms = ["Main Firm", "Branch A", "Branch B"]
 const users = ["Amit", "Riya", "Priya"]
 const paymentTypes = ["Cash", "UPI", "Bank"]
@@ -333,10 +252,10 @@ export default function SellListing() {
         const fetchPurchases = async () => {
             try {
                 setLoading(true)
-                const res = await ApiGet("/admin/purchase")
+                const res = await ApiGet("/admin/sale")
                 console.log('res', res)
-                if (res?.data) {
-                    setRows(res.data)
+                if (res) {
+                    setRows(res)
                 }
             } catch (error) {
                 console.error("❌ Error fetching purchases:", error)

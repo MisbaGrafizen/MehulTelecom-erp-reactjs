@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import Header from "../../Component/header/Header";
 import SideBar from "../../Component/sidebar/SideBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDispatch, useSelector } from "react-redux";
 import Cookies from "js-cookie";
-import { getUserByIdAction } from "../../redux/action/userManagement";
-import { addCompanyInfoAction } from "../../redux/action/generalManagement";
+import { ApiGet, ApiPost } from "../../helper/axios";
+
+
 
 export default function CreateCompany() {
   const [isChecked, setIsChecked] = useState(false);
@@ -34,7 +34,7 @@ export default function CreateCompany() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [selectedType, setSelectedType] = useState("");
-  const userId = Cookies.get("user");
+  const userId = localStorage.getItem("user");
   const [formData, setFormData] = useState({
     firmName: "",
     firmType: "",
@@ -60,14 +60,21 @@ export default function CreateCompany() {
     billType: "only",
   });
 
-  const dispatch = useDispatch();
-  const user = useSelector((state) => state.users.getUserById);
+  const [user, setUser] = useState({});
 
   useEffect(() => {
-    if (userId) {
-      dispatch(getUserByIdAction(userId));
-    }
-  }, [dispatch, userId]);
+    const fetchUser = async () => {
+      if (!userId) return;
+      try {
+        const res = await ApiGet(`/user/${userId}`);
+        if (res?.data) setUser(res.data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, [userId]);
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -77,17 +84,52 @@ export default function CreateCompany() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = { ...formData, userId };
+    const res = await ApiPost("/admin/info", payload);
+    console.log("res", res);
 
-    const payload = {
-      ...formData,
-      userId,
-    };
-    dispatch(addCompanyInfoAction(payload));
+    if (res?.data?.success || res?.data?.data) {
+      alert("Company created successfully ✅");
 
-    alert("Data created Successfully.");
-  };
+      // ✅ Reset all form fields after success
+      setFormData({
+        firmName: "",
+        firmType: "",
+        address: "",
+        state: "",
+        city: "",
+        pinCode: "",
+        gstNumber: "",
+        panNumber: "",
+        holderName: "",
+        accountNo: "",
+        accountType: "saving",
+        bankName: "",
+        IFSCCode: "",
+        bankAddress: "",
+        beginingFrom: "",
+        terms: "",
+        invoicePrefix: "",
+        invoiceNumber: "",
+        TCSApply: false,
+        dealerType: "regular",
+        type: "jewellery",
+        billType: "only",
+      });
+      setSelectedType("");
+      setDropdownOpen(false);
+    } else {
+      alert("Something went wrong while creating the company.");
+    }
+  } catch (error) {
+    console.error("Error creating company:", error);
+    alert("Error: Unable to create company. Please check console.");
+  }
+};
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -141,11 +183,10 @@ export default function CreateCompany() {
                       <div className="relative w-full input-box12 border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="name1"
-                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.name || NameFocused
+                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.name || NameFocused
                               ? "text-[#000] -translate-y-[21px] hidden"
                               : "text-[#8f8f8f] cursor-text   flex"
-                          }`}
+                            }`}
                         >
                           Name
                         </label>
@@ -164,11 +205,10 @@ export default function CreateCompany() {
    bg-[#fff] ">
                         <label
                           htmlFor="emailid"
-                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.email || EmailFocused
+                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.email || EmailFocused
                               ? "text-[#000] -translate-y-[21px] hidden"
                               : "text-[#8f8f8f]  cursor-text  flex"
-                          }`}
+                            }`}
                         >
                           Email Id
                         </label>
@@ -177,7 +217,7 @@ export default function CreateCompany() {
                           name="email"
                           id="emailid"
                           value={user?.email}
-            
+
                           className="w-full outline-none text-[15px]   py-[9px] font-Poppins font-[400] bg-transparent"
                           onFocus={() => setEmailFocused(true)}
                           onBlur={(e) => setEmailFocused(e.target.value !== "")}
@@ -189,11 +229,10 @@ export default function CreateCompany() {
                       <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="Monumber"
-                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.mobileNumber || mobileNumber
+                          className={`absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.mobileNumber || mobileNumber
                               ? "text-[#000] -translate-y-[21px] hidden"
                               : "text-[#8f8f8f] cursor-text  flex"
-                          }`}
+                            }`}
                         >
                           Mobile Number
                         </label>
@@ -221,11 +260,10 @@ export default function CreateCompany() {
                       <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="firmName"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.firmName || firmFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.firmName || firmFocused
                               ? "text-[#000] -translate-y-[21px] hidden"
                               : "text-[#8f8f8f]  cursor-text flex"
-                          }`}
+                            }`}
                         >
                           Firm Name
                         </label>
@@ -244,11 +282,10 @@ export default function CreateCompany() {
                       <div className="relative w-full  border-[1px] border-[#dedede]  h-[90px]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="address"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.address || addressFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.address || addressFocused
                               ? "text-[#000] -translate-y-[45px] font-[] hidden"
                               : " text-[#8f8f8f]   -translate-y-[27px] flex cursor-text"
-                          }`}
+                            }`}
                         >
                           Buisness Address
                         </label>
@@ -271,11 +308,10 @@ export default function CreateCompany() {
    bg-[#fff] ">
                         <label
                           htmlFor="state"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.state || stateFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.state || stateFocused
                               ? "text-[#000] -translate-y-[21px] hidden "
                               : "text-[#8f8f8f] flex cursor-text"
-                          }`}
+                            }`}
                         >
                           State
                         </label>
@@ -295,11 +331,10 @@ export default function CreateCompany() {
    bg-[#fff] ">
                         <label
                           htmlFor="city"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.city || cityFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.city || cityFocused
                               ? "text-[#000] -translate-y-[21px] hidden "
                               : "text-[#8f8f8f] cursor-text flex"
-                          }`}
+                            }`}
                         >
                           City
                         </label>
@@ -319,11 +354,10 @@ export default function CreateCompany() {
    bg-[#fff] ">
                         <label
                           htmlFor="pin"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            user?.pinCode || pinFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${user?.pinCode || pinFocused
                               ? "text-[#000] -translate-y-[21px] hidden "
                               : "text-[#8f8f8f] cursor-text flex"
-                          }`}
+                            }`}
                         >
                           Pin-Code
                         </label>
@@ -348,11 +382,10 @@ export default function CreateCompany() {
                       >
                         <label
                           htmlFor="type"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            selectedType || typeFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${selectedType || typeFocused
                               ? "text-[#000] -translate-y-[21px] hidden "
                               : "text-[#8f8f8f] cursor-text flex"
-                          }`}
+                            }`}
                           onClick={() => setDropdownOpen((prev) => !prev)}
                         >
                           Firm Type
@@ -407,11 +440,10 @@ export default function CreateCompany() {
                       <div className="relative w-full border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="gst"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            formData?.gstNumber || gstFocused
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.gstNumber || gstFocused
                               ? "text-[#000] -translate-y-[21px] hidden "
                               : "text-[#8f8f8f] cursor-text flex"
-                          }`}
+                            }`}
                         >
                           GST Number
                         </label>
@@ -431,14 +463,10 @@ export default function CreateCompany() {
                       <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="pannumber"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            formData?.panNumber|| panFocused
-                              ? "text-[#000] -translate-y-[21px] hidden "
+                          className={`absolute left-[13px] font-Poppins px-[5px] bg-[#fff] text-[14px] transition-all duration-200 ${formData?.panNumber || panFocused
+                              ? "text-[#000] -translate-y-[21px] hidden"
                               : "text-[#8f8f8f] cursor-text flex"
-                          }`}
-                          onClick={() =>
-                            document.getElementById("number").setPanFocused()
-                          }
+                            }`}
                         >
                           PAN Number
                         </label>
@@ -636,12 +664,11 @@ export default function CreateCompany() {
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
                           <label
-                          htmlFor="Holdername"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.holderName || holderFocused
+                            htmlFor="Holdername"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.holderName || holderFocused
                                 ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             Account Holder Name
                           </label>
@@ -661,12 +688,11 @@ export default function CreateCompany() {
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                           <label
-                          htmlFor="accountno"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.accountNo|| accountFocused
-                               ? "text-[#000] -translate-y-[21px] hidden "
+                            htmlFor="accountno"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.accountNo || accountFocused
+                                ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             Account No
                           </label>
@@ -809,12 +835,11 @@ export default function CreateCompany() {
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
                           <label
-                          htmlFor="bankname"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.bankName || bankFocused
-                        ? "text-[#000] -translate-y-[21px] hidden "
+                            htmlFor="bankname"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.bankName || bankFocused
+                                ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             Bank Name
                           </label>
@@ -834,12 +859,11 @@ export default function CreateCompany() {
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                           <label
-                          htmlFor="ifsc"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.IFSCCode || ifscFocused
+                            htmlFor="ifsc"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.IFSCCode || ifscFocused
                                 ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             IFSC Code
                           </label>
@@ -859,12 +883,11 @@ export default function CreateCompany() {
                     </div>
                     <div className="relative w-full  border-[1px] border-[#dedede]  h-[90px]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                       <label
-                      htmlFor="bankaddress"
-                        className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                          formData?.bankAddress || bankAddressFocused
+                        htmlFor="bankaddress"
+                        className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.bankAddress || bankAddressFocused
                             ? "text-[#000] -translate-y-[45px]  hidden"
                             : "text-[#8f8f8f] -translate-y-[26px]  flex  cursor-text"
-                        }`}
+                          }`}
                       >
                         Bank address
                       </label>
@@ -893,12 +916,11 @@ export default function CreateCompany() {
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
                           <label
-                          htmlFor="finanace"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.beginingFrom || financialFocused
-                               ? "text-[#000] -translate-y-[21px] hidden "
+                            htmlFor="finanace"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.beginingFrom || financialFocused
+                                ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             Financial year Beginning From
                           </label>
@@ -918,12 +940,11 @@ export default function CreateCompany() {
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                           <label
-                          htmlFor="invoice"
-                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                              formData?.invoicePrefix || invoiceFocused
-                           ? "text-[#000] -translate-y-[21px] hidden "
+                            htmlFor="invoice"
+                            className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.invoicePrefix || invoiceFocused
+                                ? "text-[#000] -translate-y-[21px] hidden "
                                 : "text-[#8f8f8f] cursor-text flex"
-                            }`}
+                              }`}
                           >
                             Invoice Prefix
                           </label>
@@ -944,12 +965,11 @@ export default function CreateCompany() {
                     <div className=" flex  w-[100%] gap-[20px]">
                       <div className="relative w-[50%]  border-[1px] border-[#dedede]  h-[90px]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
-                        htmlFor="terms"
-                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                            formData?.terms || termsFocused
+                          htmlFor="terms"
+                          className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.terms || termsFocused
                               ? "text-[#000] -translate-y-[44px]  hidden "
                               : "text-[#8f8f8f] -translate-y-[26px] flex cursor-text"
-                          }`}
+                            }`}
                         >
                           Term & Condition
                         </label>
@@ -969,12 +989,11 @@ export default function CreateCompany() {
                         <div className=" flex w-[100%] flex-col gap-[20px]">
                           <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                             <label
-                            htmlFor="invoiceNumber"
-                              className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${
-                                formData?.invoiceNumber || invoiceNumberFocused
-                                                 ? "text-[#000] -translate-y-[21px] hidden "
-                                : "text-[#8f8f8f] cursor-text flex"
-                              }`}
+                              htmlFor="invoiceNumber"
+                              className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.invoiceNumber || invoiceNumberFocused
+                                  ? "text-[#000] -translate-y-[21px] hidden "
+                                  : "text-[#8f8f8f] cursor-text flex"
+                                }`}
                             >
                               Invoice Number
                             </label>

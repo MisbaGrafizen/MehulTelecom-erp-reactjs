@@ -138,10 +138,10 @@ const handleSave = async () => {
   };
 
   try {
-    const res = await ApiPost("/admin/purchase", payload);
-    console.log("Purchase saved:", res.data);
-    alert("Purchase saved successfully!");
-    navigate("/purches-list");
+    const res = await ApiPost("/admin/sale", payload);
+    console.log("Sales saved:", res.data);
+    alert("Sales saved successfully!");
+    navigate("/sells");
   } catch (error) {
     console.error("Error saving purchase:", error);
     alert("Failed to save purchase");
@@ -159,7 +159,7 @@ const handleSave = async () => {
     <>
       <section className="flex w-[100%] h-[100%] select-none p-[15px] overflow-hidden">
         <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
-          <Header pageName=" Sells Invoice" />
+          <Header pageName=" Sale Invoice" />
           <div className="flex gap-[10px] w-[100%] h-[100%]">
             <SideBar />
             <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">

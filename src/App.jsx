@@ -5,7 +5,6 @@ import "../src/App.css";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import ScrollToTop from "./Component/Scrooltop";
-import LoginPage from "./pages/authPage/LoginPage";
 
 import PurchesInvoice from "./pages/purches/PurchesInvoice";
 import Login from "./pages/authPage/Login";
@@ -13,7 +12,7 @@ import Purchasemain from "./pages/purches/Purchasemain";
 import ComapnyListing from "./pages/companyManage/ComapnyListing";
 import SellListing from "./pages/sell/SellListing";
 import SellsInvoice from "./pages/sell/SellsInvoice";
-// import CreateCompany from "./pages/companyManage/CreateCompany";
+import CreateCompany from "./pages/companyManage/CreateCompany";
 
 
 
@@ -30,7 +29,7 @@ function App() {
 
 
           <Route path="/purches-invoice" element={<PurchesInvoice />} />
-          {/* <Route path ="/create-account" element={<CreateCompany />} /> */}
+          <Route path ="/create-account" element={<CreateCompany />} />
 
           <Route path="/company-listing" element={<ComapnyListing />} />
 
