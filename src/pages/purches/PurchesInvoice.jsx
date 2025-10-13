@@ -22,15 +22,7 @@ import NormalDropdown from "../../Component/inputFelleds/NormalDropdown";
 
 export default function PurchesInvoice() {
   const navigate = useNavigate();
-  const productSuggestions = [
-    { name: "iPhone 15 Pro", stock: 2 },
-    { name: "Samsung Galaxy S24 Ultra", stock: 0 },
-    { name: "Samsung Galaxy A55", stock: 1 },
-    { name: "MacBook Air M3", stock: 3 },
-    { name: "iPad Pro 12.9", stock: 0 },
-    { name: "Lenovo ThinkPad X1", stock: 4 },
-  ];
-   const options = ["Option 1", "Option 2", "Option 3"];
+  const options = ["Option 1", "Option 2", "Option 3"];
   // Parties & address
   const [parties, setParties] = useState([]);
   const [selectedParty, setSelectedParty] = useState("");
@@ -39,12 +31,15 @@ export default function PurchesInvoice() {
   const [partyId, setPartyId] = useState("");
   const [isImeiModalOpen, setImeiModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedProductIndex, setSelectedProductIndex] = useState(null);
+  const [productSuggestions, setProductSuggestions] = useState([]);
+
 
 
 
   // Items
   const [items, setItems] = useState([
-    { productName: "", serialNo: "", modelNo: "", unit: "", pricePerUnit: "", amount: "" },
+    { productName: "", serialNumbers: [], modelNo: "", unit: "", pricePerUnit: "", amount: "" },
   ]);
 
 
@@ -67,6 +62,41 @@ export default function PurchesInvoice() {
   }, []);
 
   useEffect(() => {
+    const fetchPurchasedProducts = async () => {
+      try {
+        const res = await ApiGet("/admin/purchase");
+        console.log('res', res)
+        if (res) {
+          const products = res.flatMap((p) =>
+            p.items.map((item) => ({
+              name: item.itemName,
+              stock: item.serialNumbers?.length || 0,
+            }))
+          );
+
+          // ✅ Group by product name & sum stock
+          const grouped = Object.values(
+            products.reduce((acc, cur) => {
+              if (!acc[cur.name]) acc[cur.name] = { name: cur.name, stock: 0 };
+              acc[cur.name].stock += cur.stock;
+              return acc;
+            }, {})
+          );
+
+          // Optional: filter out 0 stock if needed
+          setProductSuggestions(grouped.filter((g) => g.stock >= 0));
+        }
+      } catch (err) {
+        console.error("❌ Error fetching purchase products:", err);
+      }
+    };
+
+    fetchPurchasedProducts();
+  }, []);
+
+
+
+  useEffect(() => {
     const fetchPartyDetails = async () => {
       if (!selectedParty) return;
       try {
@@ -83,21 +113,22 @@ export default function PurchesInvoice() {
     const updated = [...items];
     updated[index][field] = value;
 
-    // ✅ Update amount per row
-    const qty = parseFloat(updated[index].unit) || 0;
+    const qty =
+      updated[index].serialNumbers?.length ||
+      parseFloat(updated[index].unit) ||
+      0;
     const price = parseFloat(updated[index].pricePerUnit) || 0;
     updated[index].amount = (qty * price).toFixed(2);
 
-    // ✅ Update state
     setItems(updated);
 
-    // ✅ Recalculate total
     const total = updated.reduce(
       (sum, item) => sum + (parseFloat(item.amount) || 0),
       0
     );
     setTotalAmount(total.toFixed(2));
   };
+
 
 
   const addRow = () => {
@@ -121,11 +152,11 @@ export default function PurchesInvoice() {
 
     // ✅ Map items to backend schema
     const mappedItems = items.map((item) => ({
-      itemName: item.productName,
-      serialNo: item.serialNo || "",
+      itemName: item.itemName || item.productName || "",
+      serialNumbers: item.serialNumbers || [],
       modelNo: item.modelNo || "",
-      qty: parseFloat(item.unit) || 1,
-      unit: item.unit || "NONE",
+      qty: item.serialNumbers?.length > 0 ? item.serialNumbers.length : parseFloat(item.unit) || 1,
+      unit: item.unit || "PCS",
       pricePerUnit: parseFloat(item.pricePerUnit) || 0,
       amount: parseFloat(item.amount) || 0,
     }));
@@ -170,29 +201,31 @@ export default function PurchesInvoice() {
 
 
   const handleSelectProduct = (index, name) => {
-    handleItemChange(index, "productName", name);
+    handleItemChange(index, "itemName", name);
     setActiveDropdown(null);
     setSearchTerm(""); // reset search after select
   };
 
+
   const filteredSuggestions = (term) => {
     if (!term) return productSuggestions;
+
+    console.log('productSuggestions', productSuggestions)
     return productSuggestions.filter((p) =>
       p.name.toLowerCase().includes(term.toLowerCase())
     );
   };
 
 
-  const handleSerialClick = (product) => {
-    if (product.productName) {
-      setSelectedModel(product.productName);
+  const handleSerialClick = (product, index) => {
+    if (product.itemName) {
+      setSelectedModel(product.itemName);
+      setSelectedProductIndex(index); // ✅ track which item we’re updating
       setImeiModalOpen(true);
-    } else {
-      <>
-
-      </>
     }
   };
+
+
 
   return (
     <>
@@ -320,34 +353,33 @@ export default function PurchesInvoice() {
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.productName}
+                                    value={product.itemName}
                                     onChange={(e) => {
                                       const value = e.target.value;
-                                      handleItemChange(index, "productName", value);
+                                      handleItemChange(index, "itemName", value);
                                       setSearchTerm(value);
                                       setActiveDropdown(index);
                                     }}
                                     onFocus={() => setActiveDropdown(index)}
                                     onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
-                                    placeholder=" product name"
+                                    placeholder="Product name"
                                   />
+
                                 </td>
 
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.serialNo}
-                                    onChange={(e) =>
-                                      handleItemChange(index, "serialNo", e.target.value)
-                                    }
-                                    onFocus={() => handleSerialClick(product)}
+                                    value={product.serialNumbers?.join(", ") || ""}
+                                    onFocus={() => handleSerialClick(product, index)}
                                     readOnly
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
                                     placeholder="Select IMEI"
                                   />
                                 </td>
+
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
@@ -413,20 +445,16 @@ export default function PurchesInvoice() {
                                       filteredSuggestions(searchTerm).map((p, i) => (
                                         <div
                                           key={i}
-                                          onClick={() =>
-                                            handleSelectProduct(index, p.name)
-                                          }
+                                          onClick={() => handleSelectProduct(index, p.name)}
                                           className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
                                         >
-                                          <span className="font-Poppins text-gray-700">
-                                            {p.name}
-                                          </span>
+                                          <span className="font-Poppins text-gray-700">{p.name}</span>
                                           <span
                                             className={`font-medium font-Poppins ${p.stock === 0
-                                                ? "text-red-500"
-                                                : p.stock === 1
-                                                  ? "text-blue-500"
-                                                  : "text-green-600"
+                                              ? "text-red-500"
+                                              : p.stock === 1
+                                                ? "text-blue-500"
+                                                : "text-green-600"
                                               }`}
                                           >
                                             {p.stock}
@@ -443,11 +471,34 @@ export default function PurchesInvoice() {
                               </AnimatePresence>
 
 
+
                               <ImeiModal
                                 isOpen={isImeiModalOpen}
                                 onClose={() => setImeiModalOpen(false)}
-                                modelName="Samsung Galaxy S24"
+                                modelName={items[selectedProductIndex]?.itemName || selectedModel} // ✅ auto-passes selected product name
+                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}   // ✅ also passes existing serials for that item
+                                onSave={(imeis) => {
+                                  if (selectedProductIndex !== null) {
+                                    const updated = [...items];
+                                    updated[selectedProductIndex].serialNumbers = imeis;
+                                    updated[selectedProductIndex].unit = imeis.length;
+                                    updated[selectedProductIndex].amount = (
+                                      imeis.length *
+                                      (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
+                                    ).toFixed(2);
+                                    setItems(updated);
+
+                                    const total = updated.reduce(
+                                      (sum, item) => sum + (parseFloat(item.amount) || 0),
+                                      0
+                                    );
+                                    setTotalAmount(total.toFixed(2));
+                                  }
+                                  setImeiModalOpen(false);
+                                }}
                               />
+
+
                             </>
                           ))}
 
@@ -509,13 +560,13 @@ export default function PurchesInvoice() {
                               Payment Method
                             </label>
                             <div className="flex-1 max-w-[320px]">
-                             
 
-                                    <NormalDropdown
-  label="Select Payment Method"
-        options={options}
-        onChange={(value) => console.log("Selected:", value)}
-      />
+
+                              <NormalDropdown
+                                label="Select Payment Method"
+                                options={options}
+                                onChange={(value) => console.log("Selected:", value)}
+                              />
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-4">

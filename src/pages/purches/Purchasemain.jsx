@@ -310,7 +310,7 @@ const handleCloseModal = () => {
         const fetchPurchases = async () => {
             try {
                 setLoading(true)
-                const res = await ApiGet("/admin/sale")
+                const res = await ApiGet("/admin/purchase")
                 console.log('res', res)
                 if (res) {
                     setRows(res)
@@ -569,7 +569,7 @@ const handleCloseModal = () => {
         <>
             <section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
                 <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
-                    <Header pageName="Sales" />
+                    <Header pageName="Purchase" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
                         <SideBar />
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">

@@ -1,19 +1,57 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, PlusCircle } from "lucide-react";
-import { useState, useMemo } from "react";
+import { X, PlusCircle, Loader2 } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { ApiGet } from "../../helper/axios"; // ✅ Add this to fetch existing IMEIs
 
-export default function ImeiModal({ isOpen, onClose, modelName }) {
-  // IMEI state
-  const [imeiList, setImeiList] = useState([
-    "359845679223456",
-    "358012457895321",
-    "359002457789654",
-    "351234564789653",
-  ]);
+export default function ImeiModal({
+  isOpen,
+  onClose,
+  modelName,
+  existingImeis = [],
+  onSave,
+}) {
+  // 🔹 State management
+  const [imeiList, setImeiList] = useState([]); // All IMEIs for this model from backend
   const [search, setSearch] = useState("");
   const [selectedImeis, setSelectedImeis] = useState([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+  if (!isOpen) {
+    setSearch("");
+    setImeiList([]);
+    setSelectedImeis([]);
+  }
+}, [isOpen]);
 
-  // Filter based on search term
+
+  // 🔹 Load IMEIs when modal opens
+  useEffect(() => {
+    const fetchImeis = async () => {
+      if (!isOpen || !modelName) return;
+      setLoading(true);
+      console.log('modelName', modelName)
+      try {
+        const res = await ApiGet(`/admin/serials/${encodeURIComponent(modelName)}`);
+        console.log('resdscdsf', res)
+        const backendImeis = Array.isArray(res)
+          ? res
+          : Array.isArray(res)
+            ? res
+            : [];
+
+        const merged = Array.from(new Set([...backendImeis, ...existingImeis]));
+        setImeiList(merged);
+        setSelectedImeis(existingImeis || []);
+      } catch (err) {
+        console.error("Error fetching IMEIs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchImeis();
+  }, [isOpen, modelName, existingImeis]);
+
+  // 🔹 Filter by search
   const filteredImei = useMemo(() => {
     if (!search) return imeiList;
     return imeiList.filter((imei) =>
@@ -21,23 +59,34 @@ export default function ImeiModal({ isOpen, onClose, modelName }) {
     );
   }, [search, imeiList]);
 
-  // Add new IMEI if not found
+  // 🔹 Add new IMEI
   const handleAddImei = () => {
     const trimmed = search.trim();
-    if (trimmed === "") return;
-    if (!imeiList.includes(trimmed)) {
-      setImeiList([...imeiList, trimmed]);
+    if (!trimmed) return;
+    if (imeiList.includes(trimmed)) {
+      alert("This IMEI already exists!");
+      return;
     }
+
+    setImeiList((prev) => [...prev, trimmed]);
+    setSelectedImeis((prev) => [...prev, trimmed]); // auto-select new IMEI
     setSearch("");
   };
 
-  // Toggle checkbox selection
+  // 🔹 Toggle IMEI checkbox
   const handleCheckboxChange = (imei) => {
     setSelectedImeis((prev) =>
       prev.includes(imei)
         ? prev.filter((i) => i !== imei)
         : [...prev, imei]
     );
+  };
+
+  // 🔹 Save & return selected IMEIs to parent
+  const handleSave = () => {
+    const uniqueImeis = Array.from(new Set(selectedImeis));
+    onSave(uniqueImeis);
+    onClose();
   };
 
   return (
@@ -49,18 +98,17 @@ export default function ImeiModal({ isOpen, onClose, modelName }) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 font-Poppins bg-black/40 flex justify-center items-center z-50"
         >
-          {/* Modal Box */}
           <motion.div
             initial={{ scale: 0.9, y: 30, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="bg-white w-[560px] min-h-[600px] rounded-lg shadow-lg overflow-hidden"
+            className="bg-white w-[560px] min-h-[600px] rounded-lg shadow-lg overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="flex justify-between items-center bg-blue-500 px-5 py-3">
               <h2 className="text-white font-semibold font-Poppins text-[16px]">
-                {modelName || "Phone Model"}
+                {modelName || "Select Product"}
               </h2>
               <button
                 onClick={onClose}
@@ -71,15 +119,15 @@ export default function ImeiModal({ isOpen, onClose, modelName }) {
             </div>
 
             {/* Body */}
-            <div className="p-5">
-              {/* Input + Add button */}
+            <div className="p-5 flex-1 flex flex-col">
+              {/* Search + Add */}
               <div className="flex items-center gap-2 mb-4">
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search or enter new IMEI..."
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm font-Poppins outline-none "
+                  placeholder="Search or add new IMEI..."
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm font-Poppins outline-none"
                 />
                 <button
                   onClick={handleAddImei}
@@ -90,29 +138,52 @@ export default function ImeiModal({ isOpen, onClose, modelName }) {
                 </button>
               </div>
 
-              {/* IMEI List */}
-              <div className="max-h-[200px] overflow-y-auto border border-gray-200 rounded-md">
-                {filteredImei.length > 0 ? (
-                  filteredImei.map((imei, i) => (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 px-3 py-2 text-sm border-b border-gray-100 hover:bg-blue-50 cursor-pointer font-Poppins"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedImeis.includes(imei)}
-                        onChange={() => handleCheckboxChange(imei)}
-                        className="accent-blue-500 cursor-pointer"
-                      />
-                      <span>{imei}</span>
-                    </label>
-                  ))
-                ) : (
-                  <div className="px-3 py-4 text-sm text-gray-500 text-center font-Poppins">
-                    No IMEI found. Click “Add” to insert new one.
-                  </div>
-                )}
-              </div>
+              {/* Loading State */}
+              {loading ? (
+                <div className="flex justify-center items-center flex-1 text-gray-500">
+                  <Loader2 className="animate-spin mr-2" /> Loading IMEIs...
+                </div>
+              ) : (
+                <div className="max-h-[380px] overflow-y-auto border border-gray-200 rounded-md flex-1">
+                  {filteredImei.length > 0 ? (
+                    filteredImei.map((imei, i) => (
+                      <label
+                        key={i}
+                        className="flex items-center gap-2 px-3 py-2 text-sm border-b border-gray-100 hover:bg-blue-50 cursor-pointer font-Poppins"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedImeis.includes(imei)}
+                          onChange={() => handleCheckboxChange(imei)}
+                          className="accent-blue-500 cursor-pointer"
+                        />
+                        <span>{imei}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-sm text-gray-500 text-center font-Poppins">
+                      No IMEI found. Click “Add” to insert new one.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Save ({selectedImeis.length})
+              </button>
             </div>
           </motion.div>
         </motion.div>
