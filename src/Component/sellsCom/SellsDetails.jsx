@@ -7,7 +7,7 @@ import {
   PhoneIcon,
   Receipt,
   Landmark,
-  IndianRupee,  
+  IndianRupee,
   Smartphone,
   TabletSmartphone,
   Printer,
@@ -95,8 +95,7 @@ function DeviceCard({ device }) {
   );
 }
 
-// ✅ Main Modal Component
-export default function PurchaseDetailsModal({ open, onClose, row }) {
+export default function SellsDetails({ open, onClose, row })  {
   // 🧠 Map real purchase data into modal fields
   const data = {
     invoiceNo: row?.billNumber || "—",

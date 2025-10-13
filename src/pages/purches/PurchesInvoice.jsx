@@ -225,6 +225,10 @@ export default function PurchesInvoice() {
     }
   };
 
+const deleteRow = (index) => {
+  const updatedItems = items.filter((_, i) => i !== index);
+  setItems(updatedItems);
+};
 
 
   return (

@@ -28,6 +28,7 @@ import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
 import { useNavigate } from "react-router-dom"
 import { ApiDelete, ApiGet, ApiPut } from "../../helper/axios"
+import SellsDetails from "../../Component/sellsCom/SellsDetails"
 
 function cn(...a) {
     return a.filter(Boolean).join(" ")
@@ -249,7 +250,8 @@ export default function SellListing() {
     const [firms, setFirms] = useState([])
     const [users, setUsers] = useState([])
     const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
-
+    const [selectedRow, setSelectedRow] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
 
 
     useEffect(() => {
@@ -283,6 +285,15 @@ export default function SellListing() {
         fetchData()
     }, [])
 
+const handleRowClick = (row) => {
+  setSelectedRow(row);
+  setIsModalOpen(true);
+};
+
+const handleCloseModal = () => {
+  setIsModalOpen(false);
+  setSelectedRow(null);
+};
 
     useEffect(() => {
         const fetchPurchases = async () => {
@@ -306,19 +317,19 @@ export default function SellListing() {
     const filtered = useMemo(() => {
         let result = [...rows]
 
-   if (firm) {
-  result = result.filter((r) => {
-    const firmName = r.companyId?.firmName || r.firmName || ""
-    return firmName.toLowerCase() === firm.toLowerCase()
-  })
-}
+        if (firm) {
+            result = result.filter((r) => {
+                const firmName = r.companyId?.firmName || r.firmName || ""
+                return firmName.toLowerCase() === firm.toLowerCase()
+            })
+        }
 
-if (user) {
-  result = result.filter((r) => {
-    const userName = r.partyId?.partyName || r.userName || ""
-    return userName.toLowerCase() === user.toLowerCase()
-  })
-}
+        if (user) {
+            result = result.filter((r) => {
+                const userName = r.partyId?.partyName || r.userName || ""
+                return userName.toLowerCase() === user.toLowerCase()
+            })
+        }
         if (payFilter) {
             result = result.filter(r => r.paymentType?.toLowerCase() === payFilter.toLowerCase())
         }
@@ -326,7 +337,7 @@ if (user) {
         const search = searchTerm.trim()?.toLowerCase()
         if (search) {
             result = result.filter(r =>
-              `${r.billNumber} ${r.partyId?.partyName} ${r.paymentType}`.toLowerCase().includes(search)
+                `${r.billNumber} ${r.partyId?.partyName} ${r.paymentType}`.toLowerCase().includes(search)
             )
         }
 
@@ -723,108 +734,124 @@ if (user) {
                                         </div>
 
                                         {viewMode === "table" ? (
-                                            <div className="overflow-hidden rounded-xl border bg-white shadow-xl  border-gray-200">
-                                                <div className="max-h-[520px] overflow-auto">
-                                                    <table className="min-w-full text-sm">
-                                                        <thead className="sticky top-0 !font-[500] z-10 bg-blue-100 text-gray-600">
-                                                            <tr>
-                                                                <th className="px-3 !font-[600] py-2 text-left">Date</th>
-                                                                <th className="px-3 !font-[600] py-2 text-left">Invoice No.</th>
-                                                                <th className="px-3 !font-[600] py-2 text-left">Party Name</th>
-                                                                <th className="px-3  !font-[600] py-2 text-left">Transaction</th>
-                                                                <th className="px-3 !font-[600] py-2 text-left">Payment</th>
-                                                                <th className="px-3 !font-[600] py-2 text-right">Amount</th>
-                                                                <th className="px-3 !font-[600] py-2 text-right">Balance</th>
-                                                                <th className="px-3  !font-[600] py-2 text-center">Actions</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-gray-100">
-                                                            <AnimatePresence initial={false}>
-                                                                {filtered.map((r) => (
-                                                                    <motion.tr
-                                                                        key={r._id}
-                                                                        initial={{ opacity: 0, y: 8 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        exit={{ opacity: 0, y: -6 }}
-                                                                        transition={{ duration: 0.2 }}
-                                                                        className="hover:bg-gray-50"
-                                                                    >
-                                                                        <td className="px-3 py-2">{formatDate(r.billDate)}</td>
-                                                                        <td className="px-3 py-2">{r.billNumber}</td>
-                                                                        <td className="px-3 py-2">{r.partyId?.partyName}</td>
-                                                                        <td className="px-3 py-2">{r.transaction}</td>
-                                                                        <td className="px-3 py-2">{r.paymentType}</td>
-                                                                        <td className="px-3 py-2 text-right">{formatINR(r.totalAmount)}</td>
-                                                                        <td className="px-3 py-2 text-right">{r.balance}</td>
-                                                                        <td className="px-2 py-2">
-                                                                            <div className="flex items-center justify-center gap-1">
-                                                                                <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
-                                                                                    <Eye size={16} />
-                                                                                </button>
-                                                                                <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
-                                                                                    <Printer size={16} />
-                                                                                </button>
-                                                                                <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
-                                                                                    <Download size={16} />
-                                                                                </button>
-                                                                                <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
-                                                                            </div>
-                                                                        </td>
-                                                                    </motion.tr>
-                                                                ))}
-                                                            </AnimatePresence>
-                                                            {filtered.length === 0 ? (
+                                            <>
+                                                <div className="overflow-hidden rounded-xl border bg-white shadow-xl  border-gray-200">
+                                                    <div className="max-h-[520px] overflow-auto">
+                                                        <table className="min-w-full text-sm">
+                                                            <thead className="sticky top-0 !font-[500] z-10 bg-blue-100 text-gray-600">
                                                                 <tr>
-                                                                    <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
-                                                                        No transactions match your filters.
-                                                                    </td>
+                                                                    <th className="px-3 !font-[600] py-2 text-left">Date</th>
+                                                                    <th className="px-3 !font-[600] py-2 text-left">Invoice No.</th>
+                                                                    <th className="px-3 !font-[600] py-2 text-left">Party Name</th>
+                                                                    <th className="px-3  !font-[600] py-2 text-left">Transaction</th>
+                                                                    <th className="px-3 !font-[600] py-2 text-left">Payment</th>
+                                                                    <th className="px-3 !font-[600] py-2 text-right">Amount</th>
+                                                                    <th className="px-3 !font-[600] py-2 text-right">Balance</th>
+                                                                    <th className="px-3  !font-[600] py-2 text-center">Actions</th>
                                                                 </tr>
-                                                            ) : null}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-100">
+                                                                <AnimatePresence initial={false}>
+                                                                    {filtered.map((r) => (
+                                                                        <motion.tr
+                                                                            key={r._id}
+                                                                            initial={{ opacity: 0, y: 8 }}
+                                                                            animate={{ opacity: 1, y: 0 }}
+                                                                            exit={{ opacity: 0, y: -6 }}
+                                                                            transition={{ duration: 0.2 }}
+                                                                            className="hover:bg-gray-50"
+                                                                        >
+                                                                            <td className="px-3 py-2">{formatDate(r.billDate)}</td>
+                                                                            <td className="px-3 py-2">{r.billNumber}</td>
+                                                                            <td className="px-3 py-2">{r.partyId?.partyName}</td>
+                                                                            <td className="px-3 py-2">{r.transaction}</td>
+                                                                            <td className="px-3 py-2">{r.paymentType}</td>
+                                                                            <td className="px-3 py-2 text-right">{formatINR(r.totalAmount)}</td>
+                                                                            <td className="px-3 py-2 text-right">{r.balance}</td>
+                                                                            <td className="px-2 py-2">
+                                                                                <div className="flex items-center justify-center gap-1">
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View"  onClick={() => handleRowClick(r)}>
+                                                                                        <Eye size={16} />
+                                                                                    </button>
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
+                                                                                        <Printer size={16} />
+                                                                                    </button>
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
+                                                                                        <Download size={16} />
+                                                                                    </button>
+                                                                                    <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
+                                                                                </div>
+                                                                            </td>
+                                                                        </motion.tr>
+                                                                    ))}
+                                                                </AnimatePresence>
+                                                                {filtered.length === 0 ? (
+                                                                    <tr>
+                                                                        <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
+                                                                            No transactions match your filters.
+                                                                        </td>
+                                                                    </tr>
+                                                                ) : null}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
-                                            </div>
+
+
+
+
+                                                {isModalOpen && (
+                                                    <SellsDetails
+                                                        open={isModalOpen}
+                                                        onClose={handleCloseModal}
+                                                        row={selectedRow}
+                                                    />
+                                               
+                                                ) }
+
+                                              </>
+                                        
                                         ) : (
-                                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                                {filtered.map((r) => (
-                                                    <motion.div
-                                                        key={r.id}
-                                                        initial={{ opacity: 0, y: 8 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div>
-                                                                <div className="text-xs text-gray-500">{formatDate(r.date)}</div>
-                                                                <div className="text-sm font-[600]">{r.partyName}</div>
-                                                                <div className="text-xs text-gray-500">{r.invoiceNo}</div>
-                                                            </div>
-                                                            <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                            {filtered.map((r) => (
+                                                <motion.div
+                                                    key={r.id}
+                                                    initial={{ opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <div className="text-xs text-gray-500">{formatDate(r.date)}</div>
+                                                            <div className="text-sm font-[600]">{r.partyName}</div>
+                                                            <div className="text-xs text-gray-500">{r.invoiceNo}</div>
                                                         </div>
-                                                        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                                                            <div className="text-gray-500">Transaction</div>
-                                                            <div className="text-gray-800">{r.transaction}</div>
-                                                            <div className="text-gray-500">Payment</div>
-                                                            <div className="text-gray-800">{r.paymentType}</div>
-                                                            <div className="text-gray-500">Amount</div>
-                                                            <div className="text-gray-800">{formatINR(r.totalAmount)}</div>
-                                                            <div className="text-gray-500">Balance</div>
-                                                            <div className="text-gray-800">{r.balance}</div>
-                                                        </div>
-                                                        <div className="mt-3 flex items-center justify-end gap-1">
-                                                            <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
-                                                                <Eye size={16} />
-                                                            </button>
-                                                            <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
-                                                                <Printer size={16} />
-                                                            </button>
-                                                            <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
-                                                                <Download size={16} />
-                                                            </button>
-                                                        </div>
-                                                    </motion.div>
-                                                ))}
-                                            </div>
+                                                        <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
+                                                    </div>
+                                                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                                                        <div className="text-gray-500">Transaction</div>
+                                                        <div className="text-gray-800">{r.transaction}</div>
+                                                        <div className="text-gray-500">Payment</div>
+                                                        <div className="text-gray-800">{r.paymentType}</div>
+                                                        <div className="text-gray-500">Amount</div>
+                                                        <div className="text-gray-800">{formatINR(r.totalAmount)}</div>
+                                                        <div className="text-gray-500">Balance</div>
+                                                        <div className="text-gray-800">{r.balance}</div>
+                                                    </div>
+                                                    <div className="mt-3 flex items-center justify-end gap-1">
+                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
+                                                            <Eye size={16} />
+                                                        </button>
+                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
+                                                            <Printer size={16} />
+                                                        </button>
+                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
+                                                            <Download size={16} />
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
                                         )}
                                     </div>
 
