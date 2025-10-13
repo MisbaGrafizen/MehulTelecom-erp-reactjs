@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import "../src/App.css";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";

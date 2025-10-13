@@ -28,6 +28,7 @@ import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
 import { useNavigate } from "react-router-dom"
 import { ApiDelete, ApiGet, ApiPut } from "../../helper/axios"
+import PurchaseDetailsModal from "../../Component/purchaseCom/PurchaseDetailsModal"; 
 
 function cn(...a) {
     return a.filter(Boolean).join(" ")
@@ -249,9 +250,21 @@ export default function Purchasemain() {
     const [firms, setFirms] = useState([])
     const [users, setUsers] = useState([])
     const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
+    const [selectedRow, setSelectedRow] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
 
 
 
+
+const handleRowClick = (row) => {
+  setSelectedRow(row);
+  setIsModalOpen(true);
+};
+
+const handleCloseModal = () => {
+  setIsModalOpen(false);
+  setSelectedRow(null);
+};
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -381,7 +394,7 @@ export default function Purchasemain() {
 
 
     const handleCreate = () => {
-        navigate("/sells-invoice")
+        navigate("/purches-invoice")
     }
     // Period shortcuts
     useEffect(() => {
@@ -619,7 +632,7 @@ export default function Purchasemain() {
                                         <div className="flex items-center gap-2">
                                             <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white" onClick={handleCreate}>
                                                 <Plus size={16} />
-                                                Create Sell
+                                                Create Purchase
                                             </button>
                                             <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2">
                                                 <FileSpreadsheet size={16} />
@@ -757,6 +770,7 @@ export default function Purchasemain() {
                                                                         exit={{ opacity: 0, y: -6 }}
                                                                         transition={{ duration: 0.2 }}
                                                                         className="hover:bg-gray-50"
+ onClick={() => handleRowClick(r)}
                                                                     >
                                                                         <td className="px-3 py-2">{formatDate(r.billDate)}</td>
                                                                         <td className="px-3 py-2">{r.billNumber}</td>
@@ -790,7 +804,25 @@ export default function Purchasemain() {
                                                                 </tr>
                                                             ) : null}
                                                         </tbody>
+
+
+
+
                                                     </table>
+
+
+
+
+
+
+
+                                                    {isModalOpen && (
+  <PurchaseDetailsModal
+    open={isModalOpen}
+    onClose={handleCloseModal}
+    row={selectedRow}
+  />
+)}
                                                 </div>
                                             </div>
                                         ) : (

@@ -76,7 +76,7 @@ export default function Login() {
       console.log("Login Success:", response.data);
       localStorage.setItem("token", response.data?.user?.tokens?.access?.token);
       localStorage.setItem("user", response.data?.user.user?.id);
-      navigate("/dashboard");
+      navigate("/stock-transfer");
     } catch (error) {
       console.error("Login Error:", error);
       setErrorMessage(

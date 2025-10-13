@@ -5,6 +5,7 @@ import { Modal, ModalContent } from "@nextui-org/react";
 import FloatingInput from "./FloatingInput";
 import FloatingTextarea from "./FloatingTextarea";
 import { ApiPost } from "../../helper/axios";
+import { Plus ,X } from "lucide-react";
 
 const MotionDropdown = ({
   label = "Select Party",
@@ -17,17 +18,24 @@ const MotionDropdown = ({
   const [selected, setSelected] = useState("");
   const [partyModalOpen, setPartyModalOpen] = useState(false);
   const inputRef = useRef(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [savedImages, setSavedImages] = useState([]);
 
+  // ✅ Match backend model (with creditLimit, balance, additionalFields)
   const [formData, setFormData] = useState({
     partyName: "",
     phoneNumber: "",
     email: "",
     address: { billingAddress: "", shippingAddress: "" },
+    creditLimit: "",
+    balance: "",
+    additionalFields: {},
   });
 
   const handlePartyInputChange = (e) => {
     const { name, value } = e.target;
 
+    // Handle nested address fields
     if (name === "billingAddress" || name === "shippingAddress") {
       setFormData((prev) => ({
         ...prev,
@@ -38,6 +46,7 @@ const MotionDropdown = ({
     }
   };
 
+  // ✅ Save new party to backend
   const handlePartySave = async () => {
     try {
       if (!formData.partyName) return alert("Party name is required");
@@ -47,22 +56,33 @@ const MotionDropdown = ({
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         address: formData.address,
+        creditLimit: Number(formData.creditLimit) || 0,
+        balance: Number(formData.balance) || 0,
+        additionalFields: formData.additionalFields,
       };
 
       const res = await ApiPost("/admin/party", payload);
+
       if (res?.data) {
+        alert("Party created successfully ✅");
         setPartyModalOpen(false);
+
+        // Reset form
         setFormData({
           partyName: "",
           phoneNumber: "",
           email: "",
           address: { billingAddress: "", shippingAddress: "" },
+          creditLimit: "",
+          balance: "",
+          additionalFields: {},
         });
 
         if (onPartyCreated) onPartyCreated(); // refresh list in parent
       }
     } catch (error) {
       console.error("Error creating party:", error);
+      alert("Failed to create party ❌");
     }
   };
 
@@ -70,8 +90,38 @@ const MotionDropdown = ({
     opt.toLowerCase().includes(query.toLowerCase())
   );
 
+
+
+
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(URL.createObjectURL(file));
+    }
+  };
+  const handleSave = () => {
+    if (selectedImage) {
+      setSavedImages((prev) => [...prev, selectedImage]);
+      setSelectedImage(null); // clear the picker box
+    }
+  };
+  const handleRemove = (index) => {
+    setSavedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, document: file }));
+    }
+  };
+
+
   return (
     <>
+      {/* Dropdown Field */}
       <div className="relative w-full">
         <div
           className="relative w-full border border-[#dedede] shadow rounded-lg bg-white h-[40px] flex items-center px-3 text-[#00000099] cursor-text"
@@ -82,7 +132,10 @@ const MotionDropdown = ({
         >
           <label
             className={`absolute left-[13px] bg-white px-[5px] font-Poppins transition-all duration-200
-              ${open || selected ? "top-[-9px] text-[12px] text-[#00b4d8]" : "top-[9px] text-[14px] text-[#43414199]"}`}
+              ${open || selected
+                ? "top-[-9px] text-[12px] text-[#00b4d8]"
+                : "top-[9px] text-[14px] text-[#43414199]"
+              }`}
           >
             {label}
           </label>
@@ -100,11 +153,15 @@ const MotionDropdown = ({
             className="w-full outline-none text-[14px] font-Poppins font-[400] bg-transparent"
           />
 
-          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }}>
+          <motion.div
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <FaChevronDown className="text-[#00b4d8] text-[12px]" />
           </motion.div>
         </div>
 
+        {/* Dropdown Options */}
         <AnimatePresence>
           {open && (
             <motion.div
@@ -138,6 +195,7 @@ const MotionDropdown = ({
                 )}
               </div>
 
+              {/* Add Party Button */}
               <div
                 className="flex items-center gap-2 px-4 py-2 border-t border-[#eee] text-[#00b4d8] hover:bg-[#e6f9ff] cursor-pointer text-[14px] font-medium"
                 onClick={() => {
@@ -153,18 +211,21 @@ const MotionDropdown = ({
         </AnimatePresence>
       </div>
 
+      {/* Create Party Modal */}
       <Modal
         isOpen={partyModalOpen}
-        onClose={() => setPartyModalOpen(false)}
+
         size="3xl"
         className="rounded-2xl"
       >
-        <ModalContent className="shadow-none bg-transparent">
+        <ModalContent className="shadow-none  font-Poppins bg-transparent">
           <div className="bg-white rounded-2xl p-[25px] mt-[10px]">
             <div className="flex justify-between items-center mb-[15px]">
-              <h1 className="font-[600] font-Poppins text-[22px]">Create New Party</h1>
+              <h1 className="font-[600] font-Poppins text-[22px]">
+                Create New Party
+              </h1>
               <i
-                className="text-[28px] text-red-500 cursor-pointer fa-solid fa-circle-xmark"
+                className="text-[28px] text-red-500 cursor-pointer  right-[10px] top-[20px] absolute fa-solid fa-circle-xmark"
                 onClick={() => setPartyModalOpen(false)}
               ></i>
             </div>
@@ -190,25 +251,104 @@ const MotionDropdown = ({
                   value={formData.email}
                   onChange={handlePartyInputChange}
                 />
+                <FloatingInput
+                  label="Credit Limit"
+                  name="creditLimit"
+                  type="number"
+                  value={formData.creditLimit}
+                  onChange={handlePartyInputChange}
+                />
+                <FloatingInput
+                  label="Balance"
+                  name="balance"
+                  type="number"
+                  value={formData.balance}
+                  onChange={handlePartyInputChange}
+                />
               </div>
-
               {/* Right Column */}
-              <div className="flex flex-col gap-[16px] w-full md:w-[48%]">
+              <div className="flex flex-col gap-[10px] w-full md:w-[48%]">
                 <FloatingTextarea
                   label="Billing Address"
                   name="billingAddress"
                   value={formData.address.billingAddress}
                   onChange={handlePartyInputChange}
                 />
-                <FloatingTextarea
-                  label="Shipping Address"
-                  name="shippingAddress"
-                  value={formData.address.shippingAddress}
-                  onChange={handlePartyInputChange}
-                />
+
+                {/* Document Upload Section */}
+                <div className="flex flex-wrap  items-center gap-2 ">
+                  <div>
+
+
+                    <label className="font-medium text-gray-700">Document Upload</label>
+
+                    {/* Image Picker Box */}
+                    <div
+                      className="w-[150px] h-[150px] border-[1.2px] border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition"
+                      onClick={() => document.getElementById("imageInput").click()}
+                    >
+                      {selectedImage ? (
+                        <img
+                          src={selectedImage}
+                          alt="Selected"
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      ) : (
+                        <Plus className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+
+                    {/* Hidden File Input */}
+                    <input
+                      id="imageInput"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+
+            
+                  {/* Save Button */}
+                  {selectedImage && (
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      className="bg-blue-600 text-white px-4 w-[100%] py-1 rounded-lg mt-2 hover:bg-blue-700 transition"
+                    >
+                      Save
+                    </button>
+                  )}
+      </div>
+             
+         {savedImages.length > 0 && (
+      <>
+          {savedImages.map((img, index) => (
+            <div
+              key={index}
+              className="relative w-[140px] h-[140px] group border border-gray-200 rounded-lg overflow-hidden"
+            >
+              <img
+                src={img}
+                alt={`Uploaded ${index}`}
+                className="w-full h-full object-cover"
+              />
+              {/* Remove Button */}
+              <button
+                onClick={() => handleRemove(index)}
+                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+</>
+      )}
+                </div>
               </div>
             </div>
 
+
+            {/* Save Button */}
             <div className="flex justify-center mt-[20px]">
               <button
                 onClick={handlePartySave}

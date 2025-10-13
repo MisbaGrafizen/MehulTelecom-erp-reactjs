@@ -302,7 +302,7 @@ export default function CompanyListing() {
                 </div>
 
                 {/* ✅ Branch Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[15px]">
+                <div className="grid grid-cols-1  font-Poppins md:grid-cols-2 lg:grid-cols-3 gap-[15px]">
                   {branches.length === 0 ? (
                     <p className="text-gray-500 font-Poppins">No branches created yet.</p>
                   ) : (
