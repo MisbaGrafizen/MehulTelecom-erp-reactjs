@@ -256,9 +256,16 @@ const [isModalOpen, setIsModalOpen] = useState(false);
 
 
 
-const handleRowClick = (row) => {
-  setSelectedRow(row);
-  setIsModalOpen(true);
+const handleRowClick = async (row) => {
+  try {
+    const res = await ApiGet(`/admin/purchase/${row._id}`);
+    setSelectedRow(res?.data || row);
+    setIsModalOpen(true);
+  } catch (error) {
+    console.error("Error fetching purchase details:", error);
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  }
 };
 
 const handleCloseModal = () => {
@@ -575,7 +582,6 @@ const handleCloseModal = () => {
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
-
 
                                     <div className=" flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
                                         <Dropdown

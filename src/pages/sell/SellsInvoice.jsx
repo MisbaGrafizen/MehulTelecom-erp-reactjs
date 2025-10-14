@@ -11,14 +11,15 @@ import { Plus, Scan, Pencil, Trash2 } from "lucide-react";
 
 import "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
-  const options = ["Option 1", "Option 2", "Option 3"];
+const options = ["Option 1", "Option 2", "Option 3"];
 import { X, CheckCircle } from "lucide-react"
 import FloatingInput from "../../Component/inputFelleds/FloatingInput";
-import MotionDropdown from "../../Component/inputFelleds/MotionDropdown";
+
 import FloatingTextarea from "../../Component/inputFelleds/FloatingTextarea";
 import { ApiGet, ApiPost } from "../../helper/axios";
 import ImeiModal from "../../Component/purchaseCom/ImeiModal";
 import NormalDropdown from "../../Component/inputFelleds/NormalDropdown";
+import SellsMotionDropdown from "../../Component/sellsCom/SellsMotionDropdown";
 
 export default function SellsInvoice() {
   const navigate = useNavigate();
@@ -26,15 +27,19 @@ export default function SellsInvoice() {
   // Parties & address
   const [parties, setParties] = useState([]);
   const [selectedParty, setSelectedParty] = useState("");
-  const [address, setAddress] = useState("");// Add these new states 👇
-const [billDate, setBillDate] = useState(() => new Date().toISOString().split("T")[0]);
-const [partyId, setPartyId] = useState("");
+  const [billDate, setBillDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [partyId, setPartyId] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-    const [isImeiModalOpen, setImeiModalOpen] = useState(false);
+  const [isImeiModalOpen, setImeiModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
   const [productSuggestions, setProductSuggestions] = useState([]);
+  const [address, setAddress] = useState("");
+const [phoneNumber, setPhoneNumber] = useState("");
+const [email, setEmail] = useState("");
+const [creditLimit, setCreditLimit] = useState("");
+
 
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,8 +47,9 @@ const [partyId, setPartyId] = useState("");
 
   // Items
   const [items, setItems] = useState([
-    { productName: "", serialNo: "", modelNo: "", unit: "", pricePerUnit: "", amount: "" },
-  ]);
+  { productName: "", serialNumbers: [], modelNo: "", unit: "", pricePerUnit: "", amount: "" },
+]);
+
 
 
   // Payments
@@ -54,7 +60,7 @@ const [partyId, setPartyId] = useState("");
   useEffect(() => {
     const fetchParties = async () => {
       try {
-        const res = await ApiGet("/admin/party");
+        const res = await ApiGet("/admin/sales-party");
         if (res?.data) setParties(res.data);
       } catch (error) {
         console.error("Error fetching parties:", error);
@@ -64,28 +70,72 @@ const [partyId, setPartyId] = useState("");
   }, []);
 
   useEffect(() => {
-    const fetchPartyDetails = async () => {
-      if (!selectedParty) return;
+    const fetchPurchasedProducts = async () => {
       try {
-        const res = await ApiGet(`/admin/party-by-name/${selectedParty}`);
-        if (res?.data?.address) setAddress(res.data.address);
-      } catch (error) {
-        console.error("Error fetching party details:", error);
+        const res = await ApiGet("/admin/purchase");
+        console.log('res', res)
+        if (res) {
+          const purchases = res;
+          const products = purchases.flatMap((p) =>
+            p.items.map((item) => ({
+              name: item.itemName,
+              stock: item.serialNumbers?.length || 0,
+            }))
+          );
+
+          // ✅ Group by product name
+          const grouped = Object.values(
+            products.reduce((acc, cur) => {
+              if (!acc[cur.name]) acc[cur.name] = { name: cur.name, stock: 0 };
+              acc[cur.name].stock += cur.stock;
+              return acc;
+            }, {})
+          );
+
+          setProductSuggestions(grouped);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching purchased products:", err);
       }
     };
-    fetchPartyDetails();
-  }, [selectedParty]);
 
- const handleItemChange = (index, field, value) => {
+    fetchPurchasedProducts();
+  }, []);
+
+
+ useEffect(() => {
+  const fetchPartyDetails = async () => {
+    if (!selectedParty) return;
+    try {
+      const res = await ApiGet(`/admin/sales-party-by-name/${selectedParty}`);
+      if (res?.data) {
+        const party = res.data;
+        setAddress(party.billingAddress || "");
+        setPhoneNumber(party.phoneNumber || "");
+        setEmail(party.email || "");
+        setCreditLimit(party.creditLimit || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching party details:", error);
+    }
+  };
+  fetchPartyDetails();
+}, [selectedParty]);
+
+
+const handleItemChange = (index, field, value) => {
   const updated = [...items];
   updated[index][field] = value;
+
+  // Keep both fields in sync
+  if (field === "productName") updated[index].itemName = value;
+  if (field === "itemName") updated[index].productName = value;
 
   // ✅ Update amount per row
   const qty = parseFloat(updated[index].unit) || 0;
   const price = parseFloat(updated[index].pricePerUnit) || 0;
   updated[index].amount = (qty * price).toFixed(2);
 
-  // ✅ Update state
   setItems(updated);
 
   // ✅ Recalculate total
@@ -95,6 +145,7 @@ const [partyId, setPartyId] = useState("");
   );
   setTotalAmount(total.toFixed(2));
 };
+
 
 
   const addRow = () => {
@@ -118,10 +169,10 @@ const handleSave = async () => {
 
   // ✅ Map items to backend schema
   const mappedItems = items.map((item) => ({
-    itemName: item.productName,
-    serialNo: item.serialNo || "",
+    itemName: item.itemName || item.productName || "",
+    serialNumbers: item.serialNumbers || [], // ✅ send IMEI array
     modelNo: item.modelNo || "",
-    qty: parseFloat(item.unit) || 1,
+    qty: item.serialNumbers?.length || parseFloat(item.unit) || 1, // ✅ ensure correct qty
     unit: item.unit || "NONE",
     pricePerUnit: parseFloat(item.pricePerUnit) || 0,
     amount: parseFloat(item.amount) || 0,
@@ -134,7 +185,6 @@ const handleSave = async () => {
 
   const payload = {
     partyId,
-    billNumber: `BILL-${Date.now()}`,
     billDate: billDate ? new Date(billDate) : new Date(),
     time: new Date().toLocaleTimeString(),
     paymentType: bankAmt > 0 && cashAmt > 0 ? "Mixed" : bankAmt > 0 ? "Bank" : "Cash",
@@ -154,22 +204,23 @@ const handleSave = async () => {
     alert("Sales saved successfully!");
     navigate("/sells");
   } catch (error) {
-    console.error("Error saving purchase:", error);
-    alert("Failed to save purchase");
+    console.error("Error saving sale:", error);
+    alert("Failed to save sale");
   }
 };
 
 
+
   const remainingAmount = Math.max(
-  totalAmount - (parseFloat(cashPayment || 0) + parseFloat(bankPayment || 0)),
-  0
-);
+    totalAmount - (parseFloat(cashPayment || 0) + parseFloat(bankPayment || 0)),
+    0
+  );
 
 
-const deleteRow = (index) => {
-  const updatedItems = items.filter((_, i) => i !== index);
-  setItems(updatedItems);
-};
+  const deleteRow = (index) => {
+    const updatedItems = items.filter((_, i) => i !== index);
+    setItems(updatedItems);
+  };
 
 
 
@@ -219,38 +270,37 @@ const deleteRow = (index) => {
                     </div>
                   </div>
 
-                  <div className=" w-[38%] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
-                    <div className=" flex w-[100%] flex-col gap-[16px]">
+                    <div className=" w-[600px] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
+                                      <div className=" flex w-[48%] flex-col gap-[16px]">
 
                       <div className=" flex ">
-                 <MotionDropdown
-  label="Select Party"
-  options={parties.map((p) => p.partyName)}
-  onChange={async (val) => {
-    setSelectedParty(val);
-    try {
-      const res = await ApiGet(`/admin/party-by-name/${val}`);
-      if (res?.data) {
-        setPartyId(res.data._id); // ✅ store the party ID for backend
-        setAddress(
-          res.data.address?.billingAddress ||
-          res.data.address?.shippingAddress ||
-          ""
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching party details:", error);
+                        <SellsMotionDropdown
+                          label="Select Party"
+                          options={parties.map((p) => p.partyName)}
+                          onChange={async (val) => {
+  setSelectedParty(val);
+  try {
+    const res = await ApiGet(`/admin/sales-party-by-name/${val}`);
+    if (res?.data) {
+      const party = res.data;
+      setPartyId(party._id);
+      setAddress(party.billingAddress || "");
+      setPhoneNumber(party.phoneNumber || "");
+      setEmail(party.email || "");
+      setCreditLimit(party.creditLimit || 0);
     }
-  }}
-  onPartyCreated={(newParty) => {
-    setParties((prev) => [...prev, newParty]);
-    setSelectedParty(newParty.partyName);
-    setPartyId(newParty._id); // ✅ new party ID
-    setAddress(
-      newParty.address?.billingAddress || newParty.address?.shippingAddress || ""
-    );
-  }}
-/>
+  } catch (error) {
+    console.error("Error fetching party details:", error);
+  }
+}}
+
+                          onPartyCreated={(newParty) => {
+                            setParties((prev) => [...prev, newParty]);
+                            setSelectedParty(newParty.partyName);
+                            setPartyId(newParty._id);
+                            setAddress(newParty.billingAddress || "");
+                          }}
+                        />
 
                       </div>
 
@@ -258,15 +308,37 @@ const deleteRow = (index) => {
                         label="Address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                      />                    </div>
+                      />
+                    </div>
+                      <div className=" flex gap-[15px]  w-[50%] flex-col">
+  <FloatingInput
+    label="Phone Number"
+    name="phoneNumber"
+    value={phoneNumber}
+    onChange={(e) => setPhoneNumber(e.target.value)}
+  />
+
+  <FloatingInput
+    label="Email ID"
+    name="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+  />
+
+  <FloatingInput
+    label="Credit Limit"
+    name="creditLimit"
+    type="number"
+    value={creditLimit}
+    onChange={(e) => setCreditLimit(e.target.value)}
+  />
+
+
+                                        </div>
                   </div>
 
-
-
-
-
-                    {/* Table Header */}
-                <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
+                  {/* Table Header */}
+                  <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
                     <div className="overflow-x-auto flex-shrink-0 bg-white rounded-lg w-[100%]">
                       <table className="w-full border-collapse">
                         <thead>
@@ -306,7 +378,7 @@ const deleteRow = (index) => {
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.itemName}
+                                    value={product.itemName || product.productName || ""}
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       handleItemChange(index, "itemName", value);
@@ -394,31 +466,26 @@ const deleteRow = (index) => {
                                     </div>
 
                                     {/* Filtered Product List */}
-                                    {filteredSuggestions(searchTerm).length > 0 ? (
-                                      filteredSuggestions(searchTerm).map((p, i) => (
-                                        <div
-                                          key={i}
-                                          onClick={() => handleSelectProduct(index, p.name)}
-                                          className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
-                                        >
-                                          <span className="font-Poppins text-gray-700">{p.name}</span>
-                                          <span
-                                            className={`font-medium font-Poppins ${p.stock === 0
+                                    {filteredSuggestions(searchTerm).map((p, i) => (
+                                      <div
+                                        key={i}
+                                        onClick={() => handleSelectProduct(index, p.name)}
+                                        className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
+                                      >
+                                        <span className="font-Poppins text-gray-700">{p.name}</span>
+                                        <span
+                                          className={`font-medium font-Poppins ${p.stock === 0
                                               ? "text-red-500"
                                               : p.stock === 1
                                                 ? "text-blue-500"
                                                 : "text-green-600"
-                                              }`}
-                                          >
-                                            {p.stock}
-                                          </span>
-                                        </div>
-                                      ))
-                                    ) : (
-                                      <div className="px-3 py-2 text-sm text-gray-500">
-                                        No products found
+                                            }`}
+                                        >
+                                          {p.stock}
+                                        </span>
                                       </div>
-                                    )}
+                                    ))}
+
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -492,13 +559,13 @@ const deleteRow = (index) => {
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
-            
 
-                
+
+
                       </div>
 
                     </div>
-                              <div className=" flex w-[42%]">
+                    <div className=" flex w-[42%]">
                       <div className="bg-white  w-[100%]  rounded-lg  shadow1-blue p-3">
                         <div className="space-y-2">
 

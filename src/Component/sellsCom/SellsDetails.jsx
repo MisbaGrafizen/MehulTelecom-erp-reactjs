@@ -8,7 +8,6 @@ import {
   Receipt,
   Landmark,
   IndianRupee,
-  Smartphone,
   TabletSmartphone,
   Printer,
   Download,
@@ -83,10 +82,13 @@ function DeviceCard({ device }) {
         <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
           Serial / IMEI
         </p>
-        <p className="mt-0.5 font-mono text-sm text-slate-800 break-all">
-          {device.serialNo || "—"}
+        <p className="mt-0.5 font-mono text-sm text-slate-800 break-all whitespace-pre-line">
+          {Array.isArray(device.serialNumbers)
+            ? device.serialNumbers.join(", ")
+            : device.serialNo || "—"}
         </p>
       </div>
+
       <div className="mt-2 flex justify-between text-sm text-slate-700">
         <span>Rate: {INR.format(device.pricePerUnit || 0)}</span>
         <span>Total: {INR.format(device.amount || 0)}</span>
@@ -95,22 +97,22 @@ function DeviceCard({ device }) {
   );
 }
 
-export default function SellsDetails({ open, onClose, row })  {
-  // 🧠 Map real purchase data into modal fields
+export default function SellsDetails({ open, onClose, row }) {
+  // 🧠 Map real sale data into modal fields
   const data = {
     invoiceNo: row?.billNumber || "—",
     date: row?.billDate
       ? new Date(row.billDate).toLocaleDateString("en-GB")
       : "—",
-    transaction: "Purchase",
+    transaction: "Sale",
     payment: row?.paymentType || "—",
     amount: row?.totalAmount || 0,
     balance: row?.unpaidAmount || 0,
     party: {
       name: row?.partyId?.partyName || "—",
       address:
-        row?.partyId?.address?.billingAddress ||
-        row?.partyId?.address?.shippingAddress ||
+        row?.partyId?.billingAddress ||
+        row?.partyId?.shippingAddress ||
         "—",
       number: row?.partyId?.phoneNumber || "—",
     },
@@ -122,6 +124,7 @@ export default function SellsDetails({ open, onClose, row })  {
         pricePerUnit: item.pricePerUnit,
         amount: item.amount,
         serialNo: item.serialNo,
+        serialNumbers: item.serialNumbers || [], // ✅ support multiple serials
       })) || [],
   };
 
@@ -196,11 +199,7 @@ export default function SellsDetails({ open, onClose, row })  {
                   Transaction
                 </h3>
                 <dl className="space-y-3">
-                  <RowLine
-                    icon={Receipt}
-                    label="Invoice No."
-                    value={data.invoiceNo}
-                  />
+                  <RowLine icon={Receipt} label="Invoice No." value={data.invoiceNo} />
                   <RowLine icon={Landmark} label="Payment" value={data.payment} />
                   <RowLine
                     icon={IndianRupee}
@@ -210,9 +209,7 @@ export default function SellsDetails({ open, onClose, row })  {
                   <RowLine
                     icon={IndianRupee}
                     label="Balance"
-                    value={
-                      data.balance ? INR.format(data.balance) : "—"
-                    }
+                    value={data.balance ? INR.format(data.balance) : "—"}
                   />
                 </dl>
               </section>
@@ -223,30 +220,18 @@ export default function SellsDetails({ open, onClose, row })  {
                   Party Details
                 </h3>
                 <dl className="space-y-3">
-                  <RowLine
-                    icon={User}
-                    label="Party Name"
-                    value={data.party.name}
-                  />
-                  <RowLine
-                    icon={MapPin}
-                    label="Address"
-                    value={data.party.address}
-                  />
-                  <RowLine
-                    icon={PhoneIcon}
-                    label="Contact"
-                    value={data.party.number}
-                  />
+                  <RowLine icon={User} label="Party Name" value={data.party.name} />
+                  <RowLine icon={MapPin} label="Address" value={data.party.address} />
+                  <RowLine icon={PhoneIcon} label="Contact" value={data.party.number} />
                 </dl>
               </section>
             </div>
 
-            {/* Items purchased */}
+            {/* Items sold */}
             <section className="mt-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-slate-700">
-                  Items Purchased
+                  Items Sold
                 </h3>
                 <span className="text-xs text-slate-500">
                   {data.devices?.length || 0} item(s)

@@ -33,9 +33,9 @@ export default function PurchesInvoice() {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
   const [productSuggestions, setProductSuggestions] = useState([]);
-
-
-
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [creditLimit, setCreditLimit] = useState("");
 
   // Items
   const [items, setItems] = useState([
@@ -225,10 +225,18 @@ export default function PurchesInvoice() {
     }
   };
 
-const deleteRow = (index) => {
-  const updatedItems = items.filter((_, i) => i !== index);
-  setItems(updatedItems);
-};
+
+  const deleteRow = (index) => {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+
+    // ✅ Recalculate total after deletion
+    const updated = items.filter((_, i) => i !== index);
+    const total = updated.reduce(
+      (sum, item) => sum + (parseFloat(item.amount) || 0),
+      0
+    );
+    setTotalAmount(total.toFixed(2));
+  };
 
 
   return (
@@ -260,23 +268,47 @@ const deleteRow = (index) => {
                             try {
                               const res = await ApiGet(`/admin/party-by-name/${val}`);
                               if (res?.data) {
-                                setPartyId(res.data._id); // ✅ store the party ID for backend
-                                setAddress(
-                                  res.data.address?.billingAddress ||
-                                  res.data.address?.shippingAddress ||
-                                  ""
+                                const p = res.data;
+                                setPartyId(p._id);
+
+                                // ✅ Clean address extraction
+                                if (p.address) {
+                                  if (typeof p.address === "string") {
+                                    setAddress(p.address);
+                                  } else if (p?.billingAddress) {
+                                    setAddress(
+                                      `${p.billingAddress}`
+                                    );
+                                  } else if (p?.billingAddress) {
+                                    setAddress(`${p.billingAddress}`);
+                                  } else {
+                                    setAddress("");
+                                  }
+                                } else {
+                                  setAddress("");
+                                }
+
+
+                                // ✅ Safely handle other fields
+                                setPhoneNumber(p.phoneNumber || "");
+                                setEmail(p.email || "");
+                                setCreditLimit(
+                                  typeof p.creditLimit === "object" ? "" : p.creditLimit || ""
                                 );
                               }
                             } catch (error) {
                               console.error("Error fetching party details:", error);
                             }
                           }}
+
+
+
                           onPartyCreated={(newParty) => {
                             setParties((prev) => [...prev, newParty]);
                             setSelectedParty(newParty.partyName);
                             setPartyId(newParty._id); // ✅ new party ID
                             setAddress(
-                              newParty.address?.billingAddress || newParty.address?.shippingAddress || ""
+                              newParty?.billingAddress || ""
                             );
                           }}
                         />
@@ -293,20 +325,24 @@ const deleteRow = (index) => {
                       <FloatingInput
                         label="Phone Number"
                         name="phoneNumber"
-
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
                       />
+
                       <FloatingInput
                         label="Email ID"
                         name="email"
-
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                       />
+
                       <FloatingInput
                         label="Credit Limit"
                         name="creditLimit"
                         type="number"
-
+                        value={creditLimit}
+                        onChange={(e) => setCreditLimit(e.target.value)}
                       />
-
                     </div>
 
 

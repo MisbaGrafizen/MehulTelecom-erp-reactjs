@@ -2,13 +2,13 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaPlus } from "react-icons/fa";
 import { Modal, ModalContent } from "@nextui-org/react";
-import FloatingInput from "./FloatingInput";
-import FloatingTextarea from "./FloatingTextarea";
+import FloatingInput from "../inputFelleds/FloatingInput";
+import FloatingTextarea from "../inputFelleds/FloatingTextarea";
 import { ApiPost } from "../../helper/axios";
 import { Plus, X } from "lucide-react";
-import uploadToHPanel from "../../helper/hpanelUpload"; // ✅ import your HPanel uploader
+import uploadToHPanel from "../../helper/hpanelUpload"; 
 
-const MotionDropdown = ({
+const SellsMotionDropdown = ({
   label = "Select Party",
   options = [],
   onChange,
@@ -23,7 +23,6 @@ const MotionDropdown = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [savedImages, setSavedImages] = useState([]);
 
-  // ✅ Match backend model (with creditLimit, balance, documentUrl)
   const [formData, setFormData] = useState({
     partyName: "",
     phoneNumber: "",
@@ -36,33 +35,34 @@ const MotionDropdown = ({
     additionalFields: {},
   });
 
-  // ✅ Handle input change
+  // Handle input change
   const handlePartyInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Upload image to HPanel
+  // ✅ Upload to Hpanel using your helper
   const handleUpload = async () => {
-    if (!formData.document) return alert("Please select an image first!");
-
     try {
+      if (!formData.document) return alert("Please select an image first!");
+
       const uploadedUrl = await uploadToHPanel(formData.document);
+
       if (uploadedUrl) {
         setSavedImages((prev) => [...prev, uploadedUrl]);
         setFormData((prev) => ({ ...prev, documentUrl: uploadedUrl }));
         setSelectedImage(null);
         // alert("Document uploaded successfully ✅");
       } else {
-        alert("Failed to upload image ❌");
+        alert("Upload failed ❌");
       }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Something went wrong while uploading");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image");
     }
   };
 
-  // ✅ Handle file selection
+  // Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -71,7 +71,7 @@ const MotionDropdown = ({
     }
   };
 
-  // ✅ Remove uploaded image
+  // Remove uploaded image
   const handleRemove = (index) => {
     setSavedImages((prev) => prev.filter((_, i) => i !== index));
   };
@@ -92,7 +92,7 @@ const MotionDropdown = ({
         additionalFields: formData.additionalFields,
       };
 
-      const res = await ApiPost("/admin/party", payload);
+      const res = await ApiPost("/admin/sales-party", payload);
 
       if (res?.data) {
         // alert("Party created successfully ✅");
@@ -110,7 +110,6 @@ const MotionDropdown = ({
           documentUrl: "",
           additionalFields: {},
         });
-        setSavedImages([]);
 
         if (onPartyCreated) onPartyCreated(res.data);
       }
@@ -120,6 +119,7 @@ const MotionDropdown = ({
     }
   };
 
+  // Filter options
   const filteredOptions = options.filter((opt) =>
     opt.toLowerCase().includes(query.toLowerCase())
   );
@@ -158,10 +158,7 @@ const MotionDropdown = ({
             className="w-full outline-none text-[14px] font-Poppins font-[400] bg-transparent"
           />
 
-          <motion.div
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }}>
             <FaChevronDown className="text-[#00b4d8] text-[12px]" />
           </motion.div>
         </div>
@@ -194,9 +191,7 @@ const MotionDropdown = ({
                     </motion.div>
                   ))
                 ) : (
-                  <div className="px-4 py-3 text-gray-400 text-[13px]">
-                    No results found
-                  </div>
+                  <div className="px-4 py-3 text-gray-400 text-[13px]">No results found</div>
                 )}
               </div>
 
@@ -221,9 +216,7 @@ const MotionDropdown = ({
         <ModalContent className="shadow-none font-Poppins bg-transparent">
           <div className="bg-white rounded-2xl p-[25px] mt-[10px]">
             <div className="flex justify-between items-center mb-[15px]">
-              <h1 className="font-[600] font-Poppins text-[22px]">
-                Create New Party
-              </h1>
+              <h1 className="font-[600] font-Poppins text-[22px]">Create New Party (Sell)</h1>
               <i
                 className="text-[28px] text-red-500 cursor-pointer right-[10px] top-[20px] absolute fa-solid fa-circle-xmark"
                 onClick={() => setPartyModalOpen(false)}
@@ -279,16 +272,12 @@ const MotionDropdown = ({
                 {/* Document Upload Section */}
                 <div className="flex flex-wrap items-center gap-2">
                   <div>
-                    <label className="font-medium text-gray-700">
-                      Document Upload
-                    </label>
+                    <label className="font-medium text-gray-700">Document Upload</label>
 
                     {/* Image Picker Box */}
                     <div
                       className="w-[150px] h-[150px] border-[1.2px] border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition"
-                      onClick={() =>
-                        document.getElementById("imageInput").click()
-                      }
+                      onClick={() => document.getElementById("imageInput").click()}
                     >
                       {selectedImage ? (
                         <img
@@ -329,11 +318,7 @@ const MotionDropdown = ({
                         key={index}
                         className="relative w-[140px] h-[140px] group border border-gray-200 rounded-lg overflow-hidden"
                       >
-                        <img
-                          src={img}
-                          alt={`Uploaded ${index}`}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={img} alt={`Uploaded ${index}`} className="w-full h-full object-cover" />
                         <button
                           onClick={() => handleRemove(index)}
                           className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100"
@@ -362,4 +347,4 @@ const MotionDropdown = ({
   );
 };
 
-export default MotionDropdown;
+export default SellsMotionDropdown;

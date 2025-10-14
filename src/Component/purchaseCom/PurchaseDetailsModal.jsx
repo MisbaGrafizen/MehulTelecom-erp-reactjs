@@ -31,9 +31,8 @@ function Chip({ children, color = "gray" }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        colors[color] || colors.gray
-      }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[color] || colors.gray
+        }`}
     >
       {children}
     </span>
@@ -79,14 +78,22 @@ function DeviceCard({ device }) {
         <Chip color="violet">Qty: {device.qty || 1}</Chip>
       </div>
 
+      {/* ✅ Serial numbers display */}
       <div className="mt-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200/70">
         <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
-          Serial / IMEI
+          Serial / IMEI Numbers ({device.serialNumbers?.length || 0})
         </p>
-        <p className="mt-0.5 font-mono text-sm text-slate-800 break-all">
-          {device.serialNo || "—"}
-        </p>
+        {device.serialNumbers?.length > 0 ? (
+          <ul className="mt-1 ml-3 list-disc text-xs text-slate-700 space-y-0.5">
+            {device.serialNumbers.map((sn, i) => (
+              <li key={i}>{sn}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-0.5 text-xs text-slate-500">No serials available</p>
+        )}
       </div>
+
       <div className="mt-2 flex justify-between text-sm text-slate-700">
         <span>Rate: {INR.format(device.pricePerUnit || 0)}</span>
         <span>Total: {INR.format(device.amount || 0)}</span>
@@ -94,6 +101,7 @@ function DeviceCard({ device }) {
     </div>
   );
 }
+
 
 // ✅ Main Modal Component
 export default function PurchaseDetailsModal({ open, onClose, row }) {
@@ -122,8 +130,9 @@ export default function PurchaseDetailsModal({ open, onClose, row }) {
         qty: item.qty,
         pricePerUnit: item.pricePerUnit,
         amount: item.amount,
-        serialNo: item.serialNo,
+        serialNumbers: item.serialNumbers || [], // ✅ corrected
       })) || [],
+
   };
 
   if (!open) return null;
