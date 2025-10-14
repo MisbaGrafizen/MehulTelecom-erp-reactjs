@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState ,useRef} from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
     Calendar,
@@ -29,6 +29,7 @@ import SideBar from "../../Component/sidebar/SideBar"
 import { useNavigate } from "react-router-dom"
 import { ApiDelete, ApiGet, ApiPut } from "../../helper/axios"
 import SellsDetails from "../../Component/sellsCom/SellsDetails"
+import InvoiceTemplate from "../../Component/sellsCom/InvoiceTemplate"
 
 function cn(...a) {
     return a.filter(Boolean).join(" ")
@@ -252,6 +253,36 @@ export default function SellListing() {
     const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
     const [selectedRow, setSelectedRow] = useState(null);
 const [isModalOpen, setIsModalOpen] = useState(false);
+
+
+
+const invoiceRef = useRef()
+
+const handlePrint = () => {
+  if (!invoiceRef.current) return;
+  const printContent = invoiceRef.current.innerHTML;
+
+  const win = window.open("", "_blank", "width=800,height=900");
+  win.document.write(`
+    <html>
+      <head>
+        <title>Invoice</title>
+        <link rel="stylesheet" href="/src/index.css" />
+      </head>
+      <body>
+        ${printContent}
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.focus();
+
+  // Wait for styles to load before printing
+  win.onload = () => {
+    win.print();
+    win.close();
+  };
+};
 
 
     useEffect(() => {
@@ -773,15 +804,23 @@ const handleCloseModal = () => {
                                                                                     <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View"  onClick={() => handleRowClick(r)}>
                                                                                         <Eye size={16} />
                                                                                     </button>
-                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
-                                                                                        <Printer size={16} />
-                                                                                    </button>
-                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
+<button
+  className="rounded p-1.5 hover:bg-gray-100"
+  aria-label="Print"
+  onClick={() => {
+    setSelectedRow(r);
+    setTimeout(handlePrint, 300); // wait a moment so invoice renders
+  }}
+>
+  <Printer size={16} />
+</button>                                                             <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
                                                                                         <Download size={16} />
                                                                                     </button>
                                                                                     <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
                                                                                 </div>
                                                                             </td>
+
+
                                                                         </motion.tr>
                                                                     ))}
                                                                 </AnimatePresence>
@@ -842,9 +881,13 @@ const handleCloseModal = () => {
                                                         <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
                                                             <Eye size={16} />
                                                         </button>
-                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Print">
-                                                            <Printer size={16} />
-                                                        </button>
+                                              <button
+  className="rounded p-1.5 hover:bg-gray-100"
+  aria-label="Print"
+  onClick={handlePrint}
+>
+  <Printer size={16} />
+</button>
                                                         <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
                                                             <Download size={16} />
                                                         </button>
@@ -883,6 +926,40 @@ const handleCloseModal = () => {
                                     </Modal>
 
                                     <Toast message={toast} onDismiss={() => setToast("")} />
+
+
+
+                                    {/* Hidden printable invoice (off-screen but rendered) */}
+<div
+  style={{
+    position: "absolute",
+    top: "-9999px",
+    left: "-9999px",
+    visibility: "hidden",
+  }}
+>
+  <div ref={invoiceRef}>
+    {selectedRow && (
+      <InvoiceTemplate
+        company={{
+          name: "MEHUL TELECOM",
+          address: "ASTRON CHOWK, SARDAR NAGAR MAIN ROAD, RAJKOT",
+          phone: "8320683171",
+        }}
+        invoice={{
+          number: selectedRow.billNumber,
+          date: selectedRow.billDate,
+        }}
+        billTo={{
+          name: selectedRow.partyId?.partyName,
+          contact: selectedRow.partyId?.mobile || "-",
+        }}
+        items={selectedRow.items || []}
+      />
+    )}
+  </div>
+</div>
+
                                 </div>
                             </div>
                         </div>

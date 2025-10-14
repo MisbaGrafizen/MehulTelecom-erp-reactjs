@@ -277,7 +277,7 @@ export default function MianItemspage() {
                                     </div>
                                     <div className="w-12 text-right text-[13px] font-[600] text-emerald-700">{it.qty ?? 0}</div>
 
-                                    {/* item kebab */}
+                            
                                     <div
                                         className="relative"
                                         onClick={(e) => {

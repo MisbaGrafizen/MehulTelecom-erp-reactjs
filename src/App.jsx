@@ -43,6 +43,7 @@ function App() {
           <Route path="/stock-transfer" element={<StockTransferList />} />
           <Route path="/new-transfer" element={<NewStockTransferPage />} />
           <Route path="/items" element={<MianItemspage />} />
+          
 
 
 
