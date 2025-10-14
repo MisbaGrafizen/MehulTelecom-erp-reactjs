@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, X, Check } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
-function cn(...a) {
+
+export function cn(...a) {
   return a.filter(Boolean).join(" ")
 }
 

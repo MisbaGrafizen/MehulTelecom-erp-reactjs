@@ -15,14 +15,14 @@ export default function SideBar() {
 
   const menuItems = [
     // { name: "Dashboard", icon: dashboard, path: "/dashboard" },
-    // { name: "Day Book ", icon: expan, path: "/daybook" },
+
     { name: "Transfer", icon: inventory, path: "/stock-transfer" },
     { name: "Sales", icon: sales,path: "/sells"  },
     { name: "Purchases", icon: purches, path: "/purches-list" },
     { name: "Company", icon: newsales, path: "/company-listing" },
     { name: "Settings", icon: settings, path: "/create-account" },
     // { name: "Labour", icon: reports, path: "/labour" },
-
+    { name: "Items ", icon: expan, path: "/items" },
   ];
 
   return (

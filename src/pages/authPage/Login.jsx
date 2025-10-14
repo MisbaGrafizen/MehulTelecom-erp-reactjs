@@ -180,10 +180,10 @@ export default function Login() {
                     <div className="relative w-full border border-[#BCBCBC] py-4 px-4 rounded-lg">
                       <label
                         htmlFor="name"
-                        className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins font-[300] text-primary text-xs transition-all ${
+                        className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins font-[300] text-primary s transition-all ${
                           nameFocused
-                            ? "text-primary -translate-y-[50%]"
-                            : "text-[#9f9e9e] -translate-y-[-55%]"
+                            ? "text-primary text-xs -translate-y-[50%]"
+                            : "text-[#9f9e9e] text-[20px] -translate-y-[-55%]"
                         }`}
                       >
                         User Name
@@ -387,10 +387,10 @@ export default function Login() {
                   <div className="relative w-full border border-[#BCBCBC] py-4 px-4 rounded-lg">
                     <label
                       htmlFor="name"
-                      className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins text-xs transition-all ${
+                      className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins transition-all ${
                         userName || nameFocused
-                          ? "text-primary -translate-y-[50%]"
-                          : "text-[#9f9e9e] -translate-y-[-55%]"
+                          ? "text-primary text-xs  -translate-y-[50%]"
+                          : "text-[#9f9e9e] text-[18px] font-[400] -translate-y-[-85%]"
                       }`}
                     >
                       User Name
@@ -409,10 +409,10 @@ export default function Login() {
                   <div className="relative w-full border border-[#BCBCBC] py-4 px-4 rounded-lg flex items-center space-x-4">
                     <label
                       htmlFor="password"
-                      className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins text-xs transition-all ${
+                      className={`bg-white px-1 absolute left-[20px] top-0 transform -translate-y-1/2 font-Poppins  transition-all ${
                         password || passwordFocused
-                          ? "text-primary -translate-y-[50%]"
-                          : "text-[#9f9e9e] -translate-y-[-55%]"
+                          ? "text-primary text-xs  -translate-y-[50%]"
+                          : "text-[#9f9e9e] text-[18px] font-[400] -translate-y-[-85%]"
                       }`}
                     >
                       Password
@@ -437,12 +437,12 @@ export default function Login() {
                 </div>
 
                 <div className="absolute w-[100%] bottom-[33px]">
-                  <p
+                  {/* <p
                     onClick={() => setIsRegistering(true)}
                     className="text-[#00cb82] cursor-pointer font-Poppins text-xs sm:text-base"
                   >
                     New User Registration
-                  </p>
+                  </p> */}
 
                   <div className="text-center w-[87%] mt-3">
                     <button

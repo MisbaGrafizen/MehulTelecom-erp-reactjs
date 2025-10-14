@@ -11,7 +11,7 @@ import { Plus, Scan, Pencil, Trash2 } from "lucide-react";
 
 import "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
-const options = ["Option 1", "Option 2", "Option 3"];
+const options = ["Cash", "Bank"];
 import { X, CheckCircle } from "lucide-react"
 import FloatingInput from "../../Component/inputFelleds/FloatingInput";
 

@@ -22,7 +22,7 @@ import NormalDropdown from "../../Component/inputFelleds/NormalDropdown";
 
 export default function PurchesInvoice() {
   const navigate = useNavigate();
-  const options = ["Option 1", "Option 2", "Option 3"];
+  const options = ["Cash", "Bank"];
   // Parties & address
   const [parties, setParties] = useState([]);
   const [selectedParty, setSelectedParty] = useState("");
