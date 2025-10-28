@@ -78,13 +78,17 @@ function DeviceCard({ device }) {
         <Chip color="violet">Qty: {device.qty || 1}</Chip>
       </div>
 
+      {/* ✅ Fixed serial number display */}
       <div className="mt-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200/70">
         <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
           Serial / IMEI
         </p>
         <p className="mt-0.5 font-mono text-sm text-slate-800 break-all whitespace-pre-line">
-          {Array.isArray(device.serialNumbers)
-            ? device.serialNumbers.join(", ")
+          {Array.isArray(device.serialNumbers) && device.serialNumbers.length > 0
+            ? device.serialNumbers
+                .map((s) => (typeof s === "object" ? s.number : s))
+                .filter(Boolean)
+                .join(", ")
             : device.serialNo || "—"}
         </p>
       </div>
@@ -96,6 +100,7 @@ function DeviceCard({ device }) {
     </div>
   );
 }
+
 
 export default function SellsDetails({ open, onClose, row }) {
   // 🧠 Map real sale data into modal fields

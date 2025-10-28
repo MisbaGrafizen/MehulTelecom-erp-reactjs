@@ -36,9 +36,9 @@ export default function SellsInvoice() {
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
   const [productSuggestions, setProductSuggestions] = useState([]);
   const [address, setAddress] = useState("");
-const [phoneNumber, setPhoneNumber] = useState("");
-const [email, setEmail] = useState("");
-const [creditLimit, setCreditLimit] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [creditLimit, setCreditLimit] = useState("");
 
 
 
@@ -47,8 +47,8 @@ const [creditLimit, setCreditLimit] = useState("");
 
   // Items
   const [items, setItems] = useState([
-  { productName: "", serialNumbers: [], modelNo: "", unit: "", pricePerUnit: "", amount: "" },
-]);
+    { productName: "", serialNumbers: [], modelNo: "", unit: "", pricePerUnit: "", amount: "" },
+  ]);
 
 
 
@@ -77,11 +77,19 @@ const [creditLimit, setCreditLimit] = useState("");
         if (res) {
           const purchases = res;
           const products = purchases.flatMap((p) =>
-            p.items.map((item) => ({
-              name: item.itemName,
-              stock: item.serialNumbers?.length || 0,
-            }))
+            p.items.map((item) => {
+              const unsold = (item.serialNumbers || [])
+                .filter((s) => !s.isSold)
+                .map((s) => s.number);
+              return {
+                name: item.itemName,
+                stock: unsold.length,
+                availableSerials: unsold, // ✅ store unsold serials
+              };
+            })
           );
+
+
 
           // ✅ Group by product name
           const grouped = Object.values(
@@ -103,48 +111,48 @@ const [creditLimit, setCreditLimit] = useState("");
   }, []);
 
 
- useEffect(() => {
-  const fetchPartyDetails = async () => {
-    if (!selectedParty) return;
-    try {
-      const res = await ApiGet(`/admin/sales-party-by-name/${selectedParty}`);
-      if (res?.data) {
-        const party = res.data;
-        setAddress(party.billingAddress || "");
-        setPhoneNumber(party.phoneNumber || "");
-        setEmail(party.email || "");
-        setCreditLimit(party.creditLimit || 0);
+  useEffect(() => {
+    const fetchPartyDetails = async () => {
+      if (!selectedParty) return;
+      try {
+        const res = await ApiGet(`/admin/sales-party-by-name/${selectedParty}`);
+        if (res?.data) {
+          const party = res.data;
+          setAddress(party.billingAddress || "");
+          setPhoneNumber(party.phoneNumber || "");
+          setEmail(party.email || "");
+          setCreditLimit(party.creditLimit || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching party details:", error);
       }
-    } catch (error) {
-      console.error("Error fetching party details:", error);
-    }
+    };
+    fetchPartyDetails();
+  }, [selectedParty]);
+
+
+  const handleItemChange = (index, field, value) => {
+    const updated = [...items];
+    updated[index][field] = value;
+
+    // Keep both fields in sync
+    if (field === "productName") updated[index].itemName = value;
+    if (field === "itemName") updated[index].productName = value;
+
+    // ✅ Update amount per row
+    const qty = parseFloat(updated[index].unit) || 0;
+    const price = parseFloat(updated[index].pricePerUnit) || 0;
+    updated[index].amount = (qty * price).toFixed(2);
+
+    setItems(updated);
+
+    // ✅ Recalculate total
+    const total = updated.reduce(
+      (sum, item) => sum + (parseFloat(item.amount) || 0),
+      0
+    );
+    setTotalAmount(total.toFixed(2));
   };
-  fetchPartyDetails();
-}, [selectedParty]);
-
-
-const handleItemChange = (index, field, value) => {
-  const updated = [...items];
-  updated[index][field] = value;
-
-  // Keep both fields in sync
-  if (field === "productName") updated[index].itemName = value;
-  if (field === "itemName") updated[index].productName = value;
-
-  // ✅ Update amount per row
-  const qty = parseFloat(updated[index].unit) || 0;
-  const price = parseFloat(updated[index].pricePerUnit) || 0;
-  updated[index].amount = (qty * price).toFixed(2);
-
-  setItems(updated);
-
-  // ✅ Recalculate total
-  const total = updated.reduce(
-    (sum, item) => sum + (parseFloat(item.amount) || 0),
-    0
-  );
-  setTotalAmount(total.toFixed(2));
-};
 
 
 
@@ -156,58 +164,64 @@ const handleItemChange = (index, field, value) => {
   };
 
 
-const handleSave = async () => {
-  if (!selectedParty) {
-    alert("Please select a party");
-    return;
-  }
+  const handleSave = async () => {
+    if (!selectedParty) {
+      alert("Please select a party");
+      return;
+    }
 
-  if (items.length === 0) {
-    alert("Please add at least one item");
-    return;
-  }
+    if (items.length === 0) {
+      alert("Please add at least one item");
+      return;
+    }
 
-  // ✅ Map items to backend schema
-  const mappedItems = items.map((item) => ({
-    itemName: item.itemName || item.productName || "",
-    serialNumbers: item.serialNumbers || [], // ✅ send IMEI array
-    modelNo: item.modelNo || "",
-    qty: item.serialNumbers?.length || parseFloat(item.unit) || 1, // ✅ ensure correct qty
-    unit: item.unit || "NONE",
-    pricePerUnit: parseFloat(item.pricePerUnit) || 0,
-    amount: parseFloat(item.amount) || 0,
-  }));
+    // ✅ Map items to backend schema
+    const mappedItems = items.map((item) => ({
+      itemName: item.itemName || item.productName || "",
+      modelNo: item.modelNo || "",
+      // ✅ convert each serial to backend object format
+      serialNumbers: (item.serialNumbers || []).map((s) => ({
+        number: typeof s === "object" ? s.number : s,
+        isSold: true,
+      })),
 
-  const cashAmt = parseFloat(cashPayment) || 0;
-  const bankAmt = parseFloat(bankPayment) || 0;
-  const paidAmount = cashAmt + bankAmt;
-  const unpaidAmount = Math.max((parseFloat(totalAmount) || 0) - paidAmount, 0);
+      qty: item.serialNumbers?.length || parseFloat(item.unit) || 1,
+      unit: item.unit || "PCS",
+      pricePerUnit: parseFloat(item.pricePerUnit) || 0,
+      amount: parseFloat(item.amount) || 0,
+    }));
 
-  const payload = {
-    partyId,
-    billDate: billDate ? new Date(billDate) : new Date(),
-    time: new Date().toLocaleTimeString(),
-    paymentType: bankAmt > 0 && cashAmt > 0 ? "Mixed" : bankAmt > 0 ? "Bank" : "Cash",
-    items: mappedItems,
-    totalAmount: parseFloat(totalAmount) || 0,
-    payments: [
-      { method: "Cash", amount: cashAmt },
-      { method: "Online", amount: bankAmt },
-    ],
-    paidAmount,
-    unpaidAmount,
+
+    const cashAmt = parseFloat(cashPayment) || 0;
+    const bankAmt = parseFloat(bankPayment) || 0;
+    const paidAmount = cashAmt + bankAmt;
+    const unpaidAmount = Math.max((parseFloat(totalAmount) || 0) - paidAmount, 0);
+
+    const payload = {
+      partyId,
+      billDate: billDate ? new Date(billDate) : new Date(),
+      time: new Date().toLocaleTimeString(),
+      paymentType: bankAmt > 0 && cashAmt > 0 ? "Mixed" : bankAmt > 0 ? "Bank" : "Cash",
+      items: mappedItems,
+      totalAmount: parseFloat(totalAmount) || 0,
+      payments: [
+        { method: "Cash", amount: cashAmt },
+        { method: "Online", amount: bankAmt },
+      ],
+      paidAmount,
+      unpaidAmount,
+    };
+
+    try {
+      const res = await ApiPost("/admin/sale", payload);
+      console.log("Sales saved:", res.data);
+      alert("Sales saved successfully!");
+      navigate("/sells");
+    } catch (error) {
+      console.error("Error saving sale:", error);
+      alert("Failed to save sale");
+    }
   };
-
-  try {
-    const res = await ApiPost("/admin/sale", payload);
-    console.log("Sales saved:", res.data);
-    alert("Sales saved successfully!");
-    navigate("/sells");
-  } catch (error) {
-    console.error("Error saving sale:", error);
-    alert("Failed to save sale");
-  }
-};
 
 
 
@@ -241,13 +255,43 @@ const handleSave = async () => {
   };
 
 
-  const handleSerialClick = (product, index) => {
-    if (product.itemName) {
+  const handleSerialClick = async (product, index) => {
+    if (!product.itemName) return;
+
+    try {
+      const res = await ApiGet("/admin/purchase");
+      const purchases = res;
+
+      // ✅ Find available serials for this product
+      const serials = purchases.flatMap((p) =>
+        p.items
+          .filter((i) => i.itemName === product.itemName)
+          .flatMap((i) =>
+            (i.serialNumbers || [])
+              .filter((s) => !s.isSold) // Only unsold
+              .map((s) => s.number)
+          )
+      );
+
+
+      // if (serials.length === 0) {
+      //   alert("No available serial numbers for this product!");
+      //   return;
+      // }
+
+      // ✅ Store for modal
       setSelectedModel(product.itemName);
-      setSelectedProductIndex(index); // ✅ track which item we’re updating
+      setSelectedProductIndex(index);
       setImeiModalOpen(true);
+
+      // Optionally, pass them into your modal as props (see Step 3)
+    } catch (err) {
+      console.error("Error fetching serials:", err);
     }
   };
+
+
+
   return (
     <>
       <section className="flex w-[100%] h-[100%] select-none p-[15px] overflow-hidden">
@@ -270,29 +314,30 @@ const handleSave = async () => {
                     </div>
                   </div>
 
-                    <div className=" w-[600px] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
-                                      <div className=" flex w-[48%] flex-col gap-[16px]">
+                  <div className=" w-[600px] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
+                    <div className=" flex w-[48%] flex-col gap-[16px]">
 
                       <div className=" flex ">
                         <SellsMotionDropdown
                           label="Select Party"
                           options={parties.map((p) => p.partyName)}
                           onChange={async (val) => {
-  setSelectedParty(val);
-  try {
-    const res = await ApiGet(`/admin/sales-party-by-name/${val}`);
-    if (res?.data) {
-      const party = res.data;
-      setPartyId(party._id);
-      setAddress(party.billingAddress || "");
-      setPhoneNumber(party.phoneNumber || "");
-      setEmail(party.email || "");
-      setCreditLimit(party.creditLimit || 0);
-    }
-  } catch (error) {
-    console.error("Error fetching party details:", error);
-  }
-}}
+                            setSelectedParty(val);
+                            try {
+                              const res = await ApiGet(`/admin/sales-party-by-name/${val}`);
+                              console.log('res', res)
+                              if (res?.data) {
+                                const party = res.data;
+                                setPartyId(party._id);
+                                setAddress(party.billingAddress || "");
+                                setPhoneNumber(party.phoneNumber || "");
+                                setEmail(party.email || "");
+                                setCreditLimit(party.creditLimit || 0);
+                              }
+                            } catch (error) {
+                              console.error("Error fetching party details:", error);
+                            }
+                          }}
 
                           onPartyCreated={(newParty) => {
                             setParties((prev) => [...prev, newParty]);
@@ -310,31 +355,31 @@ const handleSave = async () => {
                         onChange={(e) => setAddress(e.target.value)}
                       />
                     </div>
-                      <div className=" flex gap-[15px]  w-[50%] flex-col">
-  <FloatingInput
-    label="Phone Number"
-    name="phoneNumber"
-    value={phoneNumber}
-    onChange={(e) => setPhoneNumber(e.target.value)}
-  />
+                    <div className=" flex gap-[15px]  w-[50%] flex-col">
+                      <FloatingInput
+                        label="Phone Number"
+                        name="phoneNumber"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                      />
 
-  <FloatingInput
-    label="Email ID"
-    name="email"
-    value={email}
-    onChange={(e) => setEmail(e.target.value)}
-  />
+                      <FloatingInput
+                        label="Email ID"
+                        name="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
 
-  <FloatingInput
-    label="Credit Limit"
-    name="creditLimit"
-    type="number"
-    value={creditLimit}
-    onChange={(e) => setCreditLimit(e.target.value)}
-  />
+                      <FloatingInput
+                        label="Credit Limit"
+                        name="creditLimit"
+                        type="number"
+                        value={creditLimit}
+                        onChange={(e) => setCreditLimit(e.target.value)}
+                      />
 
 
-                                        </div>
+                    </div>
                   </div>
 
                   {/* Table Header */}
@@ -397,13 +442,27 @@ const handleSave = async () => {
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.serialNumbers?.join(", ") || ""}
+                                    value={
+                                      Array.isArray(product.serialNumbers)
+                                        ? product.serialNumbers
+                                          .filter((s) => {
+                                            if (typeof s === "object" && s !== null) {
+                                              return !s.isSold; // show only unsold
+                                            }
+                                            return true;
+                                          })
+                                          .map((s) => (typeof s === "object" ? s.number : s))
+                                          .join(", ")
+                                        : ""
+                                    }
                                     onFocus={() => handleSerialClick(product, index)}
                                     readOnly
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
                                     placeholder="Select IMEI"
                                   />
                                 </td>
+
+
 
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
@@ -475,10 +534,10 @@ const handleSave = async () => {
                                         <span className="font-Poppins text-gray-700">{p.name}</span>
                                         <span
                                           className={`font-medium font-Poppins ${p.stock === 0
-                                              ? "text-red-500"
-                                              : p.stock === 1
-                                                ? "text-blue-500"
-                                                : "text-green-600"
+                                            ? "text-red-500"
+                                            : p.stock === 1
+                                              ? "text-blue-500"
+                                              : "text-green-600"
                                             }`}
                                         >
                                           {p.stock}
@@ -490,22 +549,31 @@ const handleSave = async () => {
                                 )}
                               </AnimatePresence>
 
-
-
                               <ImeiModal
                                 isOpen={isImeiModalOpen}
                                 onClose={() => setImeiModalOpen(false)}
-                                modelName={items[selectedProductIndex]?.itemName || selectedModel} // ✅ auto-passes selected product name
-                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}   // ✅ also passes existing serials for that item
+                                modelName={items[selectedProductIndex]?.itemName || selectedModel}
+                                existingImeis={
+                                  (productSuggestions.find((p) => p.name === selectedModel)?.availableSerials || [])
+                                    .filter((s) => {
+                                      if (typeof s === "object" && s !== null) return !s.isSold;
+                                      return true;
+                                    })
+                                    .map((s) => (typeof s === "object" ? s.number : s))
+                                }
                                 onSave={(imeis) => {
                                   if (selectedProductIndex !== null) {
                                     const updated = [...items];
-                                    updated[selectedProductIndex].serialNumbers = imeis;
+                                    updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
+                                      number: n,
+                                      isSold: false,
+                                    }));
                                     updated[selectedProductIndex].unit = imeis.length;
                                     updated[selectedProductIndex].amount = (
                                       imeis.length *
                                       (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
                                     ).toFixed(2);
+
                                     setItems(updated);
 
                                     const total = updated.reduce(

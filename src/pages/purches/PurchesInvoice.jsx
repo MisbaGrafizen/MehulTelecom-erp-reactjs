@@ -68,10 +68,10 @@ export default function PurchesInvoice() {
         console.log('res', res)
         if (res) {
           const products = res.flatMap((p) =>
-            p.items.map((item) => ({
-              name: item.itemName,
-              stock: item.serialNumbers?.length || 0,
-            }))
+            p.items.map((item) => {
+              const available = item.serialNumbers?.filter((s) => !s.isSold)?.length || 0;
+              return { name: item.itemName, stock: available };
+            })
           );
 
           // ✅ Group by product name & sum stock
@@ -150,16 +150,20 @@ export default function PurchesInvoice() {
       return;
     }
 
-    // ✅ Map items to backend schema
+    // ✅ Ensure serials include isSold flag
     const mappedItems = items.map((item) => ({
       itemName: item.itemName || item.productName || "",
-      serialNumbers: item.serialNumbers || [],
       modelNo: item.modelNo || "",
+      serialNumbers: (item.serialNumbers || []).map((num) => ({
+        number: num,
+        isSold: false, // Mark all as unsold in purchase
+      })),
       qty: item.serialNumbers?.length > 0 ? item.serialNumbers.length : parseFloat(item.unit) || 1,
       unit: item.unit || "PCS",
       pricePerUnit: parseFloat(item.pricePerUnit) || 0,
       amount: parseFloat(item.amount) || 0,
     }));
+
 
     const cashAmt = parseFloat(cashPayment) || 0;
     const bankAmt = parseFloat(bankPayment) || 0;
@@ -267,39 +271,41 @@ export default function PurchesInvoice() {
                             setSelectedParty(val);
                             try {
                               const res = await ApiGet(`/admin/party-by-name/${val}`);
+                              console.log('resdscds', res)
                               if (res?.data) {
                                 const p = res.data;
                                 setPartyId(p._id);
 
-                                // ✅ Clean address extraction
-                                if (p.address) {
-                                  if (typeof p.address === "string") {
-                                    setAddress(p.address);
-                                  } else if (p?.billingAddress) {
-                                    setAddress(
-                                      `${p.billingAddress}`
-                                    );
-                                  } else if (p?.billingAddress) {
-                                    setAddress(`${p.billingAddress}`);
-                                  } else {
-                                    setAddress("");
+                                // 🧠 Fix address formatting
+                                const formatAddress = (addr) => {
+                                  if (!addr) return "";
+                                  if (typeof addr === "string") return addr;
+                                  if (typeof addr === "object") {
+                                    // Join all values (e.g., street, city, state, etc.)
+                                    return Object.values(addr).filter(Boolean).join(", ");
                                   }
-                                } else {
-                                  setAddress("");
-                                }
+                                  return "";
+                                };
 
+                                const cleanAddress =
+                                  formatAddress(p.billingAddress) ||
+                                  formatAddress(p.address) ||
+                                  formatAddress(p.shippingAddress) ||
+                                  "";
 
-                                // ✅ Safely handle other fields
+                                setAddress(cleanAddress);
+                                console.log('address', cleanAddress)
+
+                                // ✅ Set other fields
                                 setPhoneNumber(p.phoneNumber || "");
                                 setEmail(p.email || "");
-                                setCreditLimit(
-                                  typeof p.creditLimit === "object" ? "" : p.creditLimit || ""
-                                );
+                                setCreditLimit(typeof p.creditLimit === "object" ? "" : p.creditLimit || "");
                               }
                             } catch (error) {
                               console.error("Error fetching party details:", error);
                             }
                           }}
+
 
 
 
@@ -510,20 +516,19 @@ export default function PurchesInvoice() {
                                 )}
                               </AnimatePresence>
 
-
-
                               <ImeiModal
                                 isOpen={isImeiModalOpen}
                                 onClose={() => setImeiModalOpen(false)}
                                 modelName={items[selectedProductIndex]?.itemName || selectedModel} // ✅ auto-passes selected product name
                                 existingImeis={items[selectedProductIndex]?.serialNumbers || []}   // ✅ also passes existing serials for that item
                                 onSave={(imeis) => {
+                                  const cleanImeis = imeis.filter((num) => !!num && num.trim() !== "");
                                   if (selectedProductIndex !== null) {
                                     const updated = [...items];
-                                    updated[selectedProductIndex].serialNumbers = imeis;
-                                    updated[selectedProductIndex].unit = imeis.length;
+                                    updated[selectedProductIndex].serialNumbers = cleanImeis;
+                                    updated[selectedProductIndex].unit = cleanImeis.length;
                                     updated[selectedProductIndex].amount = (
-                                      imeis.length *
+                                      cleanImeis.length *
                                       (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
                                     ).toFixed(2);
                                     setItems(updated);
@@ -536,8 +541,8 @@ export default function PurchesInvoice() {
                                   }
                                   setImeiModalOpen(false);
                                 }}
-                              />
 
+                              />
 
                             </>
                           ))}

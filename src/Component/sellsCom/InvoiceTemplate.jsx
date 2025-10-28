@@ -157,16 +157,16 @@ export default function InvoiceTemplate({
 <style jsx global>{`
   @page {
     size: 21cm 14.8cm; /* A5 Landscape */
-    margin: 10mm; /* Adjust as needed */
+    margin: 5mm; /* Adjust as needed */
   }
 
   @media print {
     html,
     body {
-      width: 1300px;
-      height: 14.8cm;
+      width: 100%;
+      height: 15.8cm;
       background: white !important;
-      margin-top: 60px;
+     
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }

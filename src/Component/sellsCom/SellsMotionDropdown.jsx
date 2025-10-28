@@ -85,10 +85,10 @@ const SellsMotionDropdown = ({
         partyName: formData.partyName,
         phoneNumber: formData.phoneNumber,
         email: formData.email,
-        billingAddress: formData.billingAddress,
+        billingAddress: formData.billingAddress, 
         creditLimit: Number(formData.creditLimit) || 0,
         balance: Number(formData.balance) || 0,
-        documentUrl: formData.documentUrl || "",
+        image: formData.documentUrl || "",
         additionalFields: formData.additionalFields,
       };
 
@@ -120,8 +120,8 @@ const SellsMotionDropdown = ({
   };
 
   // Filter options
-  const filteredOptions = options.filter((opt) =>
-    opt.toLowerCase().includes(query.toLowerCase())
+  const filteredOptions = options?.filter((opt) =>
+    opt?.toLowerCase()?.includes(query?.toLowerCase())
   );
 
   return (

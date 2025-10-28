@@ -7,8 +7,7 @@ import {
   PhoneIcon,
   Receipt,
   Landmark,
-  IndianRupee,  
-  Smartphone,
+  IndianRupee,
   TabletSmartphone,
   Printer,
   Download,
@@ -31,8 +30,9 @@ function Chip({ children, color = "gray" }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[color] || colors.gray
-        }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        colors[color] || colors.gray
+      }`}
     >
       {children}
     </span>
@@ -58,7 +58,7 @@ function DeviceCard({ device }) {
     <div className="relative overflow-hidden rounded-xl border border-slate-200 shadow-md bg-white p-4">
       <div
         aria-hidden
-        className={`absolute -right-px -top-px h-8 w-8 bg-indigo-500`}
+        className="absolute -right-px -top-px h-8 w-8 bg-indigo-500"
         style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }}
       />
       <div className="flex items-start justify-between gap-3">
@@ -79,20 +79,18 @@ function DeviceCard({ device }) {
       </div>
 
       {/* ✅ Serial numbers display */}
-      <div className="mt-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200/70">
-        <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
-          Serial / IMEI Numbers ({device.serialNumbers?.length || 0})
-        </p>
-        {device.serialNumbers?.length > 0 ? (
-          <ul className="mt-1 ml-3 list-disc text-xs text-slate-700 space-y-0.5">
+      {device.serialNumbers && device.serialNumbers.length > 0 && (
+        <div className="mt-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200/70">
+          <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+            Serial / IMEI Numbers ({device.serialNumbers.length})
+          </p>
+          <ul className="mt-1 ml-2 list-disc text-xs text-slate-700 space-y-0.5">
             {device.serialNumbers.map((sn, i) => (
               <li key={i}>{sn}</li>
             ))}
           </ul>
-        ) : (
-          <p className="mt-0.5 text-xs text-slate-500">No serials available</p>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mt-2 flex justify-between text-sm text-slate-700">
         <span>Rate: {INR.format(device.pricePerUnit || 0)}</span>
@@ -102,10 +100,10 @@ function DeviceCard({ device }) {
   );
 }
 
-
 // ✅ Main Modal Component
 export default function PurchaseDetailsModal({ open, onClose, row }) {
-  // 🧠 Map real purchase data into modal fields
+  console.log('row', row)
+  // 🧠 Map purchase data into modal fields
   const data = {
     invoiceNo: row?.billNumber || "—",
     date: row?.billDate
@@ -130,42 +128,34 @@ export default function PurchaseDetailsModal({ open, onClose, row }) {
         qty: item.qty,
         pricePerUnit: item.pricePerUnit,
         amount: item.amount,
-        serialNumbers: item.serialNumbers || [], // ✅ corrected
+        // ✅ pull the serialNumbers.number values
+        serialNumbers: item.serialNumbers || [],
       })) || [],
-
   };
+
+  console.log('data', data)
 
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tx-title"
-    >
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Panel */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-3xl overflow-hidden max-h-[90vh] rounded-2xl bg-white h-[90vh] shadow-2xl ring-1 ring-slate-200 animate-fadeIn">
+        <div className="relative w-full max-w-3xl overflow-hidden max-h-[90vh] rounded-2xl bg-white h-[90vh] shadow-2xl ring-1 ring-slate-200">
           {/* Accent rail */}
           <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-sky-400 to-indigo-500" />
 
           {/* Header */}
-          <div className="relative bg-gradient-to-br from-slate-50 via-white to-white">
-            <div
-              aria-hidden
-              className="absolute right-0 top-0 h-10 w-10 bg-sky-500"
-              style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }}
-            />
+          <div className="relative bg-gradient-to-br from-slate-50 via-white to-white border-b border-slate-200">
             <div className="px-6 pt-5 pb-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2
                     id="tx-title"
-                    className="text-lg sm:text-xl font-[600] text-slate-900 flex items-center gap-2"
+                    className="text-lg sm:text-xl font-semibold text-slate-900 flex items-center gap-2"
                   >
                     <Receipt className="w-5 h-5 text-sky-600" />
                     {data.invoiceNo}
@@ -206,24 +196,10 @@ export default function PurchaseDetailsModal({ open, onClose, row }) {
                   Transaction
                 </h3>
                 <dl className="space-y-3">
-                  <RowLine
-                    icon={Receipt}
-                    label="Invoice No."
-                    value={data.invoiceNo}
-                  />
+                  <RowLine icon={Receipt} label="Invoice No." value={data.invoiceNo} />
                   <RowLine icon={Landmark} label="Payment" value={data.payment} />
-                  <RowLine
-                    icon={IndianRupee}
-                    label="Amount"
-                    value={INR.format(data.amount)}
-                  />
-                  <RowLine
-                    icon={IndianRupee}
-                    label="Balance"
-                    value={
-                      data.balance ? INR.format(data.balance) : "—"
-                    }
-                  />
+                  <RowLine icon={IndianRupee} label="Amount" value={INR.format(data.amount)} />
+                  <RowLine icon={IndianRupee} label="Balance" value={data.balance ? INR.format(data.balance) : "—"} />
                 </dl>
               </section>
 
@@ -233,21 +209,9 @@ export default function PurchaseDetailsModal({ open, onClose, row }) {
                   Party Details
                 </h3>
                 <dl className="space-y-3">
-                  <RowLine
-                    icon={User}
-                    label="Party Name"
-                    value={data.party.name}
-                  />
-                  <RowLine
-                    icon={MapPin}
-                    label="Address"
-                    value={data.party.address}
-                  />
-                  <RowLine
-                    icon={PhoneIcon}
-                    label="Contact"
-                    value={data.party.number}
-                  />
+                  <RowLine icon={User} label="Party Name" value={data.party.name} />
+                  <RowLine icon={MapPin} label="Address" value={data.party.address} />
+                  <RowLine icon={PhoneIcon} label="Contact" value={data.party.number} />
                 </dl>
               </section>
             </div>

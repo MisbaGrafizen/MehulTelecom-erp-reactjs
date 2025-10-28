@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, PlusCircle, Loader2 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { ApiGet } from "../../helper/axios"; // ✅ Add this to fetch existing IMEIs
+import { ApiGet } from "../../helper/axios";
 
 export default function ImeiModal({
   isOpen,
@@ -10,36 +10,47 @@ export default function ImeiModal({
   existingImeis = [],
   onSave,
 }) {
-  // 🔹 State management
-  const [imeiList, setImeiList] = useState([]); // All IMEIs for this model from backend
+  // State
+  const [imeiList, setImeiList] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedImeis, setSelectedImeis] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Reset when closing
   useEffect(() => {
-  if (!isOpen) {
-    setSearch("");
-    setImeiList([]);
-    setSelectedImeis([]);
-  }
-}, [isOpen]);
+    if (!isOpen) {
+      setSearch("");
+      setImeiList([]);
+      setSelectedImeis([]);
+    }
+  }, [isOpen]);
 
-
-  // 🔹 Load IMEIs when modal opens
+  // Fetch IMEIs from backend when modal opens
   useEffect(() => {
     const fetchImeis = async () => {
       if (!isOpen || !modelName) return;
       setLoading(true);
-      console.log('modelName', modelName)
       try {
         const res = await ApiGet(`/admin/serials/${encodeURIComponent(modelName)}`);
-        console.log('resdscdsf', res)
-        const backendImeis = Array.isArray(res)
-          ? res
-          : Array.isArray(res)
-            ? res
-            : [];
+        // Backend may return array of objects: [{number, isSold}, ...]
+        let backendImeis = [];
 
-        const merged = Array.from(new Set([...backendImeis, ...existingImeis]));
+        if (Array.isArray(res)) {
+          backendImeis = res;
+        } else if (Array.isArray(res?.data)) {
+          backendImeis = res.data;
+        } else if (res?.serials) {
+          backendImeis = res.serials;
+        }
+
+        // ✅ Normalize: keep only unsold serial numbers as strings
+        const unsoldImeis = backendImeis
+          .filter((s) => !s.isSold)
+          .map((s) => (typeof s === "object" ? s.number : s));
+
+        // ✅ Merge with existingImeis (avoid duplicates)
+        const merged = Array.from(new Set([...unsoldImeis, ...existingImeis]));
+
         setImeiList(merged);
         setSelectedImeis(existingImeis || []);
       } catch (err) {
@@ -48,10 +59,11 @@ export default function ImeiModal({
         setLoading(false);
       }
     };
+
     fetchImeis();
   }, [isOpen, modelName, existingImeis]);
 
-  // 🔹 Filter by search
+  // Search filter
   const filteredImei = useMemo(() => {
     if (!search) return imeiList;
     return imeiList.filter((imei) =>
@@ -59,7 +71,7 @@ export default function ImeiModal({
     );
   }, [search, imeiList]);
 
-  // 🔹 Add new IMEI
+  // Add new IMEI manually
   const handleAddImei = () => {
     const trimmed = search.trim();
     if (!trimmed) return;
@@ -67,13 +79,12 @@ export default function ImeiModal({
       alert("This IMEI already exists!");
       return;
     }
-
     setImeiList((prev) => [...prev, trimmed]);
-    setSelectedImeis((prev) => [...prev, trimmed]); // auto-select new IMEI
+    setSelectedImeis((prev) => [...prev, trimmed]);
     setSearch("");
   };
 
-  // 🔹 Toggle IMEI checkbox
+  // Toggle IMEI checkbox
   const handleCheckboxChange = (imei) => {
     setSelectedImeis((prev) =>
       prev.includes(imei)
@@ -82,7 +93,7 @@ export default function ImeiModal({
     );
   };
 
-  // 🔹 Save & return selected IMEIs to parent
+  // Save selected IMEIs
   const handleSave = () => {
     const uniqueImeis = Array.from(new Set(selectedImeis));
     onSave(uniqueImeis);
@@ -110,10 +121,7 @@ export default function ImeiModal({
               <h2 className="text-white font-semibold font-Poppins text-[16px]">
                 {modelName || "Select Product"}
               </h2>
-              <button
-                onClick={onClose}
-                className="text-white hover:text-gray-200 transition"
-              >
+              <button onClick={onClose} className="text-white hover:text-gray-200 transition">
                 <X size={20} />
               </button>
             </div>
@@ -138,7 +146,7 @@ export default function ImeiModal({
                 </button>
               </div>
 
-              {/* Loading State */}
+              {/* Loading */}
               {loading ? (
                 <div className="flex justify-center items-center flex-1 text-gray-500">
                   <Loader2 className="animate-spin mr-2" /> Loading IMEIs...

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState ,useRef} from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
     Calendar,
@@ -250,20 +250,21 @@ export default function SellListing() {
     const [confirmRow, setConfirmRow] = useState(null)
     const [firms, setFirms] = useState([])
     const [users, setUsers] = useState([])
-    const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
+    const paymentTypes = ["Cash", "Bank"];
     const [selectedRow, setSelectedRow] = useState(null);
-const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
 
+    console.log('selectedRow', selectedRow)
 
-const invoiceRef = useRef()
+    const invoiceRef = useRef()
 
-const handlePrint = () => {
-  if (!invoiceRef.current) return;
-  const printContent = invoiceRef.current.innerHTML;
+    const handlePrint = () => {
+        if (!invoiceRef.current) return;
+        const printContent = invoiceRef.current.innerHTML;
 
-  const win = window.open("", "_blank", "width=800,height=900");
-  win.document.write(`
+        const win = window.open("", "_blank", "width=800,height=900");
+        win?.document?.write(`
     <html>
       <head>
         <title>Invoice</title>
@@ -274,15 +275,17 @@ const handlePrint = () => {
       </body>
     </html>
   `);
-  win.document.close();
-  win.focus();
+        win?.document?.close();
+        win.focus();
 
-  // Wait for styles to load before printing
-  win.onload = () => {
-    win.print();
-    win.close();
-  };
-};
+        // Wait for styles to load before printing
+        win.onload = () => {
+            win.print();
+            win.close();
+        };
+    };
+
+
 
 
     useEffect(() => {
@@ -300,7 +303,7 @@ const handlePrint = () => {
                     setFirms(firmNames)
                 }
 
-                const userRes = await ApiGet("/admin/party")
+                const userRes = await ApiGet("/admin/sales-party")
                 console.log('userRes', userRes)
                 if (userRes?.data) {
                     const userNames = userRes.data.map(u => u.partyName)
@@ -316,15 +319,15 @@ const handlePrint = () => {
         fetchData()
     }, [])
 
-const handleRowClick = (row) => {
-  setSelectedRow(row);
-  setIsModalOpen(true);
-};
+    const handleRowClick = (row) => {
+        setSelectedRow(row);
+        setIsModalOpen(true);
+    };
 
-const handleCloseModal = () => {
-  setIsModalOpen(false);
-  setSelectedRow(null);
-};
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedRow(null);
+    };
 
     useEffect(() => {
         const fetchPurchases = async () => {
@@ -801,19 +804,20 @@ const handleCloseModal = () => {
                                                                             <td className="px-3 py-2 text-right">{r.balance}</td>
                                                                             <td className="px-2 py-2">
                                                                                 <div className="flex items-center justify-center gap-1">
-                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View"  onClick={() => handleRowClick(r)}>
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View" onClick={() => handleRowClick(r)}>
                                                                                         <Eye size={16} />
                                                                                     </button>
-<button
-  className="rounded p-1.5 hover:bg-gray-100"
-  aria-label="Print"
-  onClick={() => {
-    setSelectedRow(r);
-    setTimeout(handlePrint, 300); // wait a moment so invoice renders
+                                                                                    <button
+                                                                                        className="rounded p-1.5 hover:bg-gray-100"
+                                                                                        aria-label="Print"
+                                                                                     onClick={() => {
+      setSelectedRow(r);
+      setTimeout(() => handlePrint(), 300);
   }}
->
-  <Printer size={16} />
-</button>                                                             <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
+                                                                                    >
+                                                                                        <Printer size={16} />
+                                                                                    </button>
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
                                                                                         <Download size={16} />
                                                                                     </button>
                                                                                     <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
@@ -845,56 +849,59 @@ const handleCloseModal = () => {
                                                         onClose={handleCloseModal}
                                                         row={selectedRow}
                                                     />
-                                               
-                                                ) }
 
-                                              </>
-                                        
+                                                )}
+
+                                            </>
+
                                         ) : (
-                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                            {filtered.map((r) => (
-                                                <motion.div
-                                                    key={r.id}
-                                                    initial={{ opacity: 0, y: 8 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                                                >
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div>
-                                                            <div className="text-xs text-gray-500">{formatDate(r.date)}</div>
-                                                            <div className="text-sm font-[600]">{r.partyName}</div>
-                                                            <div className="text-xs text-gray-500">{r.invoiceNo}</div>
+                                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                                {filtered.map((r) => (
+                                                    <motion.div
+                                                        key={r.id}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div>
+                                                                <div className="text-xs text-gray-500">{formatDate(r.date)}</div>
+                                                                <div className="text-sm font-[600]">{r.partyName}</div>
+                                                                <div className="text-xs text-gray-500">{r.invoiceNo}</div>
+                                                            </div>
+                                                            <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
                                                         </div>
-                                                        <KebabMenu onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
-                                                    </div>
-                                                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                                                        <div className="text-gray-500">Transaction</div>
-                                                        <div className="text-gray-800">{r.transaction}</div>
-                                                        <div className="text-gray-500">Payment</div>
-                                                        <div className="text-gray-800">{r.paymentType}</div>
-                                                        <div className="text-gray-500">Amount</div>
-                                                        <div className="text-gray-800">{formatINR(r.totalAmount)}</div>
-                                                        <div className="text-gray-500">Balance</div>
-                                                        <div className="text-gray-800">{r.balance}</div>
-                                                    </div>
-                                                    <div className="mt-3 flex items-center justify-end gap-1">
-                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
-                                                            <Eye size={16} />
-                                                        </button>
-                                              <button
-  className="rounded p-1.5 hover:bg-gray-100"
-  aria-label="Print"
-  onClick={handlePrint}
->
-  <Printer size={16} />
-</button>
-                                                        <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
-                                                            <Download size={16} />
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
+                                                        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                                                            <div className="text-gray-500">Transaction</div>
+                                                            <div className="text-gray-800">{r.transaction}</div>
+                                                            <div className="text-gray-500">Payment</div>
+                                                            <div className="text-gray-800">{r.paymentType}</div>
+                                                            <div className="text-gray-500">Amount</div>
+                                                            <div className="text-gray-800">{formatINR(r.totalAmount)}</div>
+                                                            <div className="text-gray-500">Balance</div>
+                                                            <div className="text-gray-800">{r.balance}</div>
+                                                        </div>
+                                                        <div className="mt-3 flex items-center justify-end gap-1">
+                                                            <button className="rounded p-1.5 hover:bg-gray-100" aria-label="View">
+                                                                <Eye size={16} />
+                                                            </button>
+                                                            <button
+                                                                className="rounded p-1.5 hover:bg-gray-100"
+                                                                aria-label="Print"
+                                                       onClick={() => {
+      setSelectedRow(r);
+      setTimeout(() => handlePrint(), 300);
+  }}
+                                                            >
+                                                                <Printer size={16} />
+                                                            </button>
+                                                            <button className="rounded p-1.5 hover:bg-gray-100" aria-label="Download">
+                                                                <Download size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
 
@@ -930,35 +937,51 @@ const handleCloseModal = () => {
 
 
                                     {/* Hidden printable invoice (off-screen but rendered) */}
-<div
-  style={{
-    position: "absolute",
-    top: "-9999px",
-    left: "-9999px",
-    visibility: "hidden",
-  }}
->
-  <div ref={invoiceRef}>
-    {selectedRow && (
-      <InvoiceTemplate
-        company={{
-          name: "MEHUL TELECOM",
-          address: "ASTRON CHOWK, SARDAR NAGAR MAIN ROAD, RAJKOT",
-          phone: "8320683171",
-        }}
-        invoice={{
-          number: selectedRow.billNumber,
-          date: selectedRow.billDate,
-        }}
-        billTo={{
-          name: selectedRow.partyId?.partyName,
-          contact: selectedRow.partyId?.mobile || "-",
-        }}
-        items={selectedRow.items || []}
-      />
-    )}
-  </div>
-</div>
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            top: "-9999px",
+                                            left: "-9999px",
+                                            visibility: "hidden",
+                                        }}
+                                    >
+                                        <div ref={invoiceRef}>
+                                            {selectedRow && (
+                                                <InvoiceTemplate
+                                                    company={{
+                                                        name: "MEHUL TELECOM",
+                                                        address: "ASTRON CHOWK, SARDAR NAGAR MAIN ROAD, RAJKOT",
+                                                        phone: "8320683171",
+                                                    }}
+                                                    invoice={{
+                                                        number: selectedRow.billNumber,
+                                                        date: selectedRow.billDate,
+                                                    }}
+                                                    billTo={{
+                                                        name: selectedRow.partyId?.partyName || "-",
+                                                        contact: selectedRow.partyId?.mobile || "-",
+                                                    }}
+                                                    items={
+                                                        selectedRow.items?.map((it) => ({
+                                                            name: it?.itemName || "Unnamed Item",
+                                                            serial: it.serialNumbers?.map((s) => s.number) || [],
+                                                            qty: Number(it.qty) || 1,
+                                                            price: Number(it.pricePerUnit) || 0,
+                                                            amount: Number((it.pricePerUnit )* (it.qty))
+                                                        })) || []
+                                                    }
+                                                    totals={{
+                                                        subTotal: selectedRow.totalAmount || 0,
+                                                        total: selectedRow.totalAmount || 0,
+                                                        paid: selectedRow.paidAmount || 0,
+                                                        balance: selectedRow.unpaidAmount || 0,
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+
+
+                                    </div>
 
                                 </div>
                             </div>

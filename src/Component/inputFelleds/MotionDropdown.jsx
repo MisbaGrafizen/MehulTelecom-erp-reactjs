@@ -23,7 +23,7 @@ const MotionDropdown = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [savedImages, setSavedImages] = useState([]);
 
-  // ✅ Match backend model (with creditLimit, balance, documentUrl)
+  // ✅ Match backend model
   const [formData, setFormData] = useState({
     partyName: "",
     phoneNumber: "",
@@ -52,7 +52,6 @@ const MotionDropdown = ({
         setSavedImages((prev) => [...prev, uploadedUrl]);
         setFormData((prev) => ({ ...prev, documentUrl: uploadedUrl }));
         setSelectedImage(null);
-        // alert("Document uploaded successfully ✅");
       } else {
         alert("Failed to upload image ❌");
       }
@@ -81,11 +80,21 @@ const MotionDropdown = ({
     try {
       if (!formData.partyName) return alert("Party name is required");
 
+      // 🧠 Fix: Ensure billingAddress is always a string
+      const formatAddress = (addr) => {
+        if (!addr) return "";
+        if (typeof addr === "string") return addr.trim();
+        if (typeof addr === "object") {
+          return Object.values(addr).filter(Boolean).join(", ");
+        }
+        return "";
+      };
+
       const payload = {
         partyName: formData.partyName,
         phoneNumber: formData.phoneNumber,
         email: formData.email,
-        billingAddress: formData.billingAddress,
+        billingAddress: formatAddress(formData.billingAddress),
         creditLimit: Number(formData.creditLimit) || 0,
         balance: Number(formData.balance) || 0,
         documentUrl: formData.documentUrl || "",
@@ -95,7 +104,6 @@ const MotionDropdown = ({
       const res = await ApiPost("/admin/party", payload);
 
       if (res?.data) {
-        // alert("Party created successfully ✅");
         setPartyModalOpen(false);
 
         // Reset form
@@ -112,6 +120,7 @@ const MotionDropdown = ({
         });
         setSavedImages([]);
 
+        // Notify parent
         if (onPartyCreated) onPartyCreated(res.data);
       }
     } catch (error) {
@@ -120,8 +129,9 @@ const MotionDropdown = ({
     }
   };
 
+  // Filter options
   const filteredOptions = options.filter((opt) =>
-    opt.toLowerCase().includes(query.toLowerCase())
+    opt?.toLowerCase()?.includes(query?.toLowerCase())
   );
 
   return (
@@ -276,14 +286,13 @@ const MotionDropdown = ({
                   onChange={handlePartyInputChange}
                 />
 
-                {/* Document Upload Section */}
+                {/* Document Upload */}
                 <div className="flex flex-wrap items-center gap-2">
                   <div>
                     <label className="font-medium text-gray-700">
                       Document Upload
                     </label>
 
-                    {/* Image Picker Box */}
                     <div
                       className="w-[150px] h-[150px] border-[1.2px] border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition"
                       onClick={() =>
@@ -301,7 +310,6 @@ const MotionDropdown = ({
                       )}
                     </div>
 
-                    {/* Hidden File Input */}
                     <input
                       id="imageInput"
                       type="file"
@@ -310,7 +318,6 @@ const MotionDropdown = ({
                       className="hidden"
                     />
 
-                    {/* Upload Button */}
                     {selectedImage && (
                       <button
                         type="button"
@@ -322,7 +329,7 @@ const MotionDropdown = ({
                     )}
                   </div>
 
-                  {/* Show uploaded images */}
+                  {/* Uploaded images */}
                   {savedImages.length > 0 &&
                     savedImages.map((img, index) => (
                       <div

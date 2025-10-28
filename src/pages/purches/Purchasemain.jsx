@@ -249,11 +249,12 @@ export default function Purchasemain() {
     const [confirmRow, setConfirmRow] = useState(null)
     const [firms, setFirms] = useState([])
     const [users, setUsers] = useState([])
-    const paymentTypes = ["Cash", "Bank", "UPI", "Online", "Credit"];
+    const paymentTypes = ["Cash", "Bank"];
     const [selectedRow, setSelectedRow] = useState(null);
 const [isModalOpen, setIsModalOpen] = useState(false);
 
 
+console.log('selectedRow', selectedRow)
 
 
 const handleRowClick = async (row) => {
@@ -822,13 +823,25 @@ const handleCloseModal = () => {
 
 
 
-                                                    {isModalOpen && (
+{isModalOpen && selectedRow && (
   <PurchaseDetailsModal
     open={isModalOpen}
     onClose={handleCloseModal}
-    row={selectedRow}
+    row={{
+      ...selectedRow,
+      items:
+        selectedRow?.items?.map((it) => ({
+          itemName: it?.itemName || "Unnamed Item",
+          modelNo: it?.modelNo || "",
+          qty: Number(it.qty) || 1,
+          pricePerUnit: Number(it.pricePerUnit) || 0,
+          amount: Number(it.pricePerUnit || 0) * Number(it.qty || 1),
+          serialNumbers: it.serialNumbers?.map((s) => s.number) || [],
+        })) || [],
+    }}
   />
 )}
+
                                                 </div>
                                             </div>
                                         ) : (

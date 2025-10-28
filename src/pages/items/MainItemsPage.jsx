@@ -31,6 +31,7 @@ import {
 import { Modal, Toast, Badge, } from "../../Component/Uikit"
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
+import { ApiGet } from "../../helper/axios"
 
 
 
@@ -46,7 +47,7 @@ function formatINR(n) {
 }
 function formatDate(d) {
     const dt = typeof d === "string" ? new Date(d) : d
-    return dt.toLocaleDateString("en-GB")
+    return dt?.toLocaleDateString("en-GB")
 }
 function toISODate(d) {
     const dt = typeof d === "string" ? new Date(d) : d
@@ -68,16 +69,66 @@ function useKebab() {
 
 export default function MianItemspage() {
     // Seed once
-    useEffect(() => {
-        ensureSeed()
-    }, [])
+    // useEffect(() => {
+    //     ensureSeed()
+    // }, [])
 
     const [items, setItems] = useState([])
     const [txns, setTxns] = useState([])
+    // ✅ Fetch real data from backend
     useEffect(() => {
-        setItems(loadItems())
-        setTxns(loadTxns())
-    }, [])
+        const fetchTransactions = async () => {
+            try {
+                const res = await ApiGet("/admin/transactions");
+                console.log("res", res);
+
+                if (res?.success && Array.isArray(res.transactions)) {
+                    const txns = res.transactions;
+
+                    // 🟢 Build unique item list (keep both latest sale & purchase prices)
+                    const itemMap = new Map();
+
+                    txns.forEach((t) => {
+                        if (!itemMap.has(t.itemName)) {
+                            itemMap.set(t.itemName, {
+                                id: t.itemName,
+                                name: t.itemName,
+                                salePrice: t.type === "Sale" ? t.pricePerUnit : 0,
+                                purchasePrice: t.type === "Purchase" ? t.pricePerUnit : 0,
+                                qty: t.currentStock ?? 0,
+                                unsoldSerials: t.unsoldSerialCount ?? 0,
+                                serialCount: t.serialCount ?? 0,
+                            });
+                        } else {
+                            const existing = itemMap.get(t.itemName);
+                            if (t.type === "Sale" && t.pricePerUnit) existing.salePrice = t.pricePerUnit;
+                            if (t.type === "Purchase" && t.pricePerUnit) existing.purchasePrice = t.pricePerUnit;
+                            existing.qty = t.currentStock ?? existing.qty;
+                            existing.unsoldSerials = t.unsoldSerialCount ?? existing.unsoldSerials;
+                            existing.serialCount = t.serialCount ?? existing.serialCount;
+                        }
+                    });
+
+                    const uniqueItems = Array.from(itemMap.values());
+
+                    setItems(uniqueItems);
+                    setTxns(txns);
+
+
+                    setItems(uniqueItems);
+                    setTxns(txns);
+                } else {
+                    console.error("❌ Invalid response:", res);
+                }
+
+            } catch (err) {
+                console.error("❌ Failed to fetch transactions:", err);
+            }
+        };
+
+        fetchTransactions();
+    }, []);
+
 
     // Left list
     const [leftQuery, setLeftQuery] = useState("")
@@ -94,7 +145,11 @@ export default function MianItemspage() {
     }, [items, leftQuery])
 
     const selectedItem = useMemo(() => items.find((i) => i.id === selectedId), [items, selectedId])
-    const itemTxns = useMemo(() => txns.filter((t) => t.itemId === selectedId), [txns, selectedId])
+    const itemTxns = useMemo(
+        () => txns.filter((t) => t.itemName === selectedItem?.name),
+        [txns, selectedItem]
+    );
+
 
     // UI state
     const [toast, setToast] = useState("")
@@ -110,7 +165,7 @@ export default function MianItemspage() {
             const s = tQuery.toLowerCase()
             list = list.filter((t) => `${t.type} ${t.invoice} ${t.party} ${t.status}`.toLowerCase().includes(s))
         }
-        list = [...list].sort((a, b) => (sortDateDesc ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)))
+        list = [...list].sort((a, b) => (sortDateDesc ? b.date?.localeCompare(a.date) : a.date?.localeCompare(b.date)))
         return list
     }, [itemTxns, tQuery, sortDateDesc])
 
@@ -211,7 +266,7 @@ export default function MianItemspage() {
 
 
         <>
-<section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
+            <section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
                 <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
                     <Header pageName="Items" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
@@ -219,392 +274,397 @@ export default function MianItemspage() {
                         <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
- 
-                <main className=" grid grid-cols-1 gap-4  md:grid-cols-[320px_1fr]">
-                    {/* Left column */}
-                    <aside className="rounded-[10px] shadow-md border border-blue-200 bg-white">
-                        {/* Bulk update card */}
-                        <div className="border-b border-slate-200 p-3">
-                            <div className="rounded-md bg-rose-50 p-3">
-                                <div className="font-[600] text-rose-700">Bulk Items Update</div>
-                                <div className="text-xs text-rose-700/80">Update/Edit multiple items at a time.</div>
-                            </div>
-                        </div>
-                        {/* Add/search */}
-                        <div className="flex items-center justify-between gap-2 p-3">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
-                                <input
-                                    placeholder="Search items"
-                                    value={leftQuery}
-                                    onChange={(e) => setLeftQuery(e.target.value)}
-                                    className="w-full rounded-lg border outline-none border-slate-300 pl-7 pr-3 py-2 text-sm"
-                                />
-                            </div>
-                            <button
-                                onClick={() => setAddItemOpen(true)}
-                                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-[600] text-white hover:bg-amber-600"
-                                title="Add Item"
-                            >
-                               <i className="fa-solid fa-plus"></i>
-                                Add Item
-                            </button>
-                        </div>
 
-                        {/* Header row */}
-                        <div className="grid grid-cols-[1fr_64px_28px] gap-2 px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            <div>Item</div>
-                            <div className="text-right">Quantity</div>
-                            <div />
-                        </div>
 
-                        {/* List */}
-                        <div className="h-[calc(100vh-260px)] overflow-auto px-2 pb-3 pt-1">
-                            {filteredItems.map((it) => (
-                                <motion.div
-                                    key={it.id}
-                                    initial={{ opacity: 0, y: 6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={cn(
-                                        "mb-1 flex items-center gap-2 rounded-md  shadow-sm  px-2 py-2",
-                                        selectedId === it.id ? "bg-slate-100 border border-[#006dfb5a] " : "  shadow-lg hover:bg-slate-50",
-                                    )}
-                                    onClick={() => setSelectedId(it.id)}
-                                >
-                                    <div className="flex-1 truncate">
-                                        <div className="truncate text-[13px] font-semibold text-slate-800">{it.name}</div>
-                                        {it.color ? <div className="truncate text-[11px] text-slate-500">{it.color}</div> : null}
-                                    </div>
-                                    <div className="w-12 text-right text-[13px] font-[600] text-emerald-700">{it.qty ?? 0}</div>
+                                    <main className=" grid grid-cols-1 gap-4  md:grid-cols-[320px_1fr]">
+                                        {/* Left column */}
+                                        <aside className="rounded-[10px] shadow-md border border-blue-200 bg-white">
+                                            {/* Bulk update card */}
+                                            <div className="border-b border-slate-200 p-3">
+                                                <div className="rounded-md bg-rose-50 p-3">
+                                                    <div className="font-[600] text-rose-700">Bulk Items Update</div>
+                                                    <div className="text-xs text-rose-700/80">Update/Edit multiple items at a time.</div>
+                                                </div>
+                                            </div>
+                                            {/* Add/search */}
+                                            <div className="flex items-center justify-between gap-2 p-3">
+                                                <div className="relative flex-1">
+                                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
+                                                    <input
+                                                        placeholder="Search items"
+                                                        value={leftQuery}
+                                                        onChange={(e) => setLeftQuery(e.target.value)}
+                                                        className="w-full rounded-lg border outline-none border-slate-300 pl-7 pr-3 py-2 text-sm"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => setAddItemOpen(true)}
+                                                    className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-[600] text-white hover:bg-amber-600"
+                                                    title="Add Item"
 
-                            
-                                    <div
-                                        className="relative"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            kebabItems.setOpenId(kebabItems.openId === it.id ? null : it.id)
-                                        }}
-                                    >
-                                        <button className="rounded p-1 hover:bg-slate-100" aria-label="More">
-                                            <MoreVertical size={16} />
-                                        </button>
-                                        <AnimatePresence>
-                                            {kebabItems.openId === it.id ? (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 6 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 4 }}
-                                                    className="absolute right-0 z-40 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
                                                 >
-                                                    <button
-                                                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100"
-                                                        onClick={() => {
-                                                            kebabItems.setOpenId(null)
-                                                            setEditItemOpen(it)
-                                                        }}
+                                                    <i className="fa-solid fa-plus"></i>
+                                                    Add Item
+                                                </button>
+                                            </div>
+
+                                            {/* Header row */}
+                                            <div className="grid grid-cols-[1fr_64px_28px] gap-2 px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                <div>Item</div>
+                                                <div className="text-right">Quantity</div>
+                                                <div />
+                                            </div>
+
+                                            {/* List */}
+                                            <div className="h-[calc(100vh-260px)] overflow-auto px-2 pb-3 pt-1">
+                                                {filteredItems.map((it) => (
+                                                    <motion.div
+                                                        key={it.id}
+                                                        initial={{ opacity: 0, y: 6 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className={cn(
+                                                            "mb-1 flex items-center gap-2 rounded-md  shadow-sm  px-2 py-2",
+                                                            selectedId === it.id ? "bg-slate-100 border border-[#006dfb5a] " : "  shadow-lg hover:bg-slate-50",
+                                                        )}
+                                                        onClick={() => setSelectedId(it.id)}
                                                     >
-                                                        <Edit3 size={16} />
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-700 hover:bg-rose-50"
-                                                        onClick={() => {
-                                                            kebabItems.setOpenId(null)
-                                                            setConfirmItem(it)
-                                                        }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                        Delete
-                                                    </button>
-                                                </motion.div>
-                                            ) : null}
-                                        </AnimatePresence>
-                                    </div>
-                                </motion.div>
-                            ))}
-                            {!filteredItems.length ? (
-                                <div className="py-10 text-center text-sm text-slate-500">No items found.</div>
-                            ) : null}
-                        </div>
-                    </aside>
-
-                    {/* Right column */}
-                    <section className="space-y-4">
-                        {/* Item header */}
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            {selectedItem ? (
-                                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-[18px] font-[600] text-slate-900">{selectedItem.name}</h2>
-                                            <ArrowUpRight size={18} className="text-slate-400" />
-                                        </div>
-                                        <div className="mt-1 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
-                                            <div className="text-emerald-700">
-                                                Sale Price: <span className="font-[600]">{formatINR(selectedItem.salePrice || 0)}</span>
-                                            </div>
-                                            <div className="text-blue-700">
-                                                Purchase Price:{" "}
-                                                <span className="font-[600]">{formatINR(selectedItem.purchasePrice || 0)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col items-end gap-3">
-                                        <button
-                                            onClick={() => setAdjustOpen(true)}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-[600] text-white hover:bg-blue-700"
-                                        >
-                                            <Wrench size={16} />
-                                            Adjust Item
-                                        </button>
-                                        <div className="text-right text-sm">
-                                            <div>
-                                                STOCK QUANTITY: <span className="font-[600] text-emerald-700">{selectedItem.qty ?? 0}</span>
-                                            </div>
-                                            <div>
-                                                STOCK VALUE: <span className="font-[600] text-emerald-700">{formatINR(stockValue)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="py-10 text-center text-slate-500">Select an item from the left list.</div>
-                            )}
-                        </div>
-
-                        {/* Transactions */}
-                        <div className="rounded-2xl border border-slate-200 bg-white">
-                            <div className="flex items-center justify-between gap-2 border-b border-slate-200 p-3">
-                                <div className="font-[600] text-slate-800">TRANSACTIONS</div>
-                                <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
-                                        <input
-                                            placeholder="Search"
-                                            value={tQuery}
-                                            onChange={(e) => setTQuery(e.target.value)}
-                                            className="w-64 rounded-lg border border-slate-300 pl-7 pr-3 py-2 text-sm"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="max-h-[58vh] overflow-auto">
-                                <table className="min-w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
-                                        <tr>
-                                            <th className="px-3 py-2 text-left">Type</th>
-                                            <th className="px-3 py-2 text-left">Invoice</th>
-                                            <th className="px-3 py-2 text-left">Name</th>
-                                            <th
-                                                className="px-3 py-2 text-left cursor-pointer select-none"
-                                                onClick={() => setSortDateDesc((v) => !v)}
-                                                title="Sort by date"
-                                            >
-                                                Date <ChevronDown className={cn("inline h-4 w-4", sortDateDesc ? "rotate-180" : "")} />
-                                            </th>
-                                            <th className="px-3 py-2 text-right">Quantity</th>
-                                            <th className="px-3 py-2 text-right">Price/Unit</th>
-                                            <th className="px-3 py-2 text-left">Status</th>
-                                            <th className="px-3 py-2 text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        <AnimatePresence initial={false}>
-                                            {displayTxns.map((t) => (
-                                                <motion.tr
-                                                    key={t.id}
-                                                    initial={{ opacity: 0, y: 8 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: -6 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    className="hover:bg-slate-50"
-                                                    onClick={() => setViewTxn(t)}
-                                                >
-                                                    <td className="px-3 py-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <span
-                                                                className={cn(
-                                                                    "h-2 w-2 rounded-full",
-                                                                    t.type === "Sale"
-                                                                        ? "bg-emerald-500"
-                                                                        : t.type === "Purchase"
-                                                                            ? "bg-blue-500"
-                                                                            : "bg-amber-500",
-                                                                )}
-                                                            />
-                                                            {t.type}
+                                                        <div className="flex-1 truncate">
+                                                            <div className="truncate text-[13px] font-semibold text-slate-800">{it.name}</div>
+                                                            {it.color ? <div className="truncate text-[11px] text-slate-500">{it.color}</div> : null}
                                                         </div>
-                                                    </td>
-                                                    <td className="px-3 py-2">{t.invoice}</td>
-                                                    <td className="px-3 py-2">
-                                                        <button className="font-semibold text-blue-700 underline-offset-2 hover:underline">
-                                                            {t.party}
-                                                        </button>
-                                                    </td>
-                                                    <td className="px-3 py-2">{formatDate(t.date)}</td>
-                                                    <td className="px-3 py-2 text-right">{t.qty}</td>
-                                                    <td className="px-3 py-2 text-right">{formatINR(t.price)}</td>
-                                                    <td className="px-3 py-2">
-                                                        <Badge tone={t.status === "Paid" || t.status === "Done" ? "green" : "amber"}>
-                                                            {t.status}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
-                                                        <div className="flex items-center justify-center gap-1">
-                                                            <button
-                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                title="View"
-                                                                onClick={() => setViewTxn(t)}
-                                                            >
-                                                                <Eye size={16} />
+                                                        <div className="w-12 text-right text-[13px] font-[600] text-emerald-700">
+                                                            {it.unsoldSerials}
+                                                        </div>
+                                                        {/* item kebab */}
+                                                        <div
+                                                            className="relative"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                kebabItems.setOpenId(kebabItems.openId === it.id ? null : it.id)
+                                                            }}
+                                                        >
+                                                            <button className="rounded p-1 hover:bg-slate-100" aria-label="More">
+                                                                <MoreVertical size={16} />
                                                             </button>
-                                                            <button
-                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                title="Print"
-                                                                onClick={() => window.print()}
-                                                            >
-                                                                <Printer size={16} />
-                                                            </button>
-                                                            <button
-                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                title="Download"
-                                                                onClick={() => setToast("Download started")}
-                                                            >
-                                                                <Download size={16} />
-                                                            </button>
-
-                                                            <div
-                                                                className="relative"
-                                                                onClick={() => kebabRows.setOpenId(kebabRows.openId === t.id ? null : t.id)}
-                                                            >
-                                                                <button className="rounded p-1.5 hover:bg-gray-100" aria-label="More">
-                                                                    <MoreVertical size={16} />
-                                                                </button>
-                                                                <AnimatePresence>
-                                                                    {kebabRows.openId === t.id ? (
-                                                                        <motion.div
-                                                                            initial={{ opacity: 0, y: 6 }}
-                                                                            animate={{ opacity: 1, y: 0 }}
-                                                                            exit={{ opacity: 0, y: 4 }}
-                                                                            className="absolute right-0 z-40 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                                                            <AnimatePresence>
+                                                                {kebabItems.openId === it.id ? (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, y: 6 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: 4 }}
+                                                                        className="absolute right-0 z-40 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                                                                    >
+                                                                        <button
+                                                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100"
+                                                                            onClick={() => {
+                                                                                kebabItems.setOpenId(null)
+                                                                                setEditItemOpen(it)
+                                                                            }}
                                                                         >
-                                                                            <button
-                                                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100"
-                                                                                onClick={() => {
-                                                                                    kebabRows.setOpenId(null)
-                                                                                    setEditTxn(t)
-                                                                                }}
-                                                                            >
-                                                                                <Edit3 size={16} />
-                                                                                Edit
-                                                                            </button>
-                                                                            <button
-                                                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-700 hover:bg-rose-50"
-                                                                                onClick={() => {
-                                                                                    kebabRows.setOpenId(null)
-                                                                                    setConfirmTxn(t)
-                                                                                }}
-                                                                            >
-                                                                                <Trash2 size={16} />
-                                                                                Delete
-                                                                            </button>
-                                                                        </motion.div>
-                                                                    ) : null}
-                                                                </AnimatePresence>
+                                                                            <Edit3 size={16} />
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-700 hover:bg-rose-50"
+                                                                            onClick={() => {
+                                                                                kebabItems.setOpenId(null)
+                                                                                setConfirmItem(it)
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 size={16} />
+                                                                            Delete
+                                                                        </button>
+                                                                    </motion.div>
+                                                                ) : null}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                                {!filteredItems.length ? (
+                                                    <div className="py-10 text-center text-sm text-slate-500">No items found.</div>
+                                                ) : null}
+                                            </div>
+                                        </aside>
+
+                                        {/* Right column */}
+                                        <section className="space-y-4">
+                                            {/* Item header */}
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                {selectedItem ? (
+                                                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h2 className="text-[18px] font-[600] text-slate-900">{selectedItem.name}</h2>
+                                                                <ArrowUpRight size={18} className="text-slate-400" />
+                                                            </div>
+                                                            <div className="mt-1 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+                                                                <div className="text-emerald-700">
+                                                                    Sale Price: <span className="font-[600]">{formatINR(selectedItem.salePrice || 0)}</span>
+                                                                </div>
+                                                                <div className="text-blue-700">
+                                                                    Purchase Price:{" "}
+                                                                    <span className="font-[600]">{formatINR(selectedItem.purchasePrice || 0)}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                </motion.tr>
-                                            ))}
-                                        </AnimatePresence>
-                                        {displayTxns.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
-                                                    No transactions found.
-                                                </td>
-                                            </tr>
+
+                                                        <div className="flex flex-col items-end gap-3">
+                                                            <button
+                                                                onClick={() => setAdjustOpen(true)}
+                                                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-[600] text-white hover:bg-blue-700"
+                                                            >
+                                                                <Wrench size={16} />
+                                                                Adjust Item
+                                                            </button>
+                                                            <div className="text-right text-sm">
+                                                                <div>
+                                                                    STOCK QUANTITY: <span className="font-[600] text-emerald-700">{selectedItem.qty ?? 0}</span>
+                                                                </div>
+                                                                <div>
+                                                                    STOCK VALUE: <span className="font-[600] text-emerald-700">{formatINR(stockValue)}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="py-10 text-center text-slate-500">Select an item from the left list.</div>
+                                                )}
+                                            </div>
+
+                                            {/* Transactions */}
+                                            <div className="rounded-2xl border border-slate-200 bg-white">
+                                                <div className="flex items-center justify-between gap-2 border-b border-slate-200 p-3">
+                                                    <div className="font-[600] text-slate-800">TRANSACTIONS</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
+                                                            <input
+                                                                placeholder="Search"
+                                                                value={tQuery}
+                                                                onChange={(e) => setTQuery(e.target.value)}
+                                                                className="w-64 rounded-lg border border-slate-300 pl-7 pr-3 py-2 text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="max-h-[58vh] overflow-auto">
+                                                    <table className="min-w-full text-sm">
+                                                        <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left">Type</th>
+                                                                <th className="px-3 py-2 text-left">Invoice</th>
+                                                                <th className="px-3 py-2 text-left">Name</th>
+                                                                <th
+                                                                    className="px-3 py-2 text-left cursor-pointer select-none"
+                                                                    onClick={() => setSortDateDesc((v) => !v)}
+                                                                    title="Sort by date"
+                                                                >
+                                                                    Date <ChevronDown className={cn("inline h-4 w-4", sortDateDesc ? "rotate-180" : "")} />
+                                                                </th>
+                                                                <th className="px-3 py-2 text-right">Quantity</th>
+                                                                <th className="px-3 py-2 text-right">Price/Unit</th>
+                                                                <th className="px-3 py-2 text-left">Status</th>
+                                                                <th className="px-3 py-2 text-center">Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            <AnimatePresence initial={false}>
+                                                                {displayTxns.map((t) => (
+                                                                    <motion.tr
+                                                                        key={t.id}
+                                                                        initial={{ opacity: 0, y: 8 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: -6 }}
+                                                                        transition={{ duration: 0.2 }}
+                                                                        className="hover:bg-slate-50"
+                                                                        onClick={() => setViewTxn(t)}
+                                                                    >
+                                                                        <td className="px-3 py-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span
+                                                                                    className={cn(
+                                                                                        "h-2 w-2 rounded-full",
+                                                                                        t.type === "Sale"
+                                                                                            ? "bg-emerald-500"
+                                                                                            : t.type === "Purchase"
+                                                                                                ? "bg-blue-500"
+                                                                                                : "bg-amber-500",
+                                                                                    )}
+                                                                                />
+                                                                                {t.type}
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-3 py-2">{t.billNumber}</td>
+                                                                        <td className="px-3 py-2">
+                                                                            <button className="font-semibold text-blue-700 underline-offset-2 hover:underline">
+                                                                                {t.itemName}
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="px-3 py-2">{formatDate(t.billDate)}</td>
+
+                                                                        <td className="px-3 py-2 text-right">{t.qty}</td>
+                                                                        <td className="px-3 py-2 text-right">{formatINR(t.pricePerUnit)}</td>
+                                                                        <td className="px-3 py-2">
+                                                                            <Badge tone={t.paidAmount === t.totalAmount ? "green" : "amber"}>
+                                                                                {t.paidAmount === t.totalAmount ? "Paid" : "Unpaid"}
+                                                                            </Badge>
+
+                                                                        </td>
+                                                                        <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="flex items-center justify-center gap-1">
+                                                                                <button
+                                                                                    className="rounded p-1.5 hover:bg-gray-100"
+                                                                                    title="View"
+                                                                                    onClick={() => setViewTxn(t)}
+                                                                                >
+                                                                                    <Eye size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    className="rounded p-1.5 hover:bg-gray-100"
+                                                                                    title="Print"
+                                                                                    onClick={() => window.print()}
+                                                                                >
+                                                                                    <Printer size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    className="rounded p-1.5 hover:bg-gray-100"
+                                                                                    title="Download"
+                                                                                    onClick={() => setToast("Download started")}
+                                                                                >
+                                                                                    <Download size={16} />
+                                                                                </button>
+
+                                                                                <div
+                                                                                    className="relative"
+                                                                                    onClick={() => kebabRows.setOpenId(kebabRows.openId === t.id ? null : t.id)}
+                                                                                >
+                                                                                    <button className="rounded p-1.5 hover:bg-gray-100" aria-label="More">
+                                                                                        <MoreVertical size={16} />
+                                                                                    </button>
+                                                                                    <AnimatePresence>
+                                                                                        {kebabRows.openId === t.id ? (
+                                                                                            <motion.div
+                                                                                                initial={{ opacity: 0, y: 6 }}
+                                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                                exit={{ opacity: 0, y: 4 }}
+                                                                                                className="absolute right-0 z-40 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                                                                                            >
+                                                                                                <button
+                                                                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100"
+                                                                                                    onClick={() => {
+                                                                                                        kebabRows.setOpenId(null)
+                                                                                                        setEditTxn(t)
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Edit3 size={16} />
+                                                                                                    Edit
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-700 hover:bg-rose-50"
+                                                                                                    onClick={() => {
+                                                                                                        kebabRows.setOpenId(null)
+                                                                                                        setConfirmTxn(t)
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Trash2 size={16} />
+                                                                                                    Delete
+                                                                                                </button>
+                                                                                            </motion.div>
+                                                                                        ) : null}
+                                                                                    </AnimatePresence>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </motion.tr>
+                                                                ))}
+                                                            </AnimatePresence>
+                                                            {displayTxns.length === 0 ? (
+                                                                <tr>
+                                                                    <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                                                                        No transactions found.
+                                                                    </td>
+                                                                </tr>
+                                                            ) : null}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </main>
+
+                                    {/* Modals */}
+                                    <Modal open={addItemOpen} title="Add Item" onClose={() => setAddItemOpen(false)}>
+                                        <AddItemForm onSave={handleAddItem} />
+                                    </Modal>
+
+                                    <Modal open={!!editItemOpen} title="Edit Item" onClose={() => setEditItemOpen(null)}>
+                                        {editItemOpen ? (
+                                            <EditItemForm
+                                                item={editItemOpen}
+                                                onSave={(patch) => handleUpdateItem(editItemOpen.id, patch)}
+                                                onCancel={() => setEditItemOpen(null)}
+                                            />
                                         ) : null}
-                                    </tbody>
-                                </table>
+                                    </Modal>
+
+                                    <Modal open={!!confirmItem} title="Delete Item" onClose={() => setConfirmItem(null)} width="max-w-md">
+                                        <p className="text-sm text-slate-700">
+                                            This will remove <span className="font-semibold">{confirmItem?.name}</span> and all its transactions.
+                                        </p>
+                                        <div className="mt-4 flex justify-end gap-2">
+                                            <button onClick={() => setConfirmItem(null)} className="rounded-lg border px-4 py-2 font-semibold">
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleRemoveItem(confirmItem.id)}
+                                                className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </Modal>
+
+                                    <Modal open={adjustOpen} title="Adjust Item" onClose={() => setAdjustOpen(false)}>
+                                        <AdjustForm
+                                            defaultSale={selectedItem?.salePrice}
+                                            defaultPurchase={selectedItem?.purchasePrice}
+                                            onSave={handleAdjust}
+                                        />
+                                    </Modal>
+
+                                    <Modal open={!!viewTxn} title="Transaction Details" onClose={() => setViewTxn(null)}>
+                                        {viewTxn ? <TxnDetails txn={viewTxn} /> : null}
+                                    </Modal>
+
+                                    <Modal open={!!editTxn} title="Edit Transaction" onClose={() => setEditTxn(null)}>
+                                        {editTxn ? <EditTxnForm txn={editTxn} onSave={handleEditTxnSave} /> : null}
+                                    </Modal>
+
+                                    <Modal open={!!confirmTxn} title="Delete Transaction" onClose={() => setConfirmTxn(null)} width="max-w-md">
+                                        <p className="text-sm text-slate-700">
+                                            Delete invoice <span className="font-semibold">{confirmTxn?.invoice}</span>?
+                                        </p>
+                                        <div className="mt-4 flex justify-end gap-2">
+                                            <button onClick={() => setConfirmTxn(null)} className="rounded-lg border px-4 py-2 font-semibold">
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleDeleteTxn}
+                                                className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </Modal>
+
+                                    <Toast message={toast} onDismiss={() => setToast("")} />
+                                </div>
                             </div>
                         </div>
-                    </section>
-                </main>
-
-                {/* Modals */}
-                <Modal open={addItemOpen} title="Add Item" onClose={() => setAddItemOpen(false)}>
-                    <AddItemForm onSave={handleAddItem} />
-                </Modal>
-
-                <Modal open={!!editItemOpen} title="Edit Item" onClose={() => setEditItemOpen(null)}>
-                    {editItemOpen ? (
-                        <EditItemForm
-                            item={editItemOpen}
-                            onSave={(patch) => handleUpdateItem(editItemOpen.id, patch)}
-                            onCancel={() => setEditItemOpen(null)}
-                        />
-                    ) : null}
-                </Modal>
-
-                <Modal open={!!confirmItem} title="Delete Item" onClose={() => setConfirmItem(null)} width="max-w-md">
-                    <p className="text-sm text-slate-700">
-                        This will remove <span className="font-semibold">{confirmItem?.name}</span> and all its transactions.
-                    </p>
-                    <div className="mt-4 flex justify-end gap-2">
-                        <button onClick={() => setConfirmItem(null)} className="rounded-lg border px-4 py-2 font-semibold">
-                            Cancel
-                        </button>
-                        <button
-                            onClick={() => handleRemoveItem(confirmItem.id)}
-                            className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700"
-                        >
-                            Delete
-                        </button>
                     </div>
-                </Modal>
-
-                <Modal open={adjustOpen} title="Adjust Item" onClose={() => setAdjustOpen(false)}>
-                    <AdjustForm
-                        defaultSale={selectedItem?.salePrice}
-                        defaultPurchase={selectedItem?.purchasePrice}
-                        onSave={handleAdjust}
-                    />
-                </Modal>
-
-                <Modal open={!!viewTxn} title="Transaction Details" onClose={() => setViewTxn(null)}>
-                    {viewTxn ? <TxnDetails txn={viewTxn} /> : null}
-                </Modal>
-
-                <Modal open={!!editTxn} title="Edit Transaction" onClose={() => setEditTxn(null)}>
-                    {editTxn ? <EditTxnForm txn={editTxn} onSave={handleEditTxnSave} /> : null}
-                </Modal>
-
-                <Modal open={!!confirmTxn} title="Delete Transaction" onClose={() => setConfirmTxn(null)} width="max-w-md">
-                    <p className="text-sm text-slate-700">
-                        Delete invoice <span className="font-semibold">{confirmTxn?.invoice}</span>?
-                    </p>
-                    <div className="mt-4 flex justify-end gap-2">
-                        <button onClick={() => setConfirmTxn(null)} className="rounded-lg border px-4 py-2 font-semibold">
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleDeleteTxn}
-                            className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700"
-                        >
-                            Delete
-                        </button>
-                    </div>
-                </Modal>
-
-                <Toast message={toast} onDismiss={() => setToast("")} />
-            </div>
-      </div>
-            </div>
-                  </div>
-                        </div>
-                              </section>
+                </div>
+            </section>
 
         </>
     )
@@ -833,15 +893,15 @@ function TxnDetails({ txn }) {
                 </div>
                 <div>
                     <div className="text-slate-500">Invoice</div>
-                    <div className="font-semibold">{txn.invoice}</div>
+                    <div className="font-semibold">{txn.billNumber}</div>
                 </div>
                 <div>
                     <div className="text-slate-500">Party</div>
-                    <div className="font-semibold">{txn.party}</div>
+                    <div className="font-semibold">{txn.partyName}</div>
                 </div>
                 <div>
                     <div className="text-slate-500">Date</div>
-                    <div className="font-semibold">{formatDate(txn.date)}</div>
+                    <div className="font-semibold">{formatDate(txn.billDate)}</div>
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -851,11 +911,11 @@ function TxnDetails({ txn }) {
                 </div>
                 <div>
                     <div className="text-slate-500">Price/Unit</div>
-                    <div className="font-semibold">{formatINR(txn.price)}</div>
+                    <div className="font-semibold">{formatINR(txn.pricePerUnit)}</div>
                 </div>
                 <div>
                     <div className="text-slate-500">Status</div>
-                    <div className="font-semibold">{txn.status}</div>
+                    <div className="font-semibold">{txn.paidAmount === txn.totalAmount ? "Paid" : "Unpaid"}</div>
                 </div>
             </div>
             {txn.note ? (
