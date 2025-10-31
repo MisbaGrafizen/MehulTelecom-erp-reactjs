@@ -53,14 +53,18 @@ function RowLine({ icon: Icon, label, value }) {
 }
 
 // ✅ Item card component
+// ✅ Item card component (enhanced)
 function DeviceCard({ device }) {
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200 shadow-md bg-white p-4">
+      {/* Corner Accent */}
       <div
         aria-hidden
         className="absolute -right-px -top-px h-8 w-8 bg-indigo-500"
         style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }}
       />
+      
+      {/* Header Row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-slate-200">
@@ -78,7 +82,43 @@ function DeviceCard({ device }) {
         <Chip color="violet">Qty: {device.qty || 1}</Chip>
       </div>
 
-      {/* ✅ Serial numbers display */}
+      {/* 🔹 New Details Section (Color, Spec, Condition) */}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-600">
+        <div className="flex flex-col">
+          <span className="text-[11px] uppercase text-slate-400 font-medium">
+            Color
+          </span>
+          <span className="font-medium text-slate-700">
+            {device.color || "—"}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[11px] uppercase text-slate-400 font-medium">
+            Spec
+          </span>
+          <span className="font-medium text-slate-700">
+            {device.specification || "—"}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[11px] uppercase text-slate-400 font-medium">
+            Condition
+          </span>
+          <span
+            className={`font-medium ${
+              device.condition === "Old"
+                ? "text-amber-600"
+                : device.condition === "New"
+                ? "text-green-600"
+                : "text-slate-700"
+            }`}
+          >
+            {device.condition || "—"}
+          </span>
+        </div>
+      </div>
+
+      {/* Serial Numbers */}
       {device.serialNumbers && device.serialNumbers.length > 0 && (
         <div className="mt-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200/70">
           <p className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
@@ -92,6 +132,7 @@ function DeviceCard({ device }) {
         </div>
       )}
 
+      {/* Price and Amount */}
       <div className="mt-2 flex justify-between text-sm text-slate-700">
         <span>Rate: {INR.format(device.pricePerUnit || 0)}</span>
         <span>Total: {INR.format(device.amount || 0)}</span>
@@ -99,6 +140,7 @@ function DeviceCard({ device }) {
     </div>
   );
 }
+
 
 // ✅ Main Modal Component
 export default function PurchaseDetailsModal({ open, onClose, row }) {
@@ -146,7 +188,7 @@ export default function PurchaseDetailsModal({ open, onClose, row }) {
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="relative w-full max-w-3xl overflow-hidden max-h-[90vh] rounded-2xl bg-white h-[90vh] shadow-2xl ring-1 ring-slate-200">
           {/* Accent rail */}
-          <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-sky-400 to-indigo-500" />
+       
 
           {/* Header */}
           <div className="relative bg-gradient-to-br from-slate-50 via-white to-white border-b border-slate-200">

@@ -30,7 +30,7 @@ export default function SellsInvoice() {
   const [billDate, setBillDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [partyId, setPartyId] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
-
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [isImeiModalOpen, setImeiModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
@@ -39,10 +39,16 @@ export default function SellsInvoice() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
-
-
-
   const [searchTerm, setSearchTerm] = useState("");
+  const [productAttributes, setProductAttributes] = useState({});
+
+
+  const options = ["Online", "Card", "Cash"];
+
+  // Payment rows (start with one)
+  const [paymentRows, setPaymentRows] = useState([
+    { method: "Online", amount: "" },
+  ]);
 
 
   // Items
@@ -50,6 +56,8 @@ export default function SellsInvoice() {
     { productName: "", serialNumbers: [], modelNo: "", unit: "", pricePerUnit: "", amount: "" },
   ]);
 
+
+  console.log('items', items)
 
 
   // Payments
@@ -151,7 +159,8 @@ export default function SellsInvoice() {
       (sum, item) => sum + (parseFloat(item.amount) || 0),
       0
     );
-    setTotalAmount(total.toFixed(2));
+   setTotalAmount(Number(total.toFixed(2)));
+
   };
 
 
@@ -180,10 +189,10 @@ export default function SellsInvoice() {
       itemName: item.itemName || item.productName || "",
       modelNo: item.modelNo || "",
       // ✅ convert each serial to backend object format
-      serialNumbers: (item.serialNumbers || []).map((s) => ({
-        number: typeof s === "object" ? s.number : s,
-        isSold: true,
-      })),
+serialNumbers: (item.serialNumbers || [])
+  .filter((s) => s.isSold === true || s === true || typeof s === "string")
+  .map((s) => (typeof s === "object" ? s.number : s)),
+
 
       qty: item.serialNumbers?.length || parseFloat(item.unit) || 1,
       unit: item.unit || "PCS",
@@ -238,11 +247,27 @@ export default function SellsInvoice() {
 
 
 
-  const handleSelectProduct = (index, name) => {
+  // ✅ Product selection handler
+  const handleSelectProduct = async (index, name) => {
     handleItemChange(index, "itemName", name);
     setActiveDropdown(null);
-    setSearchTerm(""); // reset search after select
+    setSearchTerm("");
+
+    try {
+      // Fetch dynamic product attributes
+      const res = await ApiGet(`/admin/product-details/${encodeURIComponent(name)}`);
+
+      if (res?.data) {
+        setProductAttributes((prev) => ({
+          ...prev,
+          [name]: res.data, // expected format: { colors:[], specifications:[], conditions:[], imeis:[] }
+        }));
+      }
+    } catch (err) {
+      console.error("❌ Error fetching product attributes:", err);
+    }
   };
+
 
 
   const filteredSuggestions = (term) => {
@@ -291,6 +316,50 @@ export default function SellsInvoice() {
   };
 
 
+  const [remaining, setRemaining] = useState(totalAmount || 0);
+
+  // Handle value change in dropdown/input
+  const handlePaymentChange = (index, field, value) => {
+    const updated = [...paymentRows];
+    updated[index][field] = field === "amount" ? parseFloat(value) || 0 : value;
+    setPaymentRows(updated);
+
+    // Update totals
+    const totalPaid = updated.reduce(
+      (sum, r) => sum + (parseFloat(r.amount) || 0),
+      0
+    );
+    setRemaining(Math.max(totalAmount - totalPaid, 0));
+  };
+
+  // Add new row automatically when previous is filled
+  const handleAddNewRowIfNeeded = (index) => {
+    const current = paymentRows[index];
+    const allFilled = current.method && current.amount > 0;
+    const totalPaid = paymentRows.reduce(
+      (sum, r) => sum + (parseFloat(r.amount) || 0),
+      0
+    );
+
+    // Add new only if valid and total not reached
+    if (allFilled && totalPaid < totalAmount) {
+      setPaymentRows([...paymentRows, { method: "Online", amount: "" }]);
+    }
+  };
+
+  // Remove payment row
+  const removePaymentRow = (index) => {
+    const updated = paymentRows.filter((_, i) => i !== index);
+    setPaymentRows(updated);
+
+    const totalPaid = updated.reduce(
+      (sum, r) => sum + (parseFloat(r.amount) || 0),
+      0
+    );
+    setRemaining(Math.max(totalAmount - totalPaid, 0));
+  };
+
+
 
   return (
     <>
@@ -299,16 +368,11 @@ export default function SellsInvoice() {
           <Header pageName=" Sale Invoice" />
           <div className="flex gap-[10px] w-[100%] h-[100%]">
             <SideBar />
-            <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
+            <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] gap-[30px] rounded-[10px]">
               <div className="flex flex-col gap-[15px] w-[100%]">
                 <div className=" w-[100%] ] flex-col gap-[15px] flex ">
                   <div className=" flex justify-between w-[100%] ">
-                    <div className=" flex  font-Poppins text-[15px]">
-                      <p>Quotation No:</p>
-                      <p className="  font-[500] text-[#ff8000] ">
-                        Q/20024-25/1
-                      </p>
-                    </div>
+
                     <div className=" flex  w-[200px]  items-center gap-[10px]">
 
                     </div>
@@ -382,19 +446,24 @@ export default function SellsInvoice() {
                     </div>
                   </div>
 
+
                   {/* Table Header */}
                   <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
-                    <div className="overflow-x-auto flex-shrink-0 bg-white rounded-lg w-[100%]">
+                    <div className="flex-shrink-0 bg-white rounded-lg w-[100%]">
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="bg-[#f0f1f364]">
                             <th className="py-3 px-2 text-left text-[13px] font-medium font-Poppins text-gray-600 w-20 border-r border-gray-200">
                               Sr. No.
                             </th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-40 border-r border-gray-200">
+                            <th className="py-3 w-[280px]    tracking-wide px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
                               Product Name
                             </th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[100px] border-r border-gray-200">
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">COLOR</th>
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">SPECIFICATION</th>
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">CONDITION</th>
+
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[200px] border-r border-gray-200">
                               SERIAL NO.
                             </th>
                             <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[108px] border-r border-gray-200">
@@ -406,9 +475,7 @@ export default function SellsInvoice() {
                             <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[100px] border-r border-gray-200">
                               AMOUNT
                             </th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[70px]">
-                              Action
-                            </th>
+
                           </tr>
                         </thead>
 
@@ -438,29 +505,158 @@ export default function SellsInvoice() {
 
                                 </td>
 
+                                {/* COLOR AUTOCOMPLETE DROPDOWN */}
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.color}
+                                    disabled={!product.itemName}
+                                    onChange={(e) => {
+                                      if (!product.itemName) return;
+                                      handleItemChange(index, "color", e.target.value);
+                                      setSearchTerm(e.target.value);
+                                      setActiveDropdown(`color-${index}`);
+                                    }}
+                                    onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select or type color" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                      }`}
+                                  />
+
+                                  <AnimatePresence>
+                                    {activeDropdown === `color-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[200px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                      >
+                                        {(productAttributes[product.itemName]?.colors || []).map((opt, i) => (
+                                          <div
+                                            key={i}
+                                            onClick={() => {
+                                              handleItemChange(index, "color", opt);
+                                              setActiveDropdown(null);
+                                            }}
+                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
+                                          >
+                                            {opt}
+                                          </div>
+                                        ))}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
+
+
+
+                                {/* SPECIFICATION AUTOCOMPLETE DROPDOWN */}
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.specification}
+                                    disabled={!product.itemName}
+                                    onChange={(e) => {
+                                      if (!product.itemName) return;
+                                      handleItemChange(index, "specification", e.target.value);
+                                      setSearchTerm(e.target.value);
+                                      setActiveDropdown(`spec-${index}`);
+                                    }}
+                                    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select or type specification" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                      }`}
+                                  />
+
+                                  <AnimatePresence>
+                                    {activeDropdown === `spec-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                      >
+                                        {(productAttributes[product.itemName]?.specifications || []).map((opt, i) => (
+                                          <div
+                                            key={i}
+                                            onClick={() => {
+                                              handleItemChange(index, "specification", opt);
+                                              setActiveDropdown(null);
+                                            }}
+                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
+                                          >
+                                            {opt}
+                                          </div>
+                                        ))}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
+
+
+                                {/* CONDITION DROPDOWN */}
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.condition}
+                                    disabled={!product.itemName}
+                                    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select condition" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                      }`}
+                                    readOnly
+                                  />
+
+                                  <AnimatePresence>
+                                    {activeDropdown === `cond-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[180px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                      >
+                                        {(productAttributes[product.itemName]?.conditions || []).map((opt, i) => (
+                                          <div
+                                            key={i}
+                                            onClick={() => {
+                                              handleItemChange(index, "condition", opt);
+                                              setActiveDropdown(null);
+                                            }}
+                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
+                                          >
+                                            {opt}
+                                          </div>
+                                        ))}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={
-                                      Array.isArray(product.serialNumbers)
-                                        ? product.serialNumbers
-                                          .filter((s) => {
-                                            if (typeof s === "object" && s !== null) {
-                                              return !s.isSold; // show only unsold
-                                            }
-                                            return true;
-                                          })
-                                          .map((s) => (typeof s === "object" ? s.number : s))
-                                          .join(", ")
-                                        : ""
-                                    }
-                                    onFocus={() => handleSerialClick(product, index)}
+                                    value={product.serialNumbers?.map((s) =>
+                                      typeof s === "object" ? s.number : s
+                                    ).join(", ") || ""}
                                     readOnly
-                                    className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
-                                    placeholder="Select IMEI"
+                                    disabled={!product.itemName}
+                                    onFocus={() => {
+                                      if (product.itemName) handleSerialClick(product, index);
+                                    }}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : "cursor-pointer"
+                                      }`}
+                                    placeholder={
+                                      product.itemName ? "Select IMEI / Serial" : "Select product first"
+                                    }
                                   />
                                 </td>
+
 
 
 
@@ -495,17 +691,16 @@ export default function SellsInvoice() {
                                   ₹ {product.amount || "0.00"}
                                 </td>
 
-                                <td className="py-2 px-2 text-center">
-                                  {items.length > 1 && (
-                                    <button
-                                      onClick={() => deleteRow(index)}
-                                      className="text-red-500 hover:text-red-700 p-1 rounded-full transition-colors"
-                                      title="Delete row"
-                                    >
-                                      <Trash2 size={18} />
-                                    </button>
-                                  )}
-                                </td>
+
+                                {items.length > 1 && (
+                                  <button
+                                    onClick={() => deleteRow(index)}
+                                    className="text-red-500  w-[30px]  justify-center flex h-[30px] items-center right-[-30px] shadow-lg top-[9px] absolute bg-white hover:text-red-700 rounded-r-[10px] transition-colors"
+                                    title="Delete row"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                )}
                               </tr>
 
 
@@ -528,9 +723,15 @@ export default function SellsInvoice() {
                                     {filteredSuggestions(searchTerm).map((p, i) => (
                                       <div
                                         key={i}
-                                        onClick={() => handleSelectProduct(index, p.name)}
-                                        className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
+                                        onClick={() => {
+                                          if (p.stock > 0) handleSelectProduct(index, p.name);
+                                        }}
+                                        className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${p.stock === 0
+                                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                          : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                          }`}
                                       >
+
                                         <span className="font-Poppins text-gray-700">{p.name}</span>
                                         <span
                                           className={`font-medium font-Poppins ${p.stock === 0
@@ -604,17 +805,15 @@ export default function SellsInvoice() {
                               </button>
                             </td>
                             <td
-                              colSpan="3"
+                              colSpan="6"
                               className="py-3 px-2 text-right text-[14px] font-medium text-gray-700 border-r border-gray-200"
                             >
                               Total
                             </td>
-                            <td className="py-3 px-2  border-r text-right text-[14px] font-semibold text-[#00b4d8]">
+                            <td className="py-3 px-2  border-r text-right text-[14px] font-semibold text-[#083aef]">
                               ₹ {totalAmount || "0.00"}
                             </td>
-                            <td className="py-3 px-2 text-center text-[14px] font-semibold text-[#00b4d8]">
 
-                            </td>
                           </tr>
                         </tbody>
                       </table>
@@ -623,78 +822,96 @@ export default function SellsInvoice() {
                   <div className=" flex w-[100%]  justify-between gap-[20px]  mt-[19px] mb-[20px]">
                     <div className="flex w-[50%]  flex-col gap-[15px] ">
                       <div className="bg-white  w-[100%] rounded-lg shadow1-blue  ">
-
                       </div>
-
                       <div className="grid md:grid-cols-2 gap-4">
-
-
-
                       </div>
 
                     </div>
-                    <div className=" flex w-[42%]">
-                      <div className="bg-white  w-[100%]  rounded-lg  shadow1-blue p-3">
-                        <div className="space-y-2">
+                    {/* 🔹 PAYMENT SECTION */}
+                    <div className="flex w-[42%]">
+                      <div className="bg-white w-full rounded-lg shadow1-blue p-3">
+                        <div className="space-y-4">
+                          {/* Section Header */}
+                          <h3 className="text-gray-700 font-Poppins font-semibold text-[15px]">
+                            Payment Details
+                          </h3>
 
-
-
-
-
-
-
-
-
-
-                          <div className="flex items-center justify-between gap-4">
-                            <label className="text-gray-600 font-Poppins text-md font-medium">
-                              Payment Method
-                            </label>
-                            <div className="flex-1 max-w-[320px]">
-
-
-                              <NormalDropdown
-                                label="Select Payment Method"
-                                options={options}
-                                onChange={(value) => console.log("Selected:", value)}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between gap-4">
-                            <label className="text-gray-600 font-Poppins text-md font-medium">
-                              Cash Payment
-                            </label>
-                            <div className="flex-1 max-w-[320px]">
-                              <div className=" relative w-full h-10 border-[1px]  border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] cursor-pointer">
-                                <input
-                                  type="number"
-                                  name="cashPayment"
-                                  placeholder="0.00"
-                                  value={cashPayment}
-                                  onChange={(e) => setCashPayment(parseFloat(e.target.value) || 0)}
-                                  className="w-full outline-none text-[15px] py-[9px] px-[15px] font-Poppins font-[400] bg-transparent cursor-pointer"
+                          {/* 🔹 Dynamic Payment Rows */}
+                          {paymentRows.map((row, index) => (
+                            <div key={index} className="flex items-center justify-between gap-3">
+                              {/* Dropdown */}
+                              <div className="flex-1  relative max-w-[230px]">
+                                <label className="absolute  z-[10] left-3 top-[-10px] text-[12px] text-blue-700 px-[3px] font-Poppins bg-white ">Payment Method</label>
+                                <NormalDropdown
+                                  label="Select Method"
+                                  options={options}
+                                  value={row.method}
+                                  onChange={(value) => handlePaymentChange(index, "method", value)}
                                 />
-
                               </div>
+
+                              {/* Input */}
+                              <div className="flex-1 max-w-[240px]">
+                                <div className="relative w-full h-10 border border-[#dedede] rounded-lg shadow flex items-center space-x-2 text-[#00000099] cursor-pointer">
+                                  <label className="absolute left-3 top-[-10px] text-[12px] text-blue-500 px-[3px] font-Poppins bg-white ">Amount</label>
+                                  <input
+                                    type="number"
+                                    value={row.amount}
+                                    placeholder="0.00"
+                                    onChange={(e) =>
+                                      handlePaymentChange(index, "amount", e.target.value)
+                                    }
+                                    onBlur={() => handleAddNewRowIfNeeded(index)}
+                                    className="w-full outline-none text-[15px] py-[9px] px-[6px] font-Poppins font-[400] bg-transparent"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Delete Row (only if more than one) */}
+                              {paymentRows.length > 1 && (
+                                <button
+                                  onClick={() => removePaymentRow(index)}
+                                  className="text-red-500 hover:text-red-600 font-medium"
+                                >
+                                  ✕
+                                </button>
+                              )}
                             </div>
-                          </div>
-                          {/* Total Amount */}
+                          ))}
+
+                          {/* Divider */}
+                          <div className="h-[1px] w-full bg-gray-200 mt-2 mb-1" />
+
+                          {/* 🔹 TOTAL AMOUNT */}
                           <div className="flex items-center justify-between gap-4">
-                            <label className="text-[#FF6B35] text-gray-600 font-Poppins text-md font-medium">
+                            <label className="text-[#FF6B35] font-Poppins text-md font-medium">
                               TOTAL AMOUNT
                             </label>
                             <div className="flex-1 max-w-[320px]">
-                              <div className=" relative w-full h-10 border-[1px]  font-Poppins px-[15px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] cursor-pointer">
-                                <p>{remainingAmount.toFixed(2)}</p>
+                              <div className="relative w-full h-10 border font-Poppins px-[15px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099]">
+                                <p>₹ {Number(totalAmount || 0).toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 🔹 REMAINING AMOUNT */}
+                          <div className="flex items-center justify-between gap-4">
+                            <label className="text-gray-600 font-Poppins text-md font-medium">
+                              Remaining
+                            </label>
+                            <div className="flex-1 max-w-[320px]">
+                              <div className="relative w-full h-10 border font-Poppins px-[15px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099]">
+                                <p>₹ {remaining.toFixed(2)}</p>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
+
                   </div>
                   <button
-                    className=" bs-spj  font-[500] font-Poppins text-[#fff] rounded-[8px] py-[5px] justify-center  text-[18px] mx-auto mt-[10px] flex w-[120px]"
+                    className=" bs-spj  font-[500] font-Poppins text-[#fff] rounded-[8px] py-[5px] justify-center  text-[18px] mx-auto mt-[px] flex w-[120px]"
                     onClick={handleSave}
 
                   >

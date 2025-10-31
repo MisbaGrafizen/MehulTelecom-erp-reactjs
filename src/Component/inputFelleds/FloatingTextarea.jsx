@@ -25,7 +25,7 @@ const FloatingTextarea = ({ label, name, value = "", onChange }) => {
         htmlFor={name}
         className={`absolute left-[13px] px-[5px] bg-[#fff] text-[14px] font-Poppins transition-all duration-200
           ${focused || internalValue
-            ? "top-[-9px] text-[12px] text-[#00b4d8]"
+            ? "top-[-9px] text-[12px] text-[#083aefa8]"
             : "top-[14px] text-[#43414199]"}
         `}
       >

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion";
 
 import { companies, deviceTypes } from "../../../src/data/companies"
 import { addTransfer } from "../../../src/lib/transferstore"
@@ -10,6 +11,7 @@ import { useNavigate } from "react-router-dom"
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
 import { ApiGet, ApiPost } from "../../helper/axios"
+import ImeiModal from "../../Component/purchaseCom/ImeiModal";
 
 function formatINR(n) {
     try {
@@ -35,6 +37,14 @@ export default function NewStockTransferPage() {
     const [companyId, setCompanyId] = useState(null);
     const [fromId, setFromId] = useState(null);
     const [toId, setToId] = useState(null);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isImeiModalOpen, setImeiModalOpen] = useState(false);
+    const [selectedModel, setSelectedModel] = useState("");
+    const [selectedProductIndex, setSelectedProductIndex] = useState(null);
+    const [totalAmount, setTotalAmount] = useState(0);
+    const [productSuggestions, setProductSuggestions] = useState([]);
+
 
     const selectedCompany = useMemo(
         () => companies.find((c) => c._id === companyId),
@@ -152,19 +162,61 @@ export default function NewStockTransferPage() {
     }
 
 
+    const filteredSuggestions = (term) => {
+        if (!term) return productSuggestions;
+
+        console.log('productSuggestions', productSuggestions)
+        return productSuggestions.filter((p) =>
+            p.name.toLowerCase().includes(term.toLowerCase())
+        );
+    };
+
+    const handleItemChange = (index, field, value) => {
+        const updated = [...items];
+        updated[index][field] = value;
+
+        const qty =
+            updated[index].serialNumbers?.length ||
+            parseFloat(updated[index].unit) ||
+            0;
+        const price = parseFloat(updated[index].pricePerUnit) || 0;
+        updated[index].amount = (qty * price).toFixed(2);
+
+        setItems(updated);
+
+        const total = updated.reduce(
+            (sum, item) => sum + (parseFloat(item.amount) || 0),
+            0
+        );
+        setTotalAmount(total.toFixed(2));
+    };
+
+    const handleSerialClick = (product, index) => {
+        if (product.itemName) {
+            setSelectedModel(product.itemName);
+            setSelectedProductIndex(index); // ✅ track which item we’re updating
+            setImeiModalOpen(true);
+        }
+    };
+
+
+
+
+
+
+
+
+
+
+
     return (
-
-
         <>
-
-
-
             <section className="flex w-[100%] font-Poppins h-[100%] select-none p-[15px] overflow-hidden">
                 <div className="flex w-[100%] flex-col gap-[14px] h-[96vh]">
-                    <Header pageName="PurchCreate Stock Transferase" />
+                    <Header pageName=" New Transfer" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
                         <SideBar />
-                        <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
+                        <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px]  gap-[30px] rounded-[10px]">
 
 
                             <div className=" w-[100%]">
@@ -235,97 +287,466 @@ export default function NewStockTransferPage() {
                                         </div>
                                     </div>
 
-                                    {/* Items table */}
-                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3">
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full text-sm">
-                                                <thead className="bg-slate-100 text-slate-600">
-                                                    <tr>
-                                                        <th className="px-2 py-2 !font-[500] text-left">#</th>
+                                    <div className="bg-white w-[100%] relative  mt-[20px]  rounded-[10px] shadow1-blue">
+                                        <div className="flex-shrink-0 border bg-white rounded-[10px] w-[100%]">
+                                            <table className="w-full border-collapse">
+                                                <thead>
+                                                    <tr className="bg-[#f0f1f364]">
+                                                        <th className="py-3 px-2 text-left text-[13px] font-medium font-Poppins text-gray-600 w-20 border-r border-gray-200">
+                                                            Sr. No.
+                                                        </th>
+                                                        <th className="py-3 w-[280px]    tracking-wide px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
+                                                            Product Name
+                                                        </th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">COLOR</th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">SPECIFICATION</th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">CONDITION</th>
 
-                                                        <th className="px-2 py-2 !font-[600] text-left">Product Name</th>
-                                                        <th className="px-2 py-2 !font-[600] text-left">IMEI/Serial</th>
-                                                        <th className="px-2 py-2 !font-[600] text-left">Model</th>
-                                                        <th className="px-2 py-2 !font-[600] text-right">Qty</th>
-                                                        <th className="px-2 py-2 !font-[600] text-right">Price</th>
-                                                        <th className="px-2 py-2 !font-[600] text-right">Amount</th>
-                                                        <th className="px-2 py-2"></th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[200px] border-r border-gray-200">
+                                                            SERIAL NO.
+                                                        </th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[108px] border-r border-gray-200">
+                                                            UNIT
+                                                        </th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[103px] border-r border-gray-200">
+                                                            PRICE/UNIT
+                                                        </th>
+                                                        <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[100px] border-r border-gray-200">
+                                                            AMOUNT
+                                                        </th>
+
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {items.map((it, idx) => (
-                                                        <tr key={idx} className="align-top">
-                                                            <td className="px-2 py-2">{idx + 1}</td>
 
-                                                            <td className="px-2 py-2">
-                                                                <input
-                                                                    value={it.name}
-                                                                    onChange={(e) => updateItem(idx, { name: e.target.value })}
-                                                                    className="w-56  outline-none border-b 00 px-2 py-1.5"
-                                                                    placeholder="e.g., iPhone 14"
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-2">
-                                                                <input
-                                                                    value={it.imei}
-                                                                    onChange={(e) => updateItem(idx, { imei: e.target.value })}
-                                                                    className="w-56  outline-none border-b 00 px-2 py-1.5"
-                                                                    placeholder="IMEI / Serial No."
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-2">
-                                                                <input
-                                                                    value={it.model}
-                                                                    onChange={(e) => updateItem(idx, { model: e.target.value })}
-                                                                    className="w-40  outline-none border-b 00 px-2 py-1.5"
-                                                                    placeholder="Model"
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-2 text-right">
-                                                                <input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    value={it.qty}
-                                                                    onChange={(e) => updateItem(idx, { qty: Number(e.target.value) || 0 })}
-                                                                    className="w-20  outline-none border-b 00 px-2 py-1.5 text-right"
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-2 text-right">
-                                                                <input
-                                                                    type="number"
-                                                                    value={it.price}
-                                                                    onChange={(e) => updateItem(idx, { price: Number(e.target.value) || 0 })}
-                                                                    className="w-28  outline-none border-b 00 px-2 py-1.5 text-right"
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-2 text-right font-[500]">{formatINR(it.amount || 0)}</td>
-                                                            <td className="px-2 py-2 text-right">
-                                                                <button
-                                                                    className="rounded-lg5 text-rose-700 hover:bg-rose-50"
-                                                                    onClick={() => removeRow(idx)}
-                                                                    title="Remove"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
+                                                <tbody>
+                                                    {items.map((product, index) => (
+                                                        <>
+                                                            <tr key={index} className="border-t relative border-gray-200">
+                                                                <td className="py-2 px-4 text-sm text-gray-600 font-Poppins border-r border-gray-200">
+                                                                    {index + 1}
+                                                                </td>
+
+                                                                <td className="py-2 relative px-4 border-r font-Poppins border-gray-200">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={product.itemName}
+                                                                        onChange={(e) => {
+                                                                            const value = e.target.value;
+                                                                            handleItemChange(index, "itemName", value);
+                                                                            setSearchTerm(value);
+                                                                            setActiveDropdown(index);
+                                                                        }}
+                                                                        onFocus={() => setActiveDropdown(index)}
+                                                                        onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                        placeholder="Product name"
+                                                                    />
+                                                                    <AnimatePresence>
+                                                                        {activeDropdown === index && (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -5 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -5 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="absolute z-30 left-[0px] top-[68%] mt-4 w-[300px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                                                            >
+                                                                                {/* Header Row */}
+                                                                                <div className="flex font-Poppins justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Model Name</span>
+                                                                                    <span>Stock</span>
+                                                                                </div>
+
+                                                                                {/* Filtered Product List */}
+                                                                                {filteredSuggestions(searchTerm).length > 0 ? (
+                                                                                    filteredSuggestions(searchTerm).map((p, i) => (
+                                                                                        <div
+                                                                                            key={i}
+                                                                                            onClick={() => handleSelectProduct(index, p.name)}
+                                                                                            className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
+                                                                                        >
+                                                                                            <span className="font-Poppins text-gray-700">{p.name}</span>
+                                                                                            <span
+                                                                                                className={`font-medium font-Poppins ${p.stock === 0
+                                                                                                    ? "text-red-500"
+                                                                                                    : p.stock === 1
+                                                                                                        ? "text-blue-500"
+                                                                                                        : "text-green-600"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {p.stock}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))
+                                                                                ) : (
+                                                                                    <div className="px-3 py-2 text-sm text-gray-500">
+                                                                                        No products found
+                                                                                    </div>
+                                                                                )}
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+
+                                                                </td>
+
+                                                                {/* COLOR AUTOCOMPLETE DROPDOWN */}
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={product.color}
+                                                                        onChange={(e) => {
+                                                                            const value = e.target.value;
+                                                                            handleItemChange(index, "color", value);
+                                                                            setSearchTerm(value);
+                                                                            setActiveDropdown(`color-${index}`);
+                                                                        }}
+                                                                        onFocus={() => setActiveDropdown(`color-${index}`)}
+                                                                        onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                                                        placeholder="Type to search color..."
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                    />
+
+                                                                    <AnimatePresence>
+                                                                        {activeDropdown === `color-${index}` && (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -5 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -5 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[200px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                                                            >
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Color</span>
+                                                                                    <span>Status</span>
+                                                                                </div>
+
+                                                                                {/* Filtered color options */}
+                                                                                {[
+                                                                                    { name: "Black", stock: 2 },
+                                                                                    { name: "White", stock: 1 },
+                                                                                    { name: "Blue", stock: 0 },
+                                                                                    { name: "Red", stock: 3 },
+                                                                                    { name: "Silver", stock: 1 },
+                                                                                    { name: "Gray", stock: 2 },
+                                                                                    { name: "Gold", stock: 1 },
+                                                                                ]
+                                                                                    .filter((opt) =>
+                                                                                        opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
+                                                                                    )
+                                                                                    .map((opt, i) => (
+                                                                                        <div
+                                                                                            key={i}
+                                                                                            onClick={() => {
+                                                                                                if (opt.stock === 0) return;
+                                                                                                handleItemChange(index, "color", opt.name);
+                                                                                                setSearchTerm("");
+                                                                                                setActiveDropdown(null);
+                                                                                            }}
+                                                                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${opt.stock === 0
+                                                                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                                                                    : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                                }`}
+                                                                                        >
+                                                                                            <span>{opt.name}</span>
+                                                                                            <span
+                                                                                                className={`font-medium ${opt.stock === 0
+                                                                                                        ? "text-red-500"
+                                                                                                        : opt.stock === 1
+                                                                                                            ? "text-yellow-500"
+                                                                                                            : "text-green-600"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {opt.stock}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+
+                                                                                {/* Show “no match” message */}
+                                                                                {[
+                                                                                    { name: "Black", stock: 2 },
+                                                                                    { name: "White", stock: 1 },
+                                                                                    { name: "Blue", stock: 0 },
+                                                                                    { name: "Red", stock: 3 },
+                                                                                    { name: "Silver", stock: 1 },
+                                                                                    { name: "Gray", stock: 2 },
+                                                                                    { name: "Gold", stock: 1 },
+                                                                                ].filter((opt) =>
+                                                                                    opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
+                                                                                ).length === 0 && (
+                                                                                        <div className="px-3 py-2 text-sm text-gray-500">
+                                                                                            No colors found
+                                                                                        </div>
+                                                                                    )}
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </td>
+
+
+                                                                {/* SPECIFICATION AUTOCOMPLETE DROPDOWN */}
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={product.specification}
+                                                                        onChange={(e) => {
+                                                                            const value = e.target.value;
+                                                                            handleItemChange(index, "specification", value);
+                                                                            setSearchTerm(value);
+                                                                            setActiveDropdown(`spec-${index}`);
+                                                                        }}
+                                                                        onFocus={() => setActiveDropdown(`spec-${index}`)}
+                                                                        onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                                                        placeholder="Type to search specification..."
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                    />
+
+                                                                    <AnimatePresence>
+                                                                        {activeDropdown === `spec-${index}` && (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -5 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -5 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                                                            >
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Specification</span>
+                                                                                    <span>Status</span>
+                                                                                </div>
+
+                                                                                {/* Filtered Specification List */}
+                                                                                {[
+                                                                                    { name: "2GB / 32GB", stock: 1 },
+                                                                                    { name: "4GB / 64GB", stock: 2 },
+                                                                                    { name: "6GB / 128GB", stock: 1 },
+                                                                                    { name: "8GB / 256GB", stock: 0 },
+                                                                                    { name: "12GB / 512GB", stock: 3 },
+                                                                                ]
+                                                                                    .filter((opt) =>
+                                                                                        opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
+                                                                                    )
+                                                                                    .map((opt, i) => (
+                                                                                        <div
+                                                                                            key={i}
+                                                                                            onClick={() => {
+                                                                                                if (opt.stock === 0) return;
+                                                                                                handleItemChange(index, "specification", opt.name);
+                                                                                                setSearchTerm("");
+                                                                                                setActiveDropdown(null);
+                                                                                            }}
+                                                                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${opt.stock === 0
+                                                                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                                                                    : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                                }`}
+                                                                                        >
+                                                                                            <span>{opt.name}</span>
+                                                                                            <span
+                                                                                                className={`font-medium ${opt.stock === 0
+                                                                                                        ? "text-red-500"
+                                                                                                        : opt.stock === 1
+                                                                                                            ? "text-yellow-500"
+                                                                                                            : "text-green-600"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {opt.stock}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+
+                                                                                {/* No match fallback */}
+                                                                                {[
+                                                                                    { name: "2GB / 32GB", stock: 1 },
+                                                                                    { name: "4GB / 64GB", stock: 2 },
+                                                                                    { name: "6GB / 128GB", stock: 1 },
+                                                                                    { name: "8GB / 256GB", stock: 0 },
+                                                                                    { name: "12GB / 512GB", stock: 3 },
+                                                                                ].filter((opt) =>
+                                                                                    opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
+                                                                                ).length === 0 && (
+                                                                                        <div className="px-3 py-2 text-sm text-gray-500">
+                                                                                            No specifications found
+                                                                                        </div>
+                                                                                    )}
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </td>
+
+                                                                {/* CONDITION DROPDOWN */}
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={product.condition}
+                                                                        readOnly
+                                                                        placeholder="Select Condition"
+                                                                        onFocus={() => setActiveDropdown(`cond-${index}`)}
+                                                                        onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
+                                                                    />
+
+                                                                    <AnimatePresence>
+                                                                        {activeDropdown === `cond-${index}` && (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -5 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -5 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[180px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                                                            >
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Condition</span>
+                                                                                    <span>Status</span>
+                                                                                </div>
+
+                                                                                {[
+                                                                                    { name: "New", stock: 2 },
+                                                                                    { name: "Old", stock: 1 },
+                                                                                ].map((opt, i) => (
+                                                                                    <div
+                                                                                        key={i}
+                                                                                        onClick={() => {
+                                                                                            handleItemChange(index, "condition", opt.name);
+                                                                                            setActiveDropdown(null);
+                                                                                        }}
+                                                                                        className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors text-gray-700"
+                                                                                    >
+                                                                                        <span>{opt.name}</span>
+                                                                                        <span
+                                                                                            className={`font-medium ${opt.stock === 1 ? "text-yellow-500" : "text-green-600"
+                                                                                                }`}
+                                                                                        >
+                                                                                            {opt.stock}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </td>
+
+
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={product.serialNumbers?.join(", ") || ""}
+                                                                        onFocus={() => handleSerialClick(product, index)}
+                                                                        readOnly
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
+                                                                        placeholder="Select IMEI"
+                                                                    />
+                                                                </td>
+
+
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={product.unit}
+                                                                        onChange={(e) =>
+                                                                            handleItemChange(index, "unit", e.target.value)
+                                                                        }
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                        placeholder="0"
+                                                                    />
+                                                                </td>
+
+
+
+                                                                <td className="py-2 px-4 border-r font-Poppins border-gray-200">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={product.pricePerUnit}
+                                                                        onChange={(e) =>
+                                                                            handleItemChange(index, "pricePerUnit", e.target.value)
+                                                                        }
+                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                        placeholder="0.00"
+                                                                    />
+                                                                </td>
+
+                                                                <td className="py-2 px-4 border-r tracking-wide  flex-shrink-0 font-Poppins border-gray-200 text-right w-[140px] pr-3">
+                                                                    ₹ {product.amount || "0.00"}
+                                                                </td>
+
+
+                                                                {items.length > 1 && (
+                                                                    <button
+                                                                        onClick={() => deleteRow(index)}
+                                                                        className="text-red-500  w-[30px]  justify-center flex h-[30px] items-center right-[-30px] shadow-lg top-[9px] absolute bg-white hover:text-red-700 rounded-r-[10px] transition-colors"
+                                                                        title="Delete row"
+                                                                    >
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                )}
+
+                                                            </tr>
+
+
+
+
+                                                            <ImeiModal
+                                                                isOpen={isImeiModalOpen}
+                                                                onClose={() => setImeiModalOpen(false)}
+                                                                modelName={items[selectedProductIndex]?.itemName || selectedModel} // ✅ auto-passes selected product name
+                                                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}   // ✅ also passes existing serials for that item
+                                                                onSave={(imeis) => {
+                                                                    const cleanImeis = imeis.filter((num) => !!num && num.trim() !== "");
+                                                                    if (selectedProductIndex !== null) {
+                                                                        const updated = [...items];
+                                                                        updated[selectedProductIndex].serialNumbers = cleanImeis;
+                                                                        updated[selectedProductIndex].unit = cleanImeis.length;
+                                                                        updated[selectedProductIndex].amount = (
+                                                                            cleanImeis.length *
+                                                                            (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
+                                                                        ).toFixed(2);
+                                                                        setItems(updated);
+
+                                                                        const total = updated.reduce(
+                                                                            (sum, item) => sum + (parseFloat(item.amount) || 0),
+                                                                            0
+                                                                        );
+                                                                        setTotalAmount(total.toFixed(2));
+                                                                    }
+                                                                    setImeiModalOpen(false);
+                                                                }}
+
+                                                            />
+
+                                                        </>
                                                     ))}
-                                                    <tr>
-                                                        <td colSpan={9} className="px-2 py-2">
+
+                                                    {/* Total Row (Action column preserved) */}
+                                                    <tr className="bg-[#f0f1f364] font-Poppins border-t border-gray-200">
+                                                        <td
+                                                            colSpan="2"
+                                                            className="px-2 text-left text-[14px] font-medium text-gray-700 border-r border-gray-200"
+                                                        >
                                                             <button
+                                                                className="w-[120px] mx-auto py-1 font-Poppins border-[1.5px] border-dashed border-[#60A5FA] text-[#60A5FA] rounded-sm hover:bg-blue-50 transition-colors"
                                                                 onClick={addRow}
-                                                                className="inline-flex items-center gap-2 rounded-md border border-dashed border-blue-400 px-3 py-1.5 text-sm font-[500] text-blue-700 hover:bg-blue-50"
                                                             >
-                                                                <PlusCircle size={16} />
-                                                                Add Item
+                                                                Add Row
                                                             </button>
                                                         </td>
+                                                        <td
+                                                            colSpan="6"
+                                                            className="py-3 px-2 text-right text-[14px] font-medium text-gray-700 border-r border-gray-200"
+                                                        >
+                                                            Total
+                                                        </td>
+                                                        <td className="py-3 px-2  border-r text-right text-[14px] font-semibold text-[#083aef]">
+                                                            ₹ {totalAmount || "0.00"}
+                                                        </td>
+
                                                     </tr>
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
 
-                                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+
+                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3">
+
+
+                                        <div className=" grid grid-cols-1 gap-3 md:grid-cols-3">
                                             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-600 text-white">

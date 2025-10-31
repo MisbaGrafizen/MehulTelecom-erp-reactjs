@@ -1,19 +1,25 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown } from "react-icons/fa";
 
 const NormalDropdown = ({
   label = "Select Option",
   options = [],
+  value,              // ✅ controlled value from parent
   onChange,
-  defaultValue = "",
+  defaultValue = "",  // ✅ optional fallback
 }) => {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(defaultValue);
+  const [selected, setSelected] = useState(value || defaultValue);
   const dropdownRef = useRef(null);
 
-  // Close dropdown if clicked outside
-  React.useEffect(() => {
+  // ✅ Sync internal selected when parent value changes
+  useEffect(() => {
+    if (value !== undefined) setSelected(value);
+  }, [value]);
+
+  // ✅ Close when clicking outside
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpen(false);
@@ -23,9 +29,15 @@ const NormalDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleSelect = (opt) => {
+    setSelected(opt);
+    setOpen(false);
+    if (onChange) onChange(opt);
+  };
+
   return (
     <div ref={dropdownRef} className="relative w-full font-Poppins">
-      {/* Dropdown Trigger */}
+      {/* Trigger */}
       <div
         onClick={() => setOpen(!open)}
         className="w-full h-[40px] border border-[#dedede] shadow-sm rounded-lg bg-white flex items-center justify-between px-3 cursor-pointer text-[14px] text-gray-700"
@@ -37,7 +49,7 @@ const NormalDropdown = ({
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.3 }}
         >
-          <FaChevronDown className="text-[#00b4d8] text-[12px]" />
+          <FaChevronDown className="text-[#083aef] text-[12px]" />
         </motion.div>
       </div>
 
@@ -57,13 +69,9 @@ const NormalDropdown = ({
                   <motion.div
                     key={index}
                     whileHover={{ backgroundColor: "#e6f9ff" }}
-                    onClick={() => {
-                      setSelected(opt);
-                      setOpen(false);
-                      if (onChange) onChange(opt);
-                    }}
-                    className={`px-4 py-2 text-[14px] cursor-pointer hover:text-[#00b4d8] ${
-                      selected === opt ? "text-[#00b4d8] font-medium" : ""
+                    onClick={() => handleSelect(opt)}
+                    className={`px-4 py-2 text-[14px] cursor-pointer hover:text-[#305af3] ${
+                      selected === opt ? "text-[#305af3] font-medium" : ""
                     }`}
                   >
                     {opt}

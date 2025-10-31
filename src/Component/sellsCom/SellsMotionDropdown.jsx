@@ -138,7 +138,7 @@ const SellsMotionDropdown = ({
           <label
             className={`absolute left-[13px] bg-white px-[5px] font-Poppins transition-all duration-200
               ${open || selected
-                ? "top-[-9px] text-[12px] text-[#00b4d8]"
+                ? "top-[-9px] text-[12px] text-[#083aef]"
                 : "top-[9px] text-[14px] text-[#43414199]"
               }`}
           >
@@ -159,7 +159,7 @@ const SellsMotionDropdown = ({
           />
 
           <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }}>
-            <FaChevronDown className="text-[#00b4d8] text-[12px]" />
+            <FaChevronDown className="text-[#083aef] text-[12px]" />
           </motion.div>
         </div>
 
@@ -185,7 +185,7 @@ const SellsMotionDropdown = ({
                         setOpen(false);
                         if (onChange) onChange(opt);
                       }}
-                      className="px-4 py-2 text-[14px] cursor-pointer hover:text-[#00b4d8]"
+                      className="px-4 py-2 text-[14px] cursor-pointer hover:text-[#083aef]"
                     >
                       {opt}
                     </motion.div>
@@ -197,7 +197,7 @@ const SellsMotionDropdown = ({
 
               {/* Add Party Button */}
               <div
-                className="flex items-center gap-2 px-4 py-2 border-t border-[#eee] text-[#00b4d8] hover:bg-[#e6f9ff] cursor-pointer text-[14px] font-medium"
+                className="flex items-center gap-2 px-4 py-2 border-t border-[#eee] text-[#083aef] hover:bg-[#e6f9ff] cursor-pointer text-[14px] font-medium"
                 onClick={() => {
                   setPartyModalOpen(true);
                   setOpen(false);
@@ -335,7 +335,7 @@ const SellsMotionDropdown = ({
             <div className="flex justify-center mt-[20px]">
               <button
                 onClick={handlePartySave}
-                className="bg-[#00b4d8] text-white font-[500] font-Poppins text-[16px] py-[5px] rounded-[8px] w-[120px]"
+                className="bg-[#083aef] text-white font-[500] font-Poppins text-[16px] py-[5px] rounded-[8px] w-[120px]"
               >
                 Save
               </button>

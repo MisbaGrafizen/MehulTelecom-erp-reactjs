@@ -14,6 +14,7 @@ import CreateCompany from "./pages/companyManage/CreateCompany";
 import StockTransferList from "./pages/stockTransferFolder/StockTransferList";
 import NewStockTransferPage from "./pages/stockTransferFolder/NewStockTransferPage";
 import MianItemspage from "./pages/items/MainItemsPage";
+import PartyList from "./pages/party/PartyList";
 
 
 
@@ -41,9 +42,11 @@ function App() {
           <Route path="/sells" element={<SellListing />} />
           <Route path="/sells-invoice" element={<SellsInvoice />} />
           <Route path="/stock-transfer" element={<StockTransferList />} />
-          <Route path="/new-transfer" element={<NewStockTransferPage />} />
+          <Route path="/stock-transfer/new-transfer" element={<NewStockTransferPage />} />
           <Route path="/items" element={<MianItemspage />} />
-          
+          <Route path="/party-listing" element={<PartyList />} />
+
+         
 
 
 

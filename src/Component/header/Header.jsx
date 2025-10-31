@@ -13,8 +13,11 @@ export default function Header({ pageName = "" }) {
 
 
 
+const navigate = useNavigate();
 
-
+const handleBack = () => {
+  navigate(-1); 
+};
 
   return (
     <>
@@ -24,12 +27,12 @@ export default function Header({ pageName = "" }) {
             <img
               className=" flex w-[27px] h-[27px]"
               src={backArrow}
-              // onClick={handleBack}
+              onClick={handleBack}
             />
             <div className=" flex w-[4px] bg-[#ff8000] h-[30px]"></div>
             <h1
               className=" pl-[6px] text-[#3d3d3d] flex  font-Poppins text-[20px] font-[600]"
-              // onClick={handleBack}
+              onClick={handleBack}
             >
               {pageName}
             </h1>

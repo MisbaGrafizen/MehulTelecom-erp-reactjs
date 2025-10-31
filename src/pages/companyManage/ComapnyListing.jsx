@@ -21,7 +21,11 @@ export default function CompanyListing() {
     name: "",
     company: "",
     address: "",
+    username: "",
+    password: "",
+    showPassword: false,
   });
+
 
   // ✅ Fetch company data
   const fetchCompanyData = async () => {
@@ -91,7 +95,10 @@ export default function CompanyListing() {
         name: branchData.name,
         company: companyObj._id,
         address: branchData.address,
+        username: branchData.username,
+        password: branchData.password,
       };
+
 
       if (editIndex !== null && branches[editIndex]?._id) {
         // ✅ Update branch
@@ -159,7 +166,7 @@ export default function CompanyListing() {
         >
           <label
             className={`absolute left-[13px] bg-white px-[5px] text-[14px] transition-all duration-200
-              ${open || value ? "top-[-9px] text-[12px] text-[#00b4d8]" : "top-[10px] text-[#43414199]"}`}
+              ${open || value ? "top-[-9px] text-[12px] text-[#083aef]" : "top-[10px] text-[#43414199]"}`}
           >
             {label}
           </label>
@@ -178,7 +185,7 @@ export default function CompanyListing() {
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.3 }}
           >
-            <FaChevronDown className="text-[#00b4d8] text-[12px]" />
+            <FaChevronDown className="text-[#083aef] text-[12px]" />
           </motion.div>
         </div>
 
@@ -230,8 +237,8 @@ export default function CompanyListing() {
             <div className="relative flex shadow1-blue rounded-[10px] border-[#122f97] w-fit p-1 bg-gray-200">
               <div
                 className={`absolute top-0 left-0 h-full w-[130px] rounded-[8px] transition-transform duration-300 ${activeTab
-                  ? "translate-x-0 bg-[#28c723]"
-                  : "bg-[#ff8000] translate-x-[120px]"
+                  ? "translate-x-0 bg-[#083aef]"
+                  : "bg-[#083aef] translate-x-[120px]"
                   }`}
               ></div>
               <button
@@ -295,40 +302,46 @@ export default function CompanyListing() {
                       setBranchData({ name: "", company: "", address: "" });
                       setEditIndex(null);
                     }}
-                    className="bg-[#00b4d8] text-white px-4 py-2 rounded-lg font-Poppins font-[500] text-[14px]"
+                    className="bg-[#083aef] text-white px-4 py-2 rounded-lg font-Poppins font-[500] text-[14px]"
                   >
                     + Create Branch
                   </button>
                 </div>
 
                 {/* ✅ Branch Cards */}
-                <div className="grid grid-cols-1  font-Poppins md:grid-cols-2 lg:grid-cols-3 gap-[15px]">
+                <div className="grid grid-cols-1  font-Poppins md:grid-cols-2 lg:grid-cols-4 gap-[15px]">
                   {branches.length === 0 ? (
                     <p className="text-gray-500 font-Poppins">No branches created yet.</p>
                   ) : (
                     branches.map((branch, index) => (
-                      <div key={index} className="bg-white border border-[#dedede] rounded-xl shadow p-4 relative">
-                        <h3 className="text-[16px] font-[600] text-[#122f97]">
-                          {branch.name}
-                        </h3>
-                        <p className="text-[13px] text-gray-700 mt-1">
-                          <b>Company:</b> {branch.company?.firmName}
-                        </p>
-                        <p className="text-[13px] text-gray-700">
-                          <b>Address:</b> {branch.address}
-                        </p>
+                      <div
+                        key={index}
+                        className="group relative border border-[#d1d5db] rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all hover:-translate-y-1 bg-white"
+                      >
+                        {/* Header bar */}
+                        <div className="bg-gradient-to-t rounded-b-[10px] from-[#083aef] to-[#083aef] text-white px-4 py-2 flex justify-between items-center">
+                          <h3 className="font-semibold text-[15px]">{branch.name}</h3>
+                          <div className="flex gap-2 text-[14px]">
+                            <i
+                              className="fa-solid fa-pen cursor-pointer hover:text-yellow-300 transition-all"
+                              onClick={() => handleEditBranch(index)}
+                            ></i>
+                            <i
+                              className="fa-solid fa-trash cursor-pointer hover:text-red-400 transition-all"
+                              onClick={() => handleDeleteBranch(index)}
+                            ></i>
+                          </div>
+                        </div>
 
-                        <div className="absolute top-2 right-3 flex gap-3 text-[15px]">
-                          <i
-                            className="fa-solid fa-pen text-blue-500 cursor-pointer"
-                            onClick={() => handleEditBranch(index)}
-                          ></i>
-                          <i
-                            className="fa-solid fa-trash text-red-500 cursor-pointer"
-                            onClick={() => handleDeleteBranch(index)}
-                          ></i>
+                        {/* Content */}
+                        <div className="p-4 text-gray-700 font-Poppins text-[13px]">
+                          <p> <b className=" font-[600] mr-[10px]">🏢 Company:</b> {branch.company?.firmName}</p>
+                          <p> <b className=" font-[600] mr-[10px]">📍 Address:</b> {branch.address}</p>
+                          <p> <b className=" font-[600] mr-[10px]">👤 Username:</b> <span className="text-[#083aef]">{branch.username || "-"}</span></p>
                         </div>
                       </div>
+
+
                     ))
                   )}
                 </div>
@@ -339,7 +352,7 @@ export default function CompanyListing() {
       </div>
 
       {/* ✅ Modal with Framer Motion Dropdown */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="sm" className="rounded-2xl min-h-[380px]">
+      {/* <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="sm" className="rounded-2xl min-h-[380px]">
         <ModalContent>
           <ModalHeader className="font-Poppins font-[600] text-[18px] flex justify-between items-center">
             {editIndex !== null ? "Edit Branch" : "Create Branch"}
@@ -379,13 +392,98 @@ export default function CompanyListing() {
             <button
 
               onClick={handleSaveBranch}
-              className=" bg-[#00b4d8] text-white w-[120px] mx-auto px-4 py-2 rounded-lg font-Poppins font-[500] text-[14px] "
+              className=" bg-[#083aef] text-white w-[120px] mx-auto px-4 py-2 rounded-lg font-Poppins font-[500] text-[14px] "
+            >
+              {editIndex !== null ? "Update" : "Save"}
+            </button>
+          </ModalBody>
+        </ModalContent>
+      </Modal> */}
+
+
+
+
+      {/* ✅ Modal with Framer Motion Dropdown */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        size="sm"
+        className="rounded-2xl min-h-[480px]"
+      >
+        <ModalContent>
+          <ModalHeader className="font-Poppins font-[600] text-[18px] flex justify-between items-center">
+            {editIndex !== null ? "Edit Branch" : "Create Branch"}
+            <i
+              className="fa-solid fa-circle-xmark text-[20px] right-[9px] top-[10px] absolute text-red-500 cursor-pointer"
+              onClick={() => setModalOpen(false)}
+            ></i>
+          </ModalHeader>
+
+          <ModalBody className="flex flex-col gap-[20px] font-Poppins">
+            <FloatingInput
+              label="Branch Name"
+              name="name"
+              value={branchData.name}
+              onChange={handleInputChange}
+            />
+
+            <MotionDropdown
+              label="Select Company"
+              options={companies.map((c) => c.firmName)}
+              value={branchData.company}
+              onChange={(val) =>
+                setBranchData((prev) => ({ ...prev, company: val }))
+              }
+            />
+
+            <FloatingTextarea
+              label="Address"
+              name="address"
+              value={branchData.address}
+              onChange={(value) =>
+                setBranchData((prev) => ({ ...prev, address: value }))
+              }
+            />
+
+            {/* ✅ Username Field */}
+            <FloatingInput
+              label="Username"
+              name="username"
+              value={branchData.username || ""}
+              onChange={handleInputChange}
+            />
+
+            {/* ✅ Password Field with Eye Toggle */}
+            <div className="relative">
+              <FloatingInput
+                label="Password"
+                name="password"
+                type={branchData.showPassword ? "text" : "password"}
+                value={branchData.password || ""}
+                onChange={handleInputChange}
+              />
+              <i
+                className={`fa-solid ${branchData.showPassword ? "fa-eye-slash" : "fa-eye"
+                  } absolute right-3 top-[18px] text-gray-500 cursor-pointer`}
+                onClick={() =>
+                  setBranchData((prev) => ({
+                    ...prev,
+                    showPassword: !prev.showPassword,
+                  }))
+                }
+              ></i>
+            </div>
+
+            <button
+              onClick={handleSaveBranch}
+              className="bg-[#083aef] hover:bg-[#0094b8] transition-all text-white w-[120px] mx-auto px-4 py-2 rounded-lg font-Poppins font-[500] text-[14px]"
             >
               {editIndex !== null ? "Update" : "Save"}
             </button>
           </ModalBody>
         </ModalContent>
       </Modal>
+
     </section>
   );
 }

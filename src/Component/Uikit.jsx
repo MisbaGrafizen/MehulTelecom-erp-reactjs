@@ -100,12 +100,12 @@ export function Modal({ open, title, onClose, children, width = "max-w-2xl" }) {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 10, opacity: 0 }}
-            className={cn("w-full rounded-2xl bg-white p-5 shadow-xl", width)}
+            className={cn("w-full  relative rounded-2xl  bg-white p-5 shadow-xl", width)}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-lg font-extrabold text-gray-900">{title}</h4>
-              <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100" aria-label="Close">
+              <button onClick={onClose} className="rounded-full p-1.5 top-[-10px]  hover:bg-red-500   hover:text-white right-[-10px] absolute bg-gray-200" aria-label="Close">
                 <X size={18} />
               </button>
             </div>

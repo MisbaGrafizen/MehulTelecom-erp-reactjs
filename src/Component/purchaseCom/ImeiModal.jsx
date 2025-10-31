@@ -2,6 +2,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, PlusCircle, Loader2 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { ApiGet } from "../../helper/axios";
+import { useLocation } from "react-router-dom";
+
 
 export default function ImeiModal({
   isOpen,
@@ -15,6 +17,9 @@ export default function ImeiModal({
   const [search, setSearch] = useState("");
   const [selectedImeis, setSelectedImeis] = useState([]);
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+const isPurchaseInvoicePage = location.pathname === "/purches-invoice";
+
 
   // Reset when closing
   useEffect(() => {
@@ -44,9 +49,22 @@ export default function ImeiModal({
         }
 
         // ✅ Normalize: keep only unsold serial numbers as strings
-        const unsoldImeis = backendImeis
-          .filter((s) => !s.isSold)
-          .map((s) => (typeof s === "object" ? s.number : s));
+        // ✅ Normalize & filter unsold IMEIs safely
+const unsoldImeis = backendImeis
+  .filter((s) => {
+    // Case 1: backend returns object
+    if (typeof s === "object" && s !== null) {
+      return !s.isSold && s.number; // include only unsold with valid number
+    }
+    // Case 2: backend returns plain string
+    if (typeof s === "string") {
+      return true; // assume unsold if backend didn’t mark sold
+    }
+    return false;
+  })
+  .map((s) => (typeof s === "object" ? s.number : s))
+  .filter(Boolean); // remove any null/undefined
+
 
         // ✅ Merge with existingImeis (avoid duplicates)
         const merged = Array.from(new Set([...unsoldImeis, ...existingImeis]));
@@ -117,7 +135,7 @@ export default function ImeiModal({
             className="bg-white w-[560px] min-h-[600px] rounded-lg shadow-lg overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="flex justify-between items-center bg-blue-500 px-5 py-3">
+            <div className="flex justify-between items-center bg-[#083aef] px-5 py-3">
               <h2 className="text-white font-semibold font-Poppins text-[16px]">
                 {modelName || "Select Product"}
               </h2>
@@ -137,13 +155,16 @@ export default function ImeiModal({
                   placeholder="Search or add new IMEI..."
                   className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm font-Poppins outline-none"
                 />
-                <button
-                  onClick={handleAddImei}
-                  className="flex items-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-sm font-medium"
-                >
-                  <PlusCircle size={16} />
-                  Add
-                </button>
+{isPurchaseInvoicePage && (
+  <button
+    onClick={handleAddImei}
+    className="flex items-center gap-1 px-3 py-2 bg-[#083aef] text-white rounded-md hover:bg-blue-600 transition text-sm font-medium"
+  >
+    <PlusCircle size={16} />
+    Add
+  </button>
+)}
+
               </div>
 
               {/* Loading */}
@@ -163,7 +184,7 @@ export default function ImeiModal({
                           type="checkbox"
                           checked={selectedImeis.includes(imei)}
                           onChange={() => handleCheckboxChange(imei)}
-                          className="accent-blue-500 cursor-pointer"
+                          className="accent-[#083aef] cursor-pointer"
                         />
                         <span>{imei}</span>
                       </label>
@@ -188,7 +209,7 @@ export default function ImeiModal({
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium bg-[#083aef] hover:bg-blue-600 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Save ({selectedImeis.length})
               </button>

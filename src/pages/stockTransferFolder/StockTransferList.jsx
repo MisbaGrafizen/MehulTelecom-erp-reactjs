@@ -119,6 +119,7 @@ export default function StockTransferList() {
     const [confirmRow, setConfirmRow] = useState(null)
     const [companies, setCompanies] = useState([])
     const [branches, setBranches] = useState([])
+const [statusFilter, setStatusFilter] = useState("");
 
 
     // ✅ Fetch companies and branches
@@ -145,7 +146,7 @@ export default function StockTransferList() {
 
     const handleAdd = () => {
 
-        navigate("/new-transfer")
+        navigate("/stock-transfer/new-transfer")
     }
 
 
@@ -385,6 +386,23 @@ export default function StockTransferList() {
                                                 onChange={(v) => setBranch(v)}
                                                 leadingIcon={<MapPin size={16} className="text-slate-600" />}
                                             />
+{/* ✅ Status Dropdown */}
+<Dropdown
+  label={
+    statusFilter
+      ? statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)
+      : "All Status"
+  }
+  options={[
+    { label: "All Status", value: "" },
+    { label: "Complete", value: "Complete" },
+    { label: "Pending", value: "Pending" },
+    { label: "Cancelled", value: "Cancelled" },
+  ]}
+  value={statusFilter}
+  onChange={(v) => setStatusFilter(v)}
+  leadingIcon={<Filter size={16} className="text-slate-600" />}
+/>
 
 
 
@@ -478,81 +496,103 @@ export default function StockTransferList() {
 
                                     {/* Table or cards */}
                                     {viewMode === "table" ? (
-                                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                                            <div className="max-h-[520px] overflow-auto">
+                                        <div className="rounded-2xl border border-slate-200 bg-white">
+                                            <div className="max-h-[820px] ">
                                                 <table className="min-w-full text-sm">
-                                                    <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
-                                                        <tr>
-                                                            <th className="px-3 py-2 text-left">Date</th>
-                                                            <th className="px-3 py-2 text-left">Transfer No</th>
-                                                            <th className="px-3 py-2 text-left">Company</th>
-                                                            <th className="px-3 py-2 text-left">From</th>
-                                                            <th className="px-3 py-2 text-left">To</th>
-                                                            <th className="px-3 py-2 text-right">Items</th>
-                                                            <th className="px-3 py-2 text-right">Total</th>
-                                                            <th className="px-3 py-2 text-center">Actions</th>
-                                                        </tr>
-                                                    </thead>
+                                            <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
+  <tr>
+    <th className="px-3 py-2 text-left">Date</th>
+    <th className="px-3 py-2 text-left">Transfer No</th>
+    <th className="px-3 py-2 text-left">Company</th>
+    <th className="px-3 py-2 text-left">From</th>
+    <th className="px-3 py-2 text-left">To</th>
+    <th className="px-3 py-2 text-right">Items</th>
+    <th className="px-3 py-2 text-right">Total</th>
+    <th className="px-3 py-2 text-center">Status</th>
+    <th className="px-3 py-2 text-center">Actions</th>
+  </tr>
+</thead>
+
                                                     <tbody className="divide-y divide-slate-100">
-                                                        <AnimatePresence initial={false}>
-                                                            {filtered.map((r) => (
-                                                                <motion.tr
-                                                                    key={r.id}
-                                                                    initial={{ opacity: 0, y: 8 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: -6 }}
-                                                                    transition={{ duration: 0.2 }}
-                                                                    className="hover:bg-slate-50"
-                                                                >
-                                                                    <td className="px-3 py-2 text-left">{formatDate(r.transferDate)}</td>
-                                                                    <td className="px-3 py-2 text-left">{r.transferNo}</td>
-                                                                    <td className="px-3 py-2 text-left">{r.companyId?.firmName}</td>
-                                                                    <td className="px-3 py-2 text-left">{r.fromBranchId?.name}</td>
-                                                                    <td className="px-3 py-2 text-left">{r.toBranchId?.name}</td>
-                                                                    <td className="px-3 py-2 text-right">{r.items.length}</td>
-                                                                    <td className="px-3 py-2 text-right">{formatINR(r.totalAmount || 0)}</td>
-                                                                    <td className="px-2 py-2">
-                                                                        <div className="flex items-center justify-center gap-1">
-                                                                            <Badge
-                                                                                tone={r.status === "Transferred" ? "green" : r.status === "Received" ? "blue" : "amber"}
-                                                                            >
-                                                                                {r.status || "Draft"}
-                                                                            </Badge>
-                                                                            <button
-                                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                                onClick={() => setViewRow(r)}
-                                                                                title="View"
-                                                                            >
-                                                                                <Eye size={16} />
-                                                                            </button>
-                                                                            <button
-                                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                                onClick={() => window.print()}
-                                                                                title="Print"
-                                                                            >
-                                                                                <Printer size={16} />
-                                                                            </button>
-                                                                            <button
-                                                                                className="rounded p-1.5 hover:bg-gray-100"
-                                                                                onClick={() => setToast("Download started")}
-                                                                                title="Download"
-                                                                            >
-                                                                                <Download size={16} />
-                                                                            </button>
-                                                                            <Kebab onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
-                                                                        </div>
-                                                                    </td>
-                                                                </motion.tr>
-                                                            ))}
-                                                        </AnimatePresence>
-                                                        {filtered.length === 0 ? (
-                                                            <tr>
-                                                                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
-                                                                    No transfers match your filters.
-                                                                </td>
-                                                            </tr>
-                                                        ) : null}
-                                                    </tbody>
+  <AnimatePresence initial={false}>
+    {filtered.map((r) => (
+      <motion.tr
+        key={r.id}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.2 }}
+        className="hover:bg-slate-50"
+      >
+        <td className="px-3 py-2 text-left">{formatDate(r.transferDate)}</td>
+        <td className="px-3 py-2 text-left">{r.transferNo}</td>
+        <td className="px-3 py-2 text-left">{r.companyId?.firmName}</td>
+        <td className="px-3 py-2 text-left">{r.fromBranchId?.name}</td>
+        <td className="px-3 py-2 text-left">{r.toBranchId?.name}</td>
+        <td className="px-3 py-2 text-right">{r.items.length}</td>
+        <td className="px-3 py-2 text-right">{formatINR(r.totalAmount || 0)}</td>
+
+        {/* ✅ Status Capsule */}
+        <td className="px-3 py-2 text-center">
+          <span
+            className={`px-3 py-1 text-xs font-medium rounded-full ${
+              r.status === "Complete"
+                ? "bg-green-100 text-green-700"
+                : r.status === "Pending"
+                ? "bg-amber-100 text-amber-700"
+                : r.status === "Cancelled"
+                ? "bg-rose-100 text-rose-700"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            {r.status || "Draft"}
+          </span>
+        </td>
+
+        {/* ✅ Actions (Draft removed) */}
+        <td className="px-2 py-2">
+          <div className="flex items-center justify-center gap-1">
+            <button
+              className="rounded p-1.5 hover:bg-gray-100"
+              onClick={() => setViewRow(r)}
+              title="View"
+            >
+              <Eye size={16} />
+            </button>
+            <button
+              className="rounded p-1.5 hover:bg-gray-100"
+              onClick={() => window.print()}
+              title="Print"
+            >
+              <Printer size={16} />
+            </button>
+            <button
+              className="rounded p-1.5 hover:bg-gray-100"
+              onClick={() => setToast("Download started")}
+              title="Download"
+            >
+              <Download size={16} />
+            </button>
+
+            {/* ✅ Hide kebab if Draft */}
+            {r.status !== "Draft" && (
+              <Kebab onEdit={() => setEditRow(r)} onDelete={() => setConfirmRow(r)} />
+            )}
+          </div>
+        </td>
+      </motion.tr>
+    ))}
+  </AnimatePresence>
+
+  {filtered.length === 0 && (
+    <tr>
+      <td colSpan={9} className="px-3 py-10 text-center text-slate-500">
+        No transfers match your filters.
+      </td>
+    </tr>
+  )}
+</tbody>
+
                                                 </table>
                                             </div>
                                         </div>
@@ -608,74 +648,165 @@ export default function StockTransferList() {
                                 </section>
 
                                 {/* View modal */}
-                                <Modal open={!!viewRow} title="Transfer Details" onClose={() => setViewRow(null)}>
-                                    {viewRow ? (
-                                        <div className="space-y-3 text-sm">
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <div className="text-slate-500">Date</div>
-                                                    <div className="font-semibold">{formatDate(viewRow.transferDate)}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-slate-500">Transfer No</div>
-                                                    <div className="font-semibold">{viewRow.transferNo}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-slate-500">Company</div>
-                                                    <div className="font-semibold">{viewRow.company?.firmName}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-slate-500">Status</div>
-                                                    <div className="font-semibold">{viewRow.status}</div>
-                                                </div>
-                                            </div>
-                                            <div className="rounded-lg border border-slate-200 p-3">
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <div className="text-xs font-bold text-slate-600">From Branch</div>
-                                                        <div className="font-semibold">{viewRow.fromBranch?.name}</div>
-                                                        <div className="text-xs text-slate-500">{viewRow.fromBranch?.address}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-bold text-slate-600">To Branch</div>
-                                                        <div className="font-semibold">{viewRow.toBranch?.name}</div>
-                                                        <div className="text-xs text-slate-500">{viewRow.toBranch?.address}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-600 mb-2">Items</div>
-                                                <div className="overflow-x-auto">
-                                                    <table className="min-w-full text-xs">
-                                                        <thead>
-                                                            <tr className="bg-slate-100 text-slate-700">
-                                                                <th className="px-2 py-1 text-left">Type</th>
-                                                                <th className="px-2 py-1 text-left">Name</th>
-                                                                <th className="px-2 py-1 text-left">IMEI/Serial</th>
-                                                                <th className="px-2 py-1 text-right">Qty</th>
-                                                                <th className="px-2 py-1 text-right">Price</th>
-                                                                <th className="px-2 py-1 text-right">Amount</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100">
-                                                            {viewRow.items.map((it, idx) => (
-                                                                <tr key={idx}>
-                                                                    <td className="px-2 py-1">{it.type}</td>
-                                                                    <td className="px-2 py-1">{it.name}</td>
-                                                                    <td className="px-2 py-1">{it.imei || it.serial || "-"}</td>
-                                                                    <td className="px-2 py-1 text-right">{it.qty}</td>
-                                                                    <td className="px-2 py-1 text-right">{formatINR(it.price)}</td>
-                                                                    <td className="px-2 py-1 text-right">{formatINR(it.amount)}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                <div className="mt-2 text-right text-sm font-[600]">Total: {formatINR(viewRow.total || 0)}</div>
-                                            </div>
-                                        </div>
-                                    ) : null}
-                                </Modal>
+<Modal open={!!viewRow} title="" onClose={() => setViewRow(null)}>
+  {viewRow && (
+    <div className="font-Poppins text-[14px] text-slate-700 space-y-6">
+
+      {/* 🔹 Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <h2 className="text-[20px] font-semibold text-[#1E293B]">Transfer Details</h2>
+          <p className="text-[13px] text-slate-500 mt-1">
+            Review transfer summary, item list, and branch details
+          </p>
+        </div>
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-medium shadow-sm ${
+            viewRow.status === "Approved"
+              ? "bg-emerald-100 text-emerald-700"
+              : viewRow.status === "Pending"
+              ? "bg-amber-100 text-amber-700"
+              : viewRow.status === "Cancelled"
+              ? "bg-rose-100 text-rose-700"
+              : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {viewRow.status}
+        </span>
+      </div>
+
+      {/* 🔹 Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Transfer No", value: viewRow.transferNo },
+          { label: "Date", value: formatDate(viewRow.transferDate) },
+          { label: "Company", value: viewRow.company?.firmName || "-" },
+          { label: "Total Amount", value: formatINR(viewRow.total || 0), color: "text-blue-700" },
+        ].map((item, idx) => (
+          <div
+            key={idx}
+            className="flex flex-col border border-slate-200 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-white shadow-sm hover:shadow-md transition"
+          >
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{item.label}</p>
+            <p className={`mt-1 text-[15px] font-semibold ${item.color || "text-slate-800"}`}>
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* 🔹 Branch Information */}
+      <div className="grid sm:grid-cols-2 gap-5">
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-4 hover:shadow-md transition">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+              <MapPin size={16} />
+            </div>
+            <p className="text-[14px] font-semibold text-slate-700">From Branch</p>
+          </div>
+          <p className="font-medium text-slate-800">{viewRow.fromBranch?.name || "-"}</p>
+          <p className="text-xs text-slate-500 mt-1">{viewRow.fromBranch?.address || "-"}</p>
+        </div>
+
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-4 hover:shadow-md transition">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+              <Building2 size={16} />
+            </div>
+            <p className="text-[14px] font-semibold text-slate-700">To Branch</p>
+          </div>
+          <p className="font-medium text-slate-800">{viewRow.toBranch?.name || "-"}</p>
+          <p className="text-xs text-slate-500 mt-1">{viewRow.toBranch?.address || "-"}</p>
+        </div>
+      </div>
+
+      {/* 🔹 Items Section */}
+      <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
+        <div className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200 py-3 px-4 flex justify-between items-center">
+          <h3 className="text-[14px] font-semibold text-slate-700">Transferred Items</h3>
+          <span className="text-xs text-slate-500">
+            {viewRow.items.length} Item{viewRow.items.length > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300">
+          <table className="min-w-full text-xs">
+            <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
+              <tr>
+                {[
+                  "Type",
+                  "Product Name",
+                  "Color",
+                  "Specification",
+                  "Condition",
+                  "IMEI / Serial",
+                  "Qty",
+                  "Price",
+                  "Amount",
+                ].map((head) => (
+                  <th
+                    key={head}
+                    className="px-3 py-2 text-left font-semibold text-slate-600 uppercase text-[11px]"
+                  >
+                    {head}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {viewRow.items.map((it, idx) => (
+                <tr
+                  key={idx}
+                  className="hover:bg-blue-50/40 transition-all duration-150"
+                >
+                  <td className="px-3 py-2">{it.type || "-"}</td>
+                  <td className="px-3 py-2 font-medium text-slate-800">{it.name || "-"}</td>
+                  <td className="px-3 py-2">{it.color || "-"}</td>
+                  <td className="px-3 py-2">{it.specification || "-"}</td>
+                  <td className="px-3 py-2">{it.condition || "-"}</td>
+                  <td className="px-3 py-2">{it.imei || it.serial || "-"}</td>
+                  <td className="px-3 py-2 text-right">{it.qty || "-"}</td>
+                  <td className="px-3 py-2 text-right">{formatINR(it.price)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-slate-800">
+                    {formatINR(it.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 🔹 Total Footer */}
+        <div className="bg-gradient-to-r from-blue-50 to-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
+          <span className="text-[13px] font-semibold text-slate-600">Grand Total</span>
+          <span className="text-[15px] font-bold text-blue-700">
+            {formatINR(viewRow.total || 0)}
+          </span>
+        </div>
+      </div>
+
+      {/* 🔹 Footer Actions */}
+      <div className="flex justify-end gap-3 mt-3">
+        <button
+          className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition"
+          onClick={() => window.print()}
+        >
+          <Printer size={16} className="inline mr-1" />
+          Print
+        </button>
+        <button
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+          onClick={() => setToast('Download started')}
+        >
+          <Download size={16} className="inline mr-1" />
+          Download
+        </button>
+      </div>
+    </div>
+  )}
+</Modal>
+
+
 
                                 {/* Edit modal */}
                                 <Modal open={!!editRow} title="Edit Transfer" onClose={() => setEditRow(null)}>
