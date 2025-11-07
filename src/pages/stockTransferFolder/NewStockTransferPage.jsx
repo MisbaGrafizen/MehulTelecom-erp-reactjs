@@ -44,7 +44,7 @@ export default function NewStockTransferPage() {
     const [selectedProductIndex, setSelectedProductIndex] = useState(null);
     const [totalAmount, setTotalAmount] = useState(0);
     const [productSuggestions, setProductSuggestions] = useState([]);
-
+    const [productAttributes, setProductAttributes] = useState({});
 
     const selectedCompany = useMemo(
         () => companies.find((c) => c._id === companyId),
@@ -75,6 +75,43 @@ export default function NewStockTransferPage() {
         };
 
         fetchData();
+    }, []);
+
+    useEffect(() => {
+        const fetchPurchasedProducts = async () => {
+            try {
+                const res = await ApiGet("/admin/purchase");
+                if (res) {
+                    const purchases = res;
+                    const products = purchases.flatMap((p) =>
+                        p.items.map((item) => {
+                            const unsold = (item.serialNumbers || [])
+                                .filter((s) => !s.isSold)
+                                .map((s) => s.number);
+                            return {
+                                name: item.itemName,
+                                stock: unsold.length,
+                                availableSerials: unsold,
+                            };
+                        })
+                    );
+
+                    // ✅ Group by name
+                    const grouped = Object.values(
+                        products.reduce((acc, cur) => {
+                            if (!acc[cur.name]) acc[cur.name] = { name: cur.name, stock: 0 };
+                            acc[cur.name].stock += cur.stock;
+                            return acc;
+                        }, {})
+                    );
+
+                    setProductSuggestions(grouped);
+                }
+            } catch (err) {
+                console.error("❌ Error fetching products:", err);
+            }
+        };
+        fetchPurchasedProducts();
     }, []);
 
 
@@ -120,6 +157,26 @@ export default function NewStockTransferPage() {
         )
     }
 
+    const handleSelectProduct = async (index, name) => {
+        handleItemChange(index, "itemName", name);
+        setActiveDropdown(null);
+        setSearchTerm("");
+
+        try {
+            // ✅ Fetch product attributes dynamically
+            const res = await ApiGet(`/admin/product-details/${encodeURIComponent(name)}`);
+            if (res?.data) {
+                setProductAttributes((prev) => ({
+                    ...prev,
+                    [name]: res.data, // should return { colors:[], specifications:[], conditions:[], imeis:[] }
+                }));
+            }
+        } catch (err) {
+            console.error("❌ Error fetching product attributes:", err);
+        }
+    };
+
+
     async function submitTransfer() {
         if (!companyId || !fromId || !toId || fromId === toId) {
             setToast("Please select a company and two different branches.");
@@ -132,20 +189,30 @@ export default function NewStockTransferPage() {
             return;
         }
 
-        const payload = {
-            companyId,
-            fromBranchId: fromId,
-            toBranchId: toId,
-            transferDate: date,
-            items: cleaned.map((i) => ({
-                productName: i.name,
-                serialNo: i.imei,
-                model: i.model,
-                qty: i.qty,
-                price: i.price,
-                amount: i.amount,
-            })),
-        };
+const payload = {
+  companyId,
+  fromBranchId: fromId,
+  toBranchId: toId,
+  transferDate: date,
+  items: cleaned.map((i) => ({
+    itemName: i.itemName || i.name || "",
+    serialNumbers: (i.serialNumbers || i.imei || [])
+      .filter((s) => s && s !== "")
+      .map((s) => ({
+        number: typeof s === "object" ? s.number : s,
+        isSold: false, // ✅ default value per schema
+      })),
+    modelNo: i.model || "",
+    specification: i.specification || "",
+    condition: i.condition || "",
+    color: i.color || "",
+    qty: i.serialNumbers?.length || Number(i.qty) || 1,
+    unit: i.unit || "PCS",
+    pricePerUnit: Number(i.pricePerUnit || i.price || 0),
+    amount: Number(i.amount || 0),
+  })),
+};
+
 
         try {
             const res = await ApiPost("/admin/stock-transfer", payload);
@@ -164,12 +231,11 @@ export default function NewStockTransferPage() {
 
     const filteredSuggestions = (term) => {
         if (!term) return productSuggestions;
-
-        console.log('productSuggestions', productSuggestions)
         return productSuggestions.filter((p) =>
             p.name.toLowerCase().includes(term.toLowerCase())
         );
     };
+
 
     const handleItemChange = (index, field, value) => {
         const updated = [...items];
@@ -191,13 +257,34 @@ export default function NewStockTransferPage() {
         setTotalAmount(total.toFixed(2));
     };
 
-    const handleSerialClick = (product, index) => {
-        if (product.itemName) {
+    const handleSerialClick = async (product, index) => {
+        if (!product.itemName) return;
+
+        try {
+            // Fetch all purchase data to extract available IMEIs
+            const res = await ApiGet("/admin/purchase");
+            const purchases = res;
+
+            // ✅ Filter available (unsold) serial numbers for this product
+            const serials = purchases.flatMap((p) =>
+                p.items
+                    .filter((i) => i.itemName === product.itemName)
+                    .flatMap((i) =>
+                        (i.serialNumbers || [])
+                            .filter((s) => !s.isSold)
+                            .map((s) => s.number)
+                    )
+            );
+
+            // ✅ Open modal
             setSelectedModel(product.itemName);
-            setSelectedProductIndex(index); // ✅ track which item we’re updating
+            setSelectedProductIndex(index);
             setImeiModalOpen(true);
+        } catch (err) {
+            console.error("Error fetching serials:", err);
         }
     };
+
 
 
 
@@ -393,92 +480,39 @@ export default function NewStockTransferPage() {
                                                                     <input
                                                                         type="text"
                                                                         value={product.color}
+                                                                        disabled={!product.itemName}
                                                                         onChange={(e) => {
-                                                                            const value = e.target.value;
-                                                                            handleItemChange(index, "color", value);
-                                                                            setSearchTerm(value);
+                                                                            if (!product.itemName) return;
+                                                                            handleItemChange(index, "color", e.target.value);
+                                                                            setSearchTerm(e.target.value);
                                                                             setActiveDropdown(`color-${index}`);
                                                                         }}
-                                                                        onFocus={() => setActiveDropdown(`color-${index}`)}
+                                                                        onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        placeholder="Type to search color..."
-                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                        placeholder={product.itemName ? "Select or type color" : "Select Product First"}
+                                                                        className={`w-full border-0 outline-none text-sm font-Poppins ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                            }`}
                                                                     />
 
                                                                     <AnimatePresence>
-                                                                        {activeDropdown === `color-${index}` && (
-                                                                            <motion.div
-                                                                                initial={{ opacity: 0, y: -5 }}
-                                                                                animate={{ opacity: 1, y: 0 }}
-                                                                                exit={{ opacity: 0, y: -5 }}
-                                                                                transition={{ duration: 0.2 }}
-                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[200px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-                                                                            >
-                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                                                                    <span>Color</span>
-                                                                                    <span>Status</span>
-                                                                                </div>
-
-                                                                                {/* Filtered color options */}
-                                                                                {[
-                                                                                    { name: "Black", stock: 2 },
-                                                                                    { name: "White", stock: 1 },
-                                                                                    { name: "Blue", stock: 0 },
-                                                                                    { name: "Red", stock: 3 },
-                                                                                    { name: "Silver", stock: 1 },
-                                                                                    { name: "Gray", stock: 2 },
-                                                                                    { name: "Gold", stock: 1 },
-                                                                                ]
-                                                                                    .filter((opt) =>
-                                                                                        opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
-                                                                                    )
-                                                                                    .map((opt, i) => (
-                                                                                        <div
-                                                                                            key={i}
-                                                                                            onClick={() => {
-                                                                                                if (opt.stock === 0) return;
-                                                                                                handleItemChange(index, "color", opt.name);
-                                                                                                setSearchTerm("");
-                                                                                                setActiveDropdown(null);
-                                                                                            }}
-                                                                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${opt.stock === 0
-                                                                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                                                                    : "hover:bg-blue-50 cursor-pointer text-gray-700"
-                                                                                                }`}
-                                                                                        >
-                                                                                            <span>{opt.name}</span>
-                                                                                            <span
-                                                                                                className={`font-medium ${opt.stock === 0
-                                                                                                        ? "text-red-500"
-                                                                                                        : opt.stock === 1
-                                                                                                            ? "text-yellow-500"
-                                                                                                            : "text-green-600"
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {opt.stock}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    ))}
-
-                                                                                {/* Show “no match” message */}
-                                                                                {[
-                                                                                    { name: "Black", stock: 2 },
-                                                                                    { name: "White", stock: 1 },
-                                                                                    { name: "Blue", stock: 0 },
-                                                                                    { name: "Red", stock: 3 },
-                                                                                    { name: "Silver", stock: 1 },
-                                                                                    { name: "Gray", stock: 2 },
-                                                                                    { name: "Gold", stock: 1 },
-                                                                                ].filter((opt) =>
-                                                                                    opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
-                                                                                ).length === 0 && (
-                                                                                        <div className="px-3 py-2 text-sm text-gray-500">
-                                                                                            No colors found
-                                                                                        </div>
-                                                                                    )}
+                                                                        {activeDropdown === `color-${index}` && product.itemName && (
+                                                                            <motion.div className="absolute bg-white border rounded-md shadow-md mt-1 w-[200px] max-h-[200px] overflow-y-auto">
+                                                                                {(productAttributes[product.itemName]?.colors || []).map((opt, i) => (
+                                                                                    <div
+                                                                                        key={i}
+                                                                                        onClick={() => {
+                                                                                            handleItemChange(index, "color", opt);
+                                                                                            setActiveDropdown(null);
+                                                                                        }}
+                                                                                        className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                                                                    >
+                                                                                        {opt}
+                                                                                    </div>
+                                                                                ))}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
+
                                                                 </td>
 
 
@@ -487,20 +521,24 @@ export default function NewStockTransferPage() {
                                                                     <input
                                                                         type="text"
                                                                         value={product.specification}
+                                                                        disabled={!product.itemName}
                                                                         onChange={(e) => {
-                                                                            const value = e.target.value;
-                                                                            handleItemChange(index, "specification", value);
-                                                                            setSearchTerm(value);
+                                                                            if (!product.itemName) return;
+                                                                            handleItemChange(index, "specification", e.target.value);
+                                                                            setSearchTerm(e.target.value);
                                                                             setActiveDropdown(`spec-${index}`);
                                                                         }}
-                                                                        onFocus={() => setActiveDropdown(`spec-${index}`)}
+                                                                        onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        placeholder="Type to search specification..."
-                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
+                                                                        placeholder={
+                                                                            product.itemName ? "Select or type specification" : "Select Product First"
+                                                                        }
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                            }`}
                                                                     />
 
                                                                     <AnimatePresence>
-                                                                        {activeDropdown === `spec-${index}` && (
+                                                                        {activeDropdown === `spec-${index}` && product.itemName && (
                                                                             <motion.div
                                                                                 initial={{ opacity: 0, y: -5 }}
                                                                                 animate={{ opacity: 1, y: 0 }}
@@ -508,83 +546,48 @@ export default function NewStockTransferPage() {
                                                                                 transition={{ duration: 0.2 }}
                                                                                 className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
                                                                             >
-                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                                                                    <span>Specification</span>
-                                                                                    <span>Status</span>
-                                                                                </div>
-
-                                                                                {/* Filtered Specification List */}
-                                                                                {[
-                                                                                    { name: "2GB / 32GB", stock: 1 },
-                                                                                    { name: "4GB / 64GB", stock: 2 },
-                                                                                    { name: "6GB / 128GB", stock: 1 },
-                                                                                    { name: "8GB / 256GB", stock: 0 },
-                                                                                    { name: "12GB / 512GB", stock: 3 },
-                                                                                ]
-                                                                                    .filter((opt) =>
-                                                                                        opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
-                                                                                    )
-                                                                                    .map((opt, i) => (
+                                                                                {(productAttributes[product.itemName]?.specifications || []).map(
+                                                                                    (opt, i) => (
                                                                                         <div
                                                                                             key={i}
                                                                                             onClick={() => {
-                                                                                                if (opt.stock === 0) return;
-                                                                                                handleItemChange(index, "specification", opt.name);
-                                                                                                setSearchTerm("");
+                                                                                                handleItemChange(index, "specification", opt);
                                                                                                 setActiveDropdown(null);
                                                                                             }}
-                                                                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${opt.stock === 0
-                                                                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                                                                    : "hover:bg-blue-50 cursor-pointer text-gray-700"
-                                                                                                }`}
+                                                                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
                                                                                         >
-                                                                                            <span>{opt.name}</span>
-                                                                                            <span
-                                                                                                className={`font-medium ${opt.stock === 0
-                                                                                                        ? "text-red-500"
-                                                                                                        : opt.stock === 1
-                                                                                                            ? "text-yellow-500"
-                                                                                                            : "text-green-600"
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {opt.stock}
-                                                                                            </span>
+                                                                                            {opt}
                                                                                         </div>
-                                                                                    ))}
-
-                                                                                {/* No match fallback */}
-                                                                                {[
-                                                                                    { name: "2GB / 32GB", stock: 1 },
-                                                                                    { name: "4GB / 64GB", stock: 2 },
-                                                                                    { name: "6GB / 128GB", stock: 1 },
-                                                                                    { name: "8GB / 256GB", stock: 0 },
-                                                                                    { name: "12GB / 512GB", stock: 3 },
-                                                                                ].filter((opt) =>
-                                                                                    opt.name.toLowerCase().includes(searchTerm?.toLowerCase() || "")
-                                                                                ).length === 0 && (
-                                                                                        <div className="px-3 py-2 text-sm text-gray-500">
-                                                                                            No specifications found
-                                                                                        </div>
-                                                                                    )}
+                                                                                    )
+                                                                                )}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
                                                                 </td>
 
-                                                                {/* CONDITION DROPDOWN */}
+                                                                {/* CONDITION AUTOCOMPLETE DROPDOWN */}
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
                                                                     <input
                                                                         type="text"
                                                                         value={product.condition}
-                                                                        readOnly
-                                                                        placeholder="Select Condition"
-                                                                        onFocus={() => setActiveDropdown(`cond-${index}`)}
+                                                                        disabled={!product.itemName}
+                                                                        onChange={(e) => {
+                                                                            if (!product.itemName) return;
+                                                                            handleItemChange(index, "condition", e.target.value);
+                                                                            setSearchTerm(e.target.value);
+                                                                            setActiveDropdown(`cond-${index}`);
+                                                                        }}
+                                                                        onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
+                                                                        placeholder={
+                                                                            product.itemName ? "Select or type condition" : "Select Product First"
+                                                                        }
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                            }`}
                                                                     />
 
                                                                     <AnimatePresence>
-                                                                        {activeDropdown === `cond-${index}` && (
+                                                                        {activeDropdown === `cond-${index}` && product.itemName && (
                                                                             <motion.div
                                                                                 initial={{ opacity: 0, y: -5 }}
                                                                                 animate={{ opacity: 1, y: 0 }}
@@ -592,48 +595,51 @@ export default function NewStockTransferPage() {
                                                                                 transition={{ duration: 0.2 }}
                                                                                 className="absolute z-30 left-0 top-[100%] mt-1 w-[180px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
                                                                             >
-                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                                                                    <span>Condition</span>
-                                                                                    <span>Status</span>
-                                                                                </div>
-
-                                                                                {[
-                                                                                    { name: "New", stock: 2 },
-                                                                                    { name: "Old", stock: 1 },
-                                                                                ].map((opt, i) => (
-                                                                                    <div
-                                                                                        key={i}
-                                                                                        onClick={() => {
-                                                                                            handleItemChange(index, "condition", opt.name);
-                                                                                            setActiveDropdown(null);
-                                                                                        }}
-                                                                                        className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors text-gray-700"
-                                                                                    >
-                                                                                        <span>{opt.name}</span>
-                                                                                        <span
-                                                                                            className={`font-medium ${opt.stock === 1 ? "text-yellow-500" : "text-green-600"
-                                                                                                }`}
+                                                                                {(productAttributes[product.itemName]?.conditions || []).map(
+                                                                                    (opt, i) => (
+                                                                                        <div
+                                                                                            key={i}
+                                                                                            onClick={() => {
+                                                                                                handleItemChange(index, "condition", opt);
+                                                                                                setActiveDropdown(null);
+                                                                                            }}
+                                                                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
                                                                                         >
-                                                                                            {opt.stock}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                ))}
+                                                                                            {opt}
+                                                                                        </div>
+                                                                                    )
+                                                                                )}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
                                                                 </td>
 
 
+
+                                                                {/* IMEI / SERIAL NUMBER FIELD */}
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                                                     <input
                                                                         type="text"
-                                                                        value={product.serialNumbers?.join(", ") || ""}
-                                                                        onFocus={() => handleSerialClick(product, index)}
+                                                                        value={
+                                                                            product.serialNumbers
+                                                                                ?.map((s) => (typeof s === "object" ? s.number : s))
+                                                                                .join(", ") || ""
+                                                                        }
                                                                         readOnly
-                                                                        className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm cursor-pointer"
-                                                                        placeholder="Select IMEI"
+                                                                        disabled={!product.itemName}
+                                                                        onFocus={() => {
+                                                                            if (product.itemName) handleSerialClick(product, index);
+                                                                        }}
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName
+                                                                                ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                                                                : "cursor-pointer"
+                                                                            }`}
+                                                                        placeholder={
+                                                                            product.itemName ? "Select IMEI / Serial" : "Select Product First"
+                                                                        }
                                                                     />
                                                                 </td>
+
 
 
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
@@ -685,18 +691,30 @@ export default function NewStockTransferPage() {
                                                             <ImeiModal
                                                                 isOpen={isImeiModalOpen}
                                                                 onClose={() => setImeiModalOpen(false)}
-                                                                modelName={items[selectedProductIndex]?.itemName || selectedModel} // ✅ auto-passes selected product name
-                                                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}   // ✅ also passes existing serials for that item
+                                                                modelName={items[selectedProductIndex]?.itemName || selectedModel}
+                                                                existingImeis={
+                                                                    (productSuggestions.find((p) => p.name === selectedModel)?.availableSerials || [])
+                                                                        .filter((s) => {
+                                                                            if (typeof s === "object" && s !== null) return !s.isSold;
+                                                                            return true;
+                                                                        })
+                                                                        .map((s) => (typeof s === "object" ? s.number : s))
+                                                                }
                                                                 onSave={(imeis) => {
-                                                                    const cleanImeis = imeis.filter((num) => !!num && num.trim() !== "");
                                                                     if (selectedProductIndex !== null) {
                                                                         const updated = [...items];
-                                                                        updated[selectedProductIndex].serialNumbers = cleanImeis;
-                                                                        updated[selectedProductIndex].unit = cleanImeis.length;
+                                                                        updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
+                                                                            number: n,
+                                                                            isSold: false,
+                                                                        }));
+
+                                                                        // ✅ Auto update quantity & amount
+                                                                        updated[selectedProductIndex].unit = imeis.length;
                                                                         updated[selectedProductIndex].amount = (
-                                                                            cleanImeis.length *
+                                                                            imeis.length *
                                                                             (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
                                                                         ).toFixed(2);
+
                                                                         setItems(updated);
 
                                                                         const total = updated.reduce(
@@ -707,8 +725,8 @@ export default function NewStockTransferPage() {
                                                                     }
                                                                     setImeiModalOpen(false);
                                                                 }}
-
                                                             />
+
 
                                                         </>
                                                     ))}

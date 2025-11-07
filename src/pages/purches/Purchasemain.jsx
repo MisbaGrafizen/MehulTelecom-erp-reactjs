@@ -580,7 +580,7 @@ const handleCloseModal = () => {
                     <Header pageName="Purchase" />
                     <div className="flex gap-[10px] w-[100%] h-[100%]">
                         <SideBar />
-                        <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
+                        <div className="flex w-[100%] max-h-[90%] pb-[50px] md:pr-[15px] overflow-y-auto gap-[30px] rounded-[10px]">
                             <div className="flex flex-col gap-[15px] w-[100%]">
                                 <div className=" ">
 
@@ -636,7 +636,7 @@ const handleCloseModal = () => {
                                             />
                                         </div>
                                         <div className="flex-1" />
-                                        <div className="flex items-center gap-2">
+                                        <div className=" hidden md:flex items-center gap-2">
                                             <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white" onClick={handleCreate}>
                                                 <Plus size={16} />
                                                 Create Purchase
@@ -653,7 +653,7 @@ const handleCloseModal = () => {
                                     </div>
 
                                     {/* secondary filters */}
-                                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                                    <div className="md:mt-4 flex flex-wrap items-center gap-3">
                                         <Dropdown
                                             label={firm ? firm : "All Firms"}
                                             icon={<Building2 size={16} className="text-gray-500" />}
@@ -722,10 +722,14 @@ const handleCloseModal = () => {
                                         </motion.div>
                                     </div>
 
+
+         <button className=" flex justify-center  bottom-[90px]  right-[30px] fixed items-center w-[50px]  bg-blue-600 rounded-[50px] h-[50px] "        onClick={handleCreate}>
+   <i className="fa-solid text-[20px] text-[#fff] fa-plus"></i>
+                                        </button>
                                     {/* Transactions section */}
                                     <div className="mt-6 mb-[100px]">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <h3 className="text-sm font-black tracking-wide text-gray-800">TRANSACTIONS</h3>
+                                            <h3 className="  hidden md:flex text-sm font-black tracking-wide text-gray-800">TRANSACTIONS</h3>
                                             <div className="flex items-center gap-2">
                                                 <div className="relative">
                                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
@@ -733,7 +737,7 @@ const handleCloseModal = () => {
                                                         placeholder="Search"
                                                         value={searchTerm}
                                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                                        className="w-64 rounded-lg border border-gray-300 pl-7 pr-3 py-2 text-sm"
+                                                        className=" w-[190px] md:w-64 rounded-lg border border-gray-300 pl-7 pr-3 py-2 text-sm"
                                                     />
                                                 </div>
                                                 <button

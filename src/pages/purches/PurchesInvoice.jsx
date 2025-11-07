@@ -299,8 +299,8 @@ const handleSave = async () => {
                     </div>
                   </div>
 
-                  <div className=" w-[600px] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
-                    <div className=" flex w-[48%] flex-col gap-[16px]">
+                  <div className=" md:w-[600px] flex md:flex-row flex-col  gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
+                    <div className=" flex md:w-[48%] w-[100%] flex-col gap-[16px]">
 
                       <div className=" flex ">
                         <MotionDropdown
@@ -367,7 +367,7 @@ const handleSave = async () => {
                         name="address"
                       />                    </div>
 
-                    <div className=" flex gap-[15px]  w-[50%] flex-col">
+                    <div className=" flex gap-[15px]  md:w-[50%] flex-col">
                       <FloatingInput
                         label="Phone Number"
                         name="phoneNumber"
@@ -393,8 +393,8 @@ const handleSave = async () => {
 
 
                   {/* Table Header */}
-                  <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
-                    <div className="flex-shrink-0 bg-white rounded-lg w-[100%]">
+                  <div className="bg-white w-[100%] relative overflow-x-auto rounded-lg shadow1-blue">
+                    <div className="flex-shrink-0 min-w-[1100px] md:min-w-[100%] bg-white rounded-lg w-[100%]">
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="bg-[#f0f1f364]">
@@ -781,7 +781,7 @@ const handleSave = async () => {
                   </div>
 
                   <div className=" flex w-[100%]  justify-between gap-[20px]  mt-[19px] mb-[20px]">
-                    <div className="flex w-[50%]  flex-col gap-[15px] ">
+                    <div className="hidden md:flex w-[50%]  flex-col gap-[15px] ">
                       <div className="bg-white  w-[100%] rounded-lg shadow1-blue  ">
 
                       </div>
@@ -789,7 +789,7 @@ const handleSave = async () => {
 
 
                     </div>
-                    <div className=" flex w-[42%]">
+                    <div className=" flex w-[100%] md:w-[42%]">
                       <div className="bg-white  w-[100%]  rounded-lg  shadow1-blue p-3">
                         <div className="space-y-2">
 

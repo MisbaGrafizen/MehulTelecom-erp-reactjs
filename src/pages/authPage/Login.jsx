@@ -462,3 +462,180 @@ export default function Login() {
     </div>
   );
 }
+
+
+// import React from "react";
+
+// export default function Login() {
+//   const [showPassword, setShowPassword] = React.useState(false);
+
+//   return (
+//     <div className="min-h-screen  font-Oregano bg-slate-50 flex items-center justify-center p-6">
+//       <div className="relative w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl">
+//         <div className="grid md:grid-cols-2">
+//           {/* Left — blue welcome side */}
+//           <div className="relative isolate overflow-hidden text-white">
+//             <div className="relative h-full min-h-[520px] bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 p-10 md:p-12 lg:p-16">
+//               {/* Decorative gradient spheres */}
+//               <div className="pointer-events-none absolute inset-0">
+//                 <div
+//                   className="absolute -left-32 -top-40 h-[540px] w-[540px] rounded-full opacity-90"
+//                   style={{
+//                     background:
+//                       "radial-gradient( circle at 30% 30%, #58c8ff 0%, #1e84ea 55%, #0f59c8 100%)",
+//                   }}
+//                 />
+//                 <div
+//                   className="absolute left-36 bottom-10 h-64 w-64 rounded-full opacity-95"
+//                   style={{
+//                     background:
+//                       "radial-gradient( circle at 30% 30%, #58c8ff 0%, #1e84ea 60%, #0f59c8 100%)",
+//                   }}
+//                 />
+//                 <div
+//                   className="absolute -left-16 -bottom-16 h-72 w-72 rounded-full opacity-80"
+//                   style={{
+//                     background:
+//                       "radial-gradient( circle at 30% 30%, #3fb3ff 0%, #1a74da 60%, #0d49b5 100%)",
+//                   }}
+//                 />
+//               </div>
+
+//               {/* Copy */}
+//               <div className="relative z-10 mt-10 md:mt-16">
+//                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-wide">
+//                   WELCOME
+//                 </h1>
+//                 <p className="mt-2 text-sm uppercase tracking-[0.35em] text-blue-100">
+//                   Your Headline Name
+//                 </p>
+//                 <p className="mt-6 max-w-xl text-sm leading-relaxed text-blue-100/90">
+//                   Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed
+//                   do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+//                   Enim ad minim veniam quis nostrud exercit.
+//                 </p>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Right — sign in form */}
+//           <div className="p-8 md:p-10 lg:p-12">
+//             <h2 className="text-3xl font-bold text-slate-900">Sign in</h2>
+//             <p className="mt-1 text-sm text-slate-500">
+//               Lorem ipsum dolor sit amet, consectetur adipisicing elit
+//             </p>
+
+//             <form className="mt-8 space-y-4">
+//               {/* Username */}
+//               <label className="block">
+//                 <span className="sr-only">User Name</span>
+//                 <div className="flex h-12 items-center rounded-lg bg-slate-50/70 px-3 ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-blue-500">
+//                   <svg
+//                     className="size-5 text-slate-400"
+//                     viewBox="0 0 24 24"
+//                     fill="none"
+//                     stroke="currentColor"
+//                     strokeWidth="1.6"
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     aria-hidden="true"
+//                   >
+//                     <path d="M20 21a8 8 0 0 0-16 0" />
+//                     <circle cx="12" cy="7" r="4" />
+//                   </svg>
+//                   <input
+//                     type="text"
+//                     placeholder="User Name"
+//                     className="ml-3 w-full bg-transparent text-slate-900 placeholder-slate-400 outline-none"
+//                   />
+//                 </div>
+//               </label>
+
+//               {/* Password */}
+//               <label className="block">
+//                 <span className="sr-only">Password</span>
+//                 <div className="flex h-12 items-center rounded-lg bg-slate-50/70 px-3 ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-blue-500">
+//                   <svg
+//                     className="size-5 text-slate-400"
+//                     viewBox="0 0 24 24"
+//                     fill="none"
+//                     stroke="currentColor"
+//                     strokeWidth="1.6"
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     aria-hidden="true"
+//                   >
+//                     <rect x="3" y="11" width="18" height="10" rx="2" />
+//                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+//                   </svg>
+//                   <input
+//                     type={showPassword ? "text" : "password"}
+//                     placeholder="Password"
+//                     className="ml-3 w-full bg-transparent text-slate-900 placeholder-slate-400 outline-none"
+//                   />
+//                   <button
+//                     type="button"
+//                     onClick={() => setShowPassword((s) => !s)}
+//                     className="ml-2 text-xs font-semibold uppercase tracking-wide text-blue-600 hover:text-blue-700"
+//                   >
+//                     {showPassword ? "Hide" : "Show"}
+//                   </button>
+//                 </div>
+//               </label>
+
+//               {/* Options row */}
+//               <div className="flex items-center justify-between text-sm">
+//                 <label className="inline-flex select-none items-center gap-2 text-slate-600">
+//                   <input
+//                     type="checkbox"
+//                     className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+//                   />
+//                   Remember me
+//                 </label>
+//                 <a
+//                   href="#"
+//                   className="font-medium text-blue-600 hover:text-blue-700"
+//                 >
+//                   Forgot Password?
+//                 </a>
+//               </div>
+
+//               {/* Primary CTA */}
+//               <button
+//                 type="submit"
+//                 className="h-12 w-full rounded-lg bg-blue-600 font-semibold text-white shadow-sm transition hover:bg-blue-700"
+//               >
+//                 Sign in
+//               </button>
+
+//               {/* Divider */}
+//               {/* <div className="relative my-2 text-center">
+//                 <div className="absolute inset-0 flex items-center">
+//                   <div className="w-full border-t border-slate-200" />
+//                 </div>
+//                 <span className="relative bg-white px-3 text-xs uppercase tracking-wider text-slate-400">
+//                   Or
+//                 </span>
+//               </div> */}
+
+//               {/* Secondary CTA */}
+//               {/* <button
+//                 type="button"
+//                 className="h-12 w-full rounded-lg border border-slate-300 bg-white font-semibold text-slate-700 transition hover:bg-slate-50"
+//               >
+//                 Sign in with other
+//               </button> */}
+//             </form>
+
+//             {/* <p className="mt-8 text-center text-xs text-slate-500">
+//               Don’t have an account?{" "}
+//               <a href="#" className="font-semibold text-blue-600 hover:text-blue-700">
+//                 Sign Up
+//               </a>
+//             </p> */}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }

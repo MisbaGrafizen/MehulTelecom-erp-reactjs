@@ -368,7 +368,7 @@ serialNumbers: (item.serialNumbers || [])
           <Header pageName=" Sale Invoice" />
           <div className="flex gap-[10px] w-[100%] h-[100%]">
             <SideBar />
-            <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] gap-[30px] rounded-[10px]">
+            <div className="flex w-[100%] max-h-[90%] pb-[50px]  overflow-y-auto md:pr-[15px] gap-[30px] rounded-[10px]">
               <div className="flex flex-col gap-[15px] w-[100%]">
                 <div className=" w-[100%] ] flex-col gap-[15px] flex ">
                   <div className=" flex justify-between w-[100%] ">
@@ -378,8 +378,8 @@ serialNumbers: (item.serialNumbers || [])
                     </div>
                   </div>
 
-                  <div className=" w-[600px] flex   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
-                    <div className=" flex w-[48%] flex-col gap-[16px]">
+                  <div className=" md:w-[600px] flex md:flex-row flex-col   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
+                    <div className=" flex md:w-[48%] flex-col gap-[16px]">
 
                       <div className=" flex ">
                         <SellsMotionDropdown
@@ -419,7 +419,7 @@ serialNumbers: (item.serialNumbers || [])
                         onChange={(e) => setAddress(e.target.value)}
                       />
                     </div>
-                    <div className=" flex gap-[15px]  w-[50%] flex-col">
+                    <div className=" flex gap-[15px]  md:w-[50%] flex-col">
                       <FloatingInput
                         label="Phone Number"
                         name="phoneNumber"
@@ -449,8 +449,8 @@ serialNumbers: (item.serialNumbers || [])
 
                   {/* Table Header */}
                   <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
-                    <div className="flex-shrink-0 bg-white rounded-lg w-[100%]">
-                      <table className="w-full border-collapse">
+                    <div className="flex-shrink-0 bg-white overflow-x-auto rounded-lg w-[100%]">
+                      <table className="w-full min-w-[1100px] md:min-w-[100%] border-collapse">
                         <thead>
                           <tr className="bg-[#f0f1f364]">
                             <th className="py-3 px-2 text-left text-[13px] font-medium font-Poppins text-gray-600 w-20 border-r border-gray-200">
@@ -819,8 +819,8 @@ serialNumbers: (item.serialNumbers || [])
                       </table>
                     </div>
                   </div>
-                  <div className=" flex w-[100%]  justify-between gap-[20px]  mt-[19px] mb-[20px]">
-                    <div className="flex w-[50%]  flex-col gap-[15px] ">
+                  <div className=" flex w-[100%]  justify-between md:gap-[20px]  mt-[19px] mb-[20px]">
+                    <div className=" hidden md:flex w-[50%]  flex-col  gap-[15px] ">
                       <div className="bg-white  w-[100%] rounded-lg shadow1-blue  ">
                       </div>
                       <div className="grid md:grid-cols-2 gap-4">
@@ -828,7 +828,7 @@ serialNumbers: (item.serialNumbers || [])
 
                     </div>
                     {/* 🔹 PAYMENT SECTION */}
-                    <div className="flex w-[42%]">
+                    <div className="flex md:w-[42%] w-[100%]">
                       <div className="bg-white w-full rounded-lg shadow1-blue p-3">
                         <div className="space-y-4">
                           {/* Section Header */}

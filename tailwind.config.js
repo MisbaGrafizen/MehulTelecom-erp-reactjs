@@ -24,7 +24,9 @@ export default {
         'Potua':['Potua'],
         'OpenSan': ['"Open Sans", "Roboto", "Arial", "sans-serif"'],
         'Lato': ['"Lato", serif'],
-        'Jersy': ['"Jersey 25"']
+        'Jersy': ['"Jersey 25"'],
+        'Oregano' : ['"Oregano", cursive'],
+        
       },
       screens: {
         'md150': '1650px',

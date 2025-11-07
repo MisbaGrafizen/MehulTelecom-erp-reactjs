@@ -152,33 +152,16 @@ const handleSubmit = async (e) => {
           <Header pageName=" Create New Company" />
           <div className=" flex gap-[10px] w-[100%] h-[100%]">
             <SideBar />
-            <div className=" flex w-[100%] max-h-[90%] pb-[20px] pr-[15px] overflow-y-auto gap-[30px] rounded-[10px] ">
-              <div className=" flex flex-col gap-[10px] w-[50%]  ">
+            <div className=" flex md:flex-row flex-col w-[100%] max-h-[90%] pb-[20px] md:pr-[15px] overflow-y-auto gap-[30px] rounded-[10px] ">
+              <div className=" flex flex-col gap-[10px] md:w-[50%]  ">
                 <div className=" flex flex-col gap-[6px] w-[100%] ">
                   <h1 className=" flex  pl-[6px] font-Poppins text-[16px] text-[#427ae1]">
                     Personal Details
                   </h1>
 
-                  <div className=" w-[100%]  flex gap-[16px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
+                  <div className=" w-[100%]  flex md:flex-row flex-col  gap-[16px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
                     <div className=" flex w-[100%] flex-col gap-[16px]">
-                      {/* <div className="relative w-full  input-box12 border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099]">
-                      <span
-                          className={`font-Roboto font-[500] text-[15px] }`}
-                        >
-                          First Name
-                        </span>
-                        <input
-                          type="text"
-                          name="name"
-                          id="name"
-                          value={user?.name}
-                          // placeholder="Your Name"
-                          className="w-full outline-none text-[15px] py-[9px]  font-Poppins font-[400] bg-transparent"
-                          onFocus={() => setNameFocused(true)}
-                          onBlur={(e) => setNameFocused(e.target.value !== "")}
-                          autocomplete="nasme"
-                        />
-                      </div> */}
+        
 
                       <div className="relative w-full input-box12 border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099]">
                         <label
@@ -255,7 +238,7 @@ const handleSubmit = async (e) => {
                     Company Details
                   </h1>
 
-                  <div className=" w-[100%]  relative flex gap-[16px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
+                  <div className=" w-[100%]  relative flex  md:flex-row flex-col gap-[16px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
                     <div className=" flex w-[100%] flex-col gap-[16px]">
                       <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
@@ -652,14 +635,14 @@ const handleSubmit = async (e) => {
                   </div>
                 </div>
               </div>
-              <div className=" flex w-[50%] flex-col gap-[16px] h-fit ">
+              <div className=" flex md:w-[50%] flex-col gap-[16px] h-fit ">
                 <div className=" flex flex-col gap-[6px] w-[100%] ">
                   <h1 className=" flex  pl-[6px] font-Poppins text-[16px] text-[#427ae1]">
                     Bank Details
                   </h1>
 
                   <div className=" w-[100%]  flex  flex-col gap-[14px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
-                    <div className=" flex w-[100%] gap-[16px]">
+                    <div className=" flex  flex-col md:flex-row w-[100%] gap-[16px]">
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
@@ -715,7 +698,7 @@ const handleSubmit = async (e) => {
                         <p className="flex text-[14px] pl-[16px]  select-none font-Poppins">
                           Select aacount type{" "}
                         </p>
-                        <div className=" flex justify-between w-full gap-[20px]">
+                        <div className=" grid grid-cols-3 md:flex justify-between w-full gap-x-[10px] md:gap-[20px]">
                           <label className="flex items-center gap-[5px] cursor-pointer group">
                             <div className="relative flex items-center justify-center w-7 h-7">
                               <input
@@ -830,7 +813,7 @@ const handleSubmit = async (e) => {
                         </div>
                       </label>
                     </div>
-                    <div className=" flex w-[100%] gap-[20px]">
+                    <div className=" flex md:flex-row flex-col w-[100%] gap-[20px]">
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
@@ -911,7 +894,7 @@ const handleSubmit = async (e) => {
                   </h1>
 
                   <div className=" w-[100%]  flex  flex-col gap-[20px] border-[1px] bg-white shadow1-blue py-[20px]  px-[20px] rounded-[10px] h-fit">
-                    <div className=" flex w-[100%] gap-[20px]">
+                    <div className=" flex md:flex-row flex-col  w-[100%] gap-[20px]">
                       <div className=" flex w-[100%] flex-col gap-[20px]">
                         <div className="relative w-full  border-[1px] border-[#dedede] rounded-lg shadow flex items-center space-x-4 text-[#00000099] 
    bg-[#fff] ">
@@ -962,8 +945,8 @@ const handleSubmit = async (e) => {
                       </div>
                     </div>
 
-                    <div className=" flex  w-[100%] gap-[20px]">
-                      <div className="relative w-[50%]  border-[1px] border-[#dedede]  h-[90px]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
+                    <div className=" flex  md:flex-row flex-col w-[100%] gap-[20px]">
+                      <div className="relative md:w-[50%]  border-[1px] border-[#dedede]  h-[90px]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                         <label
                           htmlFor="terms"
                           className={` absolute left-[13px] font-Poppins   px-[5px]  bg-[#fff] text-[14px]   transition-all duration-200 ${formData?.terms || termsFocused
@@ -985,7 +968,7 @@ const handleSubmit = async (e) => {
                         ></textarea>
                       </div>
 
-                      <div className=" flex flex-col gap-[20px] w-[50%]">
+                      <div className=" flex flex-col gap-[20px] md:w-[50%]">
                         <div className=" flex w-[100%] flex-col gap-[20px]">
                           <div className="relative w-full  border-[1px] border-[#dedede]  shadow rounded-lg flex items-center space-x-4 text-[#00000099]">
                             <label
