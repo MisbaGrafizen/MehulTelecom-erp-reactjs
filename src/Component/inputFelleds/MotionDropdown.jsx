@@ -6,7 +6,7 @@ import FloatingInput from "./FloatingInput";
 import FloatingTextarea from "./FloatingTextarea";
 import { ApiPost } from "../../helper/axios";
 import { Plus, X } from "lucide-react";
-import uploadToHPanel from "../../helper/hpanelUpload"; // ✅ import your HPanel uploader
+import uploadToHPanel from "../../helper/hpanelUpload";
 
 const MotionDropdown = ({
   label = "Select Party",
@@ -22,6 +22,7 @@ const MotionDropdown = ({
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [savedImages, setSavedImages] = useState([]);
+  const [uploading, setUploading] = useState(false); // ✅ new loader state
 
   // ✅ Match backend model
   const [formData, setFormData] = useState({
@@ -45,9 +46,10 @@ const MotionDropdown = ({
   // ✅ Upload image to HPanel
   const handleUpload = async () => {
     if (!formData.document) return alert("Please select an image first!");
-
     try {
+      setUploading(true); // show loader
       const uploadedUrl = await uploadToHPanel(formData.document);
+
       if (uploadedUrl) {
         setSavedImages((prev) => [...prev, uploadedUrl]);
         setFormData((prev) => ({ ...prev, documentUrl: uploadedUrl }));
@@ -58,6 +60,8 @@ const MotionDropdown = ({
     } catch (err) {
       console.error("Upload error:", err);
       alert("Something went wrong while uploading");
+    } finally {
+      setUploading(false); // hide loader
     }
   };
 
@@ -75,59 +79,67 @@ const MotionDropdown = ({
     setSavedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ Save new party to backend
-  const handlePartySave = async () => {
-    try {
-      if (!formData.partyName) return alert("Party name is required");
-
-      // 🧠 Fix: Ensure billingAddress is always a string
-      const formatAddress = (addr) => {
-        if (!addr) return "";
-        if (typeof addr === "string") return addr.trim();
-        if (typeof addr === "object") {
-          return Object.values(addr).filter(Boolean).join(", ");
-        }
-        return "";
-      };
-
-      const payload = {
-        partyName: formData.partyName,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        billingAddress: formatAddress(formData.billingAddress),
-        creditLimit: Number(formData.creditLimit) || 0,
-        balance: Number(formData.balance) || 0,
-        documentUrl: formData.documentUrl || "",
-        additionalFields: formData.additionalFields,
-      };
-
-      const res = await ApiPost("/admin/party", payload);
-
-      if (res?.data) {
-        setPartyModalOpen(false);
-
-        // Reset form
-        setFormData({
-          partyName: "",
-          phoneNumber: "",
-          email: "",
-          billingAddress: "",
-          creditLimit: "",
-          balance: "",
-          document: null,
-          documentUrl: "",
-          additionalFields: {},
-        });
-        setSavedImages([]);
-
-        // Notify parent
-        if (onPartyCreated) onPartyCreated(res.data);
-      }
-    } catch (error) {
-      console.error("Error creating party:", error);
-      alert("Failed to create party ❌");
+ // ✅ Save new party to backend
+const handlePartySave = async () => {
+  try {
+    if (!formData.partyName.trim()) {
+      return alert("Party name is required");
     }
-  };
+
+    // ✅ Validate phone number
+    const phone = formData.phoneNumber.trim();
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return alert("Please enter a valid 10-digit mobile number");
+    }
+
+    // ✅ Ensure billingAddress is formatted correctly
+    const billingAddress =
+      typeof formData.billingAddress === "string"
+        ? formData.billingAddress.trim()
+        : "";
+
+    const payload = {
+      partyName: formData.partyName,
+      phoneNumber: phone,
+      email: formData.email,
+      billingAddress, // ✅ matches backend model exactly
+      creditLimit: Number(formData.creditLimit) || 0,
+      balance: Number(formData.balance) || 0,
+      documentUrl: formData.documentUrl || "",
+      additionalFields: formData.additionalFields,
+    };
+
+    console.log("🟢 Sending Payload:", payload); // optional debug log
+
+    const res = await ApiPost("/admin/party", payload);
+
+    if (res?.data?.data) {
+      alert("✅ Party created successfully!");
+      setPartyModalOpen(false);
+
+      // Reset form
+      setFormData({
+        partyName: "",
+        phoneNumber: "",
+        email: "",
+        billingAddress: "",
+        creditLimit: "",
+        balance: "",
+        document: null,
+        documentUrl: "",
+        additionalFields: {},
+      });
+      setSavedImages([]);
+
+      if (onPartyCreated) onPartyCreated(res.data.data);
+    }
+  } catch (error) {
+    console.error("Error creating party:", error);
+    alert("Failed to create party ❌");
+  }
+};
+
 
   // Filter options
   const filteredOptions = options.filter((opt) =>
@@ -147,9 +159,10 @@ const MotionDropdown = ({
         >
           <label
             className={`absolute left-[13px] bg-white px-[5px] font-Poppins transition-all duration-200
-              ${open || selected
-                ? "top-[-9px] text-[12px] text-[#083aef]"
-                : "top-[9px] text-[14px] text-[#43414199]"
+              ${
+                open || selected
+                  ? "top-[-9px] text-[12px] text-[#083aef]"
+                  : "top-[9px] text-[14px] text-[#43414199]"
               }`}
           >
             {label}
@@ -252,8 +265,15 @@ const MotionDropdown = ({
                 <FloatingInput
                   label="Phone Number"
                   name="phoneNumber"
+                  type="tel"
+                  maxLength={10}
                   value={formData.phoneNumber}
-                  onChange={handlePartyInputChange}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    if (value.length <= 10) {
+                      setFormData((prev) => ({ ...prev, phoneNumber: value }));
+                    }
+                  }}
                 />
                 <FloatingInput
                   label="Email ID"
@@ -288,14 +308,15 @@ const MotionDropdown = ({
 
                 {/* Document Upload */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <div>
+                  <div className="relative">
                     <label className="font-medium text-gray-700">
                       Document Upload
                     </label>
 
                     <div
-                      className="w-[150px] h-[150px] border-[1.2px] border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition"
+                      className="relative w-[150px] h-[150px] border-[1.2px] border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition"
                       onClick={() =>
+                        !uploading &&
                         document.getElementById("imageInput").click()
                       }
                     >
@@ -308,6 +329,35 @@ const MotionDropdown = ({
                       ) : (
                         <Plus className="w-10 h-10 text-gray-400" />
                       )}
+
+                      {/* ✅ Loader Overlay */}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center rounded-xl">
+                          <svg
+                            className="animate-spin h-8 w-8 text-blue-600 mb-2"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0v4a8 8 0 100 16v4l3.5-3.5L12 20v4a8 8 0 01-8-8z"
+                            ></path>
+                          </svg>
+                          <span className="text-[13px] text-blue-700 font-medium">
+                            Uploading...
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <input
@@ -318,7 +368,7 @@ const MotionDropdown = ({
                       className="hidden"
                     />
 
-                    {selectedImage && (
+                    {selectedImage && !uploading && (
                       <button
                         type="button"
                         onClick={handleUpload}

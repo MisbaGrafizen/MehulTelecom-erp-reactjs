@@ -81,38 +81,64 @@ export default function NewStockTransferPage() {
         const fetchPurchasedProducts = async () => {
             try {
                 const res = await ApiGet("/admin/purchase");
-                if (res) {
-                    const purchases = res;
-                    const products = purchases.flatMap((p) =>
-                        p.items.map((item) => {
-                            const unsold = (item.serialNumbers || [])
-                                .filter((s) => !s.isSold)
-                                .map((s) => s.number);
-                            return {
-                                name: item.itemName,
-                                stock: unsold.length,
-                                availableSerials: unsold,
+                if (!res) return;
+
+                const purchases = res;
+                const productsData = {};
+
+                purchases.forEach((purchase) => {
+                    purchase.items.forEach((item) => {
+                        const name = item.itemName?.trim();
+                        if (!name) return;
+
+                        if (!productsData[name]) {
+                            productsData[name] = {
+                                colors: {},
+                                specifications: {},
+                                conditions: {},
+                                totalStock: 0,
                             };
-                        })
-                    );
+                        }
 
-                    // ✅ Group by name
-                    const grouped = Object.values(
-                        products.reduce((acc, cur) => {
-                            if (!acc[cur.name]) acc[cur.name] = { name: cur.name, stock: 0 };
-                            acc[cur.name].stock += cur.stock;
-                            return acc;
-                        }, {})
-                    );
+                        const color = item.color?.trim?.() || "Unknown";
+                        const spec =
+                            item.specifications?.trim?.() ||
+                            item.specification?.trim?.() ||
+                            "Unknown";
+                        const condition = item.condition?.trim?.() || "Unknown";
 
-                    setProductSuggestions(grouped);
-                }
+                        const available =
+                            (item.serialNumbers || []).filter(
+                                (s) => typeof s === "string" || !s.isSold
+                            ).length || item.qty || 1;
+
+                        productsData[name].colors[color] =
+                            (productsData[name].colors[color] || 0) + available;
+                        productsData[name].specifications[spec] =
+                            (productsData[name].specifications[spec] || 0) + available;
+                        productsData[name].conditions[condition] =
+                            (productsData[name].conditions[condition] || 0) + available;
+                        productsData[name].totalStock += available;
+                    });
+                });
+
+                const formatted = Object.keys(productsData).map((name) => ({
+                    name,
+                    colors: productsData[name].colors,
+                    specifications: productsData[name].specifications,
+                    conditions: productsData[name].conditions,
+                    stock: productsData[name].totalStock,
+                }));
+
+                setProductSuggestions(formatted);
             } catch (err) {
                 console.error("❌ Error fetching products:", err);
             }
         };
+
         fetchPurchasedProducts();
     }, []);
+
 
 
     useEffect(() => {
@@ -189,29 +215,29 @@ export default function NewStockTransferPage() {
             return;
         }
 
-const payload = {
-  companyId,
-  fromBranchId: fromId,
-  toBranchId: toId,
-  transferDate: date,
-  items: cleaned.map((i) => ({
-    itemName: i.itemName || i.name || "",
-    serialNumbers: (i.serialNumbers || i.imei || [])
-      .filter((s) => s && s !== "")
-      .map((s) => ({
-        number: typeof s === "object" ? s.number : s,
-        isSold: false, // ✅ default value per schema
-      })),
-    modelNo: i.model || "",
-    specification: i.specification || "",
-    condition: i.condition || "",
-    color: i.color || "",
-    qty: i.serialNumbers?.length || Number(i.qty) || 1,
-    unit: i.unit || "PCS",
-    pricePerUnit: Number(i.pricePerUnit || i.price || 0),
-    amount: Number(i.amount || 0),
-  })),
-};
+        const payload = {
+            companyId,
+            fromBranchId: fromId,
+            toBranchId: toId,
+            transferDate: date,
+            items: cleaned.map((i) => ({
+                itemName: i.itemName || i.name || "",
+                serialNumbers: (i.serialNumbers || i.imei || [])
+                    .filter((s) => s && s !== "")
+                    .map((s) => ({
+                        number: typeof s === "object" ? s.number : s,
+                        isSold: false, // ✅ default value per schema
+                    })),
+                modelNo: i.model || "",
+                specification: i.specification || "",
+                condition: i.condition || "",
+                color: i.color || "",
+                qty: i.serialNumbers?.length || Number(i.qty) || 1,
+                unit: i.unit || "PCS",
+                pricePerUnit: Number(i.pricePerUnit || i.price || 0),
+                amount: Number(i.amount || 0),
+            })),
+        };
 
 
         try {
@@ -475,66 +501,81 @@ const payload = {
 
                                                                 </td>
 
-                                                                {/* COLOR AUTOCOMPLETE DROPDOWN */}
+                                                                {/* ✅ COLOR DROPDOWN */}
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
                                                                     <input
                                                                         type="text"
                                                                         value={product.color}
                                                                         disabled={!product.itemName}
-                                                                        onChange={(e) => {
-                                                                            if (!product.itemName) return;
-                                                                            handleItemChange(index, "color", e.target.value);
-                                                                            setSearchTerm(e.target.value);
-                                                                            setActiveDropdown(`color-${index}`);
-                                                                        }}
                                                                         onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        placeholder={product.itemName ? "Select or type color" : "Select Product First"}
-                                                                        className={`w-full border-0 outline-none text-sm font-Poppins ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                        placeholder={product.itemName ? "Select color" : "Select Product First"}
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
                                                                             }`}
+                                                                        readOnly
                                                                     />
 
                                                                     <AnimatePresence>
                                                                         {activeDropdown === `color-${index}` && product.itemName && (
-                                                                            <motion.div className="absolute bg-white border rounded-md shadow-md mt-1 w-[200px] max-h-[200px] overflow-y-auto">
-                                                                                {(productAttributes[product.itemName]?.colors || []).map((opt, i) => (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -5 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -5 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[240px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                                                            >
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Color</span>
+                                                                                    <span>Stock</span>
+                                                                                </div>
+
+                                                                                {Object.entries(
+                                                                                    productSuggestions.find((p) => p.name === product.itemName)?.colors || {}
+                                                                                ).map(([color, stock], i) => (
                                                                                     <div
                                                                                         key={i}
                                                                                         onClick={() => {
-                                                                                            handleItemChange(index, "color", opt);
+                                                                                            if (stock === 0) return;
+                                                                                            handleItemChange(index, "color", color);
                                                                                             setActiveDropdown(null);
                                                                                         }}
-                                                                                        className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                                                                        className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${stock === 0
+                                                                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                            }`}
                                                                                     >
-                                                                                        {opt}
+                                                                                        <span>{color}</span>
+                                                                                        <span
+                                                                                            className={`font-medium ${stock === 0
+                                                                                                    ? "text-red-500"
+                                                                                                    : stock === 1
+                                                                                                        ? "text-blue-500"
+                                                                                                        : "text-green-600"
+                                                                                                }`}
+                                                                                        >
+                                                                                            {stock}
+                                                                                        </span>
                                                                                     </div>
                                                                                 ))}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
-
                                                                 </td>
 
 
-                                                                {/* SPECIFICATION AUTOCOMPLETE DROPDOWN */}
+
+                                                                {/* ✅ SPECIFICATION DROPDOWN */}
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
                                                                     <input
                                                                         type="text"
                                                                         value={product.specification}
                                                                         disabled={!product.itemName}
-                                                                        onChange={(e) => {
-                                                                            if (!product.itemName) return;
-                                                                            handleItemChange(index, "specification", e.target.value);
-                                                                            setSearchTerm(e.target.value);
-                                                                            setActiveDropdown(`spec-${index}`);
-                                                                        }}
                                                                         onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        placeholder={
-                                                                            product.itemName ? "Select or type specification" : "Select Product First"
-                                                                        }
-                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                        placeholder={product.itemName ? "Select specification" : "Select Product First"}
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
                                                                             }`}
+                                                                        readOnly
                                                                     />
 
                                                                     <AnimatePresence>
@@ -544,46 +585,69 @@ const payload = {
                                                                                 animate={{ opacity: 1, y: 0 }}
                                                                                 exit={{ opacity: 0, y: -5 }}
                                                                                 transition={{ duration: 0.2 }}
-                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
                                                                             >
-                                                                                {(productAttributes[product.itemName]?.specifications || []).map(
-                                                                                    (opt, i) => (
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Specification</span>
+                                                                                    <span>Stock</span>
+                                                                                </div>
+
+                                                                                {(() => {
+                                                                                    const found = productSuggestions.find(
+                                                                                        (p) => p.name === product.itemName
+                                                                                    );
+                                                                                    const validSpecs = Object.entries(found?.specifications || {}).filter(
+                                                                                        ([spec, stock]) =>
+                                                                                            spec &&
+                                                                                            spec.trim() !== "" &&
+                                                                                            spec.toLowerCase() !== "unknown" &&
+                                                                                            stock > 0
+                                                                                    );
+
+                                                                                    if (validSpecs.length === 0)
+                                                                                        return (
+                                                                                            <div className="px-3 py-2 text-sm text-gray-400 text-center">
+                                                                                                No specification found
+                                                                                            </div>
+                                                                                        );
+
+                                                                                    return validSpecs.map(([spec, stock], i) => (
                                                                                         <div
                                                                                             key={i}
                                                                                             onClick={() => {
-                                                                                                handleItemChange(index, "specification", opt);
+                                                                                                handleItemChange(index, "specification", spec);
                                                                                                 setActiveDropdown(null);
                                                                                             }}
-                                                                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                            className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
                                                                                         >
-                                                                                            {opt}
+                                                                                            <span>{spec}</span>
+                                                                                            <span
+                                                                                                className={`font-medium ${stock === 1 ? "text-blue-500" : "text-green-600"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {stock}
+                                                                                            </span>
                                                                                         </div>
-                                                                                    )
-                                                                                )}
+                                                                                    ));
+                                                                                })()}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
                                                                 </td>
 
-                                                                {/* CONDITION AUTOCOMPLETE DROPDOWN */}
+
+                                                                {/* ✅ CONDITION DROPDOWN */}
                                                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
                                                                     <input
                                                                         type="text"
                                                                         value={product.condition}
                                                                         disabled={!product.itemName}
-                                                                        onChange={(e) => {
-                                                                            if (!product.itemName) return;
-                                                                            handleItemChange(index, "condition", e.target.value);
-                                                                            setSearchTerm(e.target.value);
-                                                                            setActiveDropdown(`cond-${index}`);
-                                                                        }}
                                                                         onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
                                                                         onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                                                        placeholder={
-                                                                            product.itemName ? "Select or type condition" : "Select Product First"
-                                                                        }
-                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "bg-gray-100 cursor-not-allowed" : ""
+                                                                        placeholder={product.itemName ? "Select condition" : "Select Product First"}
+                                                                        className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
                                                                             }`}
+                                                                        readOnly
                                                                     />
 
                                                                     <AnimatePresence>
@@ -593,26 +657,51 @@ const payload = {
                                                                                 animate={{ opacity: 1, y: 0 }}
                                                                                 exit={{ opacity: 0, y: -5 }}
                                                                                 transition={{ duration: 0.2 }}
-                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[180px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                                                                className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
                                                                             >
-                                                                                {(productAttributes[product.itemName]?.conditions || []).map(
-                                                                                    (opt, i) => (
+                                                                                <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                                                                    <span>Condition</span>
+                                                                                    <span>Stock</span>
+                                                                                </div>
+
+                                                                                {(() => {
+                                                                                    const found = productSuggestions.find(
+                                                                                        (p) => p.name === product.itemName
+                                                                                    );
+                                                                                    const allConditions = found?.conditions || {};
+                                                                                    const validConditions = ["New", "Old"].map((label) => [
+                                                                                        label,
+                                                                                        allConditions[label] || 0,
+                                                                                    ]);
+
+                                                                                    return validConditions.map(([label, stock], i) => (
                                                                                         <div
                                                                                             key={i}
                                                                                             onClick={() => {
-                                                                                                handleItemChange(index, "condition", opt);
+                                                                                                handleItemChange(index, "condition", label);
                                                                                                 setActiveDropdown(null);
                                                                                             }}
-                                                                                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                            className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
                                                                                         >
-                                                                                            {opt}
+                                                                                            <span>{label}</span>
+                                                                                            <span
+                                                                                                className={`font-medium ${stock === 0
+                                                                                                        ? "text-red-500"
+                                                                                                        : stock === 1
+                                                                                                            ? "text-blue-500"
+                                                                                                            : "text-green-600"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {stock}
+                                                                                            </span>
                                                                                         </div>
-                                                                                    )
-                                                                                )}
+                                                                                    ));
+                                                                                })()}
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
                                                                 </td>
+
 
 
 
@@ -631,8 +720,8 @@ const payload = {
                                                                             if (product.itemName) handleSerialClick(product, index);
                                                                         }}
                                                                         className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName
-                                                                                ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                                                                                : "cursor-pointer"
+                                                                            ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                                                            : "cursor-pointer"
                                                                             }`}
                                                                         placeholder={
                                                                             product.itemName ? "Select IMEI / Serial" : "Select Product First"
@@ -686,20 +775,16 @@ const payload = {
                                                             </tr>
 
 
-
-
                                                             <ImeiModal
                                                                 isOpen={isImeiModalOpen}
                                                                 onClose={() => setImeiModalOpen(false)}
                                                                 modelName={items[selectedProductIndex]?.itemName || selectedModel}
-                                                                existingImeis={
-                                                                    (productSuggestions.find((p) => p.name === selectedModel)?.availableSerials || [])
-                                                                        .filter((s) => {
-                                                                            if (typeof s === "object" && s !== null) return !s.isSold;
-                                                                            return true;
-                                                                        })
-                                                                        .map((s) => (typeof s === "object" ? s.number : s))
-                                                                }
+                                                                productAttributes={{
+                                                                    color: items[selectedProductIndex]?.color,
+                                                                    specification: items[selectedProductIndex]?.specification,
+                                                                    condition: items[selectedProductIndex]?.condition,
+                                                                }}
+                                                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}
                                                                 onSave={(imeis) => {
                                                                     if (selectedProductIndex !== null) {
                                                                         const updated = [...items];
@@ -707,8 +792,6 @@ const payload = {
                                                                             number: n,
                                                                             isSold: false,
                                                                         }));
-
-                                                                        // ✅ Auto update quantity & amount
                                                                         updated[selectedProductIndex].unit = imeis.length;
                                                                         updated[selectedProductIndex].amount = (
                                                                             imeis.length *
@@ -726,6 +809,7 @@ const payload = {
                                                                     setImeiModalOpen(false);
                                                                 }}
                                                             />
+
 
 
                                                         </>
