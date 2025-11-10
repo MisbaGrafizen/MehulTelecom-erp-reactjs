@@ -79,15 +79,20 @@ export default function NewStockTransferPage() {
 
     useEffect(() => {
         const fetchPurchasedProducts = async () => {
+            const userId = localStorage.getItem("userId");
             try {
-                const res = await ApiGet("/admin/purchase");
+                const res = await ApiGet(`/admin/purchase/user/${userId}`);
                 if (!res) return;
 
-                const purchases = res;
+                const raw = res?.data?.data || res?.data || res;
+
+                // ✅ Always normalize to an array
+                const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
                 const productsData = {};
 
                 purchases.forEach((purchase) => {
-                    purchase.items.forEach((item) => {
+                    const items = Array.isArray(purchase?.items) ? purchase.items : [];
+                    items.forEach((item) => {
                         const name = item.itemName?.trim();
                         if (!name) return;
 
@@ -209,13 +214,20 @@ export default function NewStockTransferPage() {
             return;
         }
 
-        const cleaned = items.filter((i) => i.name || i.imei || Number(i.amount) > 0);
+        const cleaned = items.filter((i) => i.itemName || i.name || Number(i.amount) > 0);
         if (!cleaned.length) {
             setToast("Add at least one item.");
             return;
         }
 
+        // ✅ Determine userType automatically
+        const storedUserType = localStorage.getItem("role") || "";
+        const finalUserType =
+            storedUserType.toLowerCase() === "admin" ? "User" : "Branch";
+
         const payload = {
+            userId: localStorage.getItem("userId"),
+            userType: finalUserType, // ✅ auto assigned
             companyId,
             fromBranchId: fromId,
             toBranchId: toId,
@@ -223,10 +235,15 @@ export default function NewStockTransferPage() {
             items: cleaned.map((i) => ({
                 itemName: i.itemName || i.name || "",
                 serialNumbers: (i.serialNumbers || i.imei || [])
-                    .filter((s) => s && s !== "")
+                    .filter(
+                        (s) =>
+                            (typeof s === "string" && s.trim() !== "") ||
+                            (!s.isSold && !s.inTransfer)
+                    )
                     .map((s) => ({
                         number: typeof s === "object" ? s.number : s,
-                        isSold: false, // ✅ default value per schema
+                        isSold: false,
+                        inTransfer: true, // ✅ mark temporarily in transfer
                     })),
                 modelNo: i.model || "",
                 specification: i.specification || "",
@@ -239,10 +256,9 @@ export default function NewStockTransferPage() {
             })),
         };
 
-
         try {
             const res = await ApiPost("/admin/stock-transfer", payload);
-            if (res?.status === 201) {
+            if (res?.status === 201 || res?.data?.success) {
                 setToast("Transfer created successfully!");
                 setTimeout(() => navigate("/stock-transfer"), 800);
             } else {
@@ -253,6 +269,7 @@ export default function NewStockTransferPage() {
             setToast("Error creating transfer");
         }
     }
+
 
 
     const filteredSuggestions = (term) => {
@@ -284,41 +301,55 @@ export default function NewStockTransferPage() {
     };
 
     const handleSerialClick = async (product, index) => {
-        if (!product.itemName) return;
+  if (!product.itemName) {
+    setToast("Please select a product first!");
+    return;
+  }
 
-        try {
-            // Fetch all purchase data to extract available IMEIs
-            const res = await ApiGet("/admin/purchase");
-            const purchases = res;
+  try {
+    const userId = localStorage.getItem("userId");
+    const role = (localStorage.getItem("role") || "").toLowerCase();
+    const userType = role === "admin" ? "User" : "Branch";
 
-            // ✅ Filter available (unsold) serial numbers for this product
-            const serials = purchases.flatMap((p) =>
-                p.items
-                    .filter((i) => i.itemName === product.itemName)
-                    .flatMap((i) =>
-                        (i.serialNumbers || [])
-                            .filter((s) => !s.isSold)
-                            .map((s) => s.number)
-                    )
-            );
+    // ✅ Fetch purchases belonging only to this user
+    const res = await ApiGet(`/admin/purchase/user/${userId}?userType=${userType}`);
 
-            // ✅ Open modal
-            setSelectedModel(product.itemName);
-            setSelectedProductIndex(index);
-            setImeiModalOpen(true);
-        } catch (err) {
-            console.error("Error fetching serials:", err);
-        }
-    };
+    // ✅ Normalize the response
+    const raw = res?.data?.data || res?.data || res;
+    const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
+    // ✅ Filter serials by product name
+    const serials = purchases.flatMap((p) =>
+      (Array.isArray(p.items) ? p.items : [])
+        .filter((i) => i.itemName === product.itemName)
+        .flatMap((i) =>
+          (Array.isArray(i.serialNumbers) ? i.serialNumbers : [])
+            .filter((s) => !s.isSold && !s.inTransfer)
+            .map((s) => s.number)
+        )
+    );
 
+    // ✅ Log for debugging
+    console.log("✅ Available serial numbers for", product.itemName, ":", serials);
 
+    // ✅ Open modal and show the selected product
+    setSelectedModel(product.itemName);
+    setSelectedProductIndex(index);
+    setImeiModalOpen(true);
 
-
-
-
-
-
+    // Optional: preload serials for modal display
+    if (serials.length > 0) {
+      setItems((prev) => {
+        const updated = [...prev];
+        updated[index].availableSerials = serials; // store temporarily
+        return updated;
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error fetching serials:", err);
+    setToast("Failed to fetch serial numbers!");
+  }
+};
 
 
 
@@ -540,17 +571,17 @@ export default function NewStockTransferPage() {
                                                                                             setActiveDropdown(null);
                                                                                         }}
                                                                                         className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${stock === 0
-                                                                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                                                            : "hover:bg-blue-50 cursor-pointer text-gray-700"
                                                                                             }`}
                                                                                     >
                                                                                         <span>{color}</span>
                                                                                         <span
                                                                                             className={`font-medium ${stock === 0
-                                                                                                    ? "text-red-500"
-                                                                                                    : stock === 1
-                                                                                                        ? "text-blue-500"
-                                                                                                        : "text-green-600"
+                                                                                                ? "text-red-500"
+                                                                                                : stock === 1
+                                                                                                    ? "text-blue-500"
+                                                                                                    : "text-green-600"
                                                                                                 }`}
                                                                                         >
                                                                                             {stock}
@@ -686,10 +717,10 @@ export default function NewStockTransferPage() {
                                                                                             <span>{label}</span>
                                                                                             <span
                                                                                                 className={`font-medium ${stock === 0
-                                                                                                        ? "text-red-500"
-                                                                                                        : stock === 1
-                                                                                                            ? "text-blue-500"
-                                                                                                            : "text-green-600"
+                                                                                                    ? "text-red-500"
+                                                                                                    : stock === 1
+                                                                                                        ? "text-blue-500"
+                                                                                                        : "text-green-600"
                                                                                                     }`}
                                                                                             >
                                                                                                 {stock}
@@ -764,7 +795,7 @@ export default function NewStockTransferPage() {
 
                                                                 {items.length > 1 && (
                                                                     <button
-                                                                        onClick={() => deleteRow(index)}
+                                                                        onClick={() => removeRow(index)}
                                                                         className="text-red-500  w-[30px]  justify-center flex h-[30px] items-center right-[-30px] shadow-lg top-[9px] absolute bg-white hover:text-red-700 rounded-r-[10px] transition-colors"
                                                                         title="Delete row"
                                                                     >
@@ -791,6 +822,7 @@ export default function NewStockTransferPage() {
                                                                         updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
                                                                             number: n,
                                                                             isSold: false,
+                                                                            inTransfer: false,
                                                                         }));
                                                                         updated[selectedProductIndex].unit = imeis.length;
                                                                         updated[selectedProductIndex].amount = (

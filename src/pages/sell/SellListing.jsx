@@ -288,36 +288,64 @@ export default function SellListing() {
 
 
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true)
+useEffect(() => {
+  const fetchSales = async () => {
+    try {
+      setLoading(true);
 
-                const salesRes = await ApiGet("/admin/sale")
-                if (salesRes) setRows(salesRes)
+      const userId = localStorage.getItem("userId");
+      const userType = (localStorage.getItem("userType") || "").toLowerCase();
 
-                const companyRes = await ApiGet("/admin/info")
-                console.log('companyRes', companyRes)
-                if (companyRes?.data) {
-                    const firmNames = companyRes.data?.map(c => c.firmName)
-                    setFirms(firmNames)
-                }
+      const queryParams = new URLSearchParams();
 
-                const userRes = await ApiGet("/admin/sales-party")
-                console.log('userRes', userRes)
-                if (userRes?.data) {
-                    const userNames = userRes.data.map(u => u.partyName)
-                    setUsers(userNames)
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
+      // 🔹 Date filters
+      if (from) queryParams.append("from", from);
+      if (to) queryParams.append("to", to);
 
-        fetchData()
-    }, [])
+      // 🔹 Optional filters
+      if (firm) queryParams.append("firm", firm);
+      if (user) queryParams.append("user", user);
+      if (payFilter) queryParams.append("paymentType", payFilter);
+      if (searchTerm) queryParams.append("search", searchTerm);
+
+      let url;
+      if (userType === "admin") {
+        url = queryParams.toString()
+          ? `/admin/sale?${queryParams.toString()}`
+          : `/admin/sale`;
+      } else {
+        url = queryParams.toString()
+          ? `/admin/sale/user/${userId}?${queryParams.toString()}`
+          : `/admin/sale/user/${userId}`;
+      }
+
+      const res = await ApiGet(url);
+
+      if (res?.data?.data) setRows(res.data.data);
+      else if (Array.isArray(res?.data)) setRows(res.data);
+      else setRows([]);
+
+      // 🔹 Fetch Firms and Users (dropdowns)
+      const companyRes = await ApiGet("/admin/info");
+      if (companyRes?.data) {
+        setFirms(companyRes.data.map((f) => f.firmName));
+      }
+
+      const userRes = await ApiGet("/admin/sales-party");
+      if (userRes?.data) {
+        setUsers(userRes.data.map((u) => u.partyName));
+      }
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchSales();
+}, [from, to, firm, user, payFilter, searchTerm]);
+
+
 
     const handleRowClick = (row) => {
         setSelectedRow(row);
@@ -329,24 +357,25 @@ export default function SellListing() {
         setSelectedRow(null);
     };
 
-    useEffect(() => {
-        const fetchPurchases = async () => {
-            try {
-                setLoading(true)
-                const res = await ApiGet("/admin/sale")
-                console.log('res', res)
-                if (res) {
-                    setRows(res)
-                }
-            } catch (error) {
-                console.error("Error fetching purchases:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
+    // useEffect(() => {
+    //     const fetchPurchases = async () => {
+    //         try {
+    //             setLoading(true)
+    //             const res = await ApiGet("/admin/sale")
+    //             console.log('res', res)
+    //             if (res) {
+    //                 setRows(res)
 
-        fetchPurchases()
-    }, [])
+    //             }
+    //         } catch (error) {
+    //             console.error("Error fetching purchases:", error)
+    //         } finally {
+    //             setLoading(false)
+    //         }
+    //     }
+
+    //     fetchPurchases()
+    // }, [])
 
     const filtered = useMemo(() => {
         let result = [...rows]
@@ -669,7 +698,7 @@ export default function SellListing() {
                                     </div>
 
 
-                                                          <button className=" flex justify-center  bottom-[90px]  right-[30px] fixed items-center w-[50px]  bg-blue-600 rounded-[50px] h-[50px] "         onClick={handleCreate}>
+                                                          <button className=" flex justify-center   md:hidden   bottom-[90px]  right-[30px] fixed items-center w-[50px]  bg-blue-600 rounded-[50px] h-[50px] "         onClick={handleCreate}>
    <i className="fa-solid text-[20px] text-[#fff] fa-plus"></i>
                                         </button>
 

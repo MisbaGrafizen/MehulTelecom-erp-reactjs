@@ -463,21 +463,90 @@
 //   );
 // }
 "use client";
-
 import { useState } from "react";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
-import GridDistortion from "../../Component/reactBits/GridDistortion"; // ✅ 3D Background
-import backImage from "../../../public/imges/BackImage.jpg"
+import GridDistortion from "../../Component/reactBits/GridDistortion";
+import { ApiPost } from "../../helper/axios"; // ✅ your axios helper
+import backImage from "../../../public/imges/BackImage.jpg";
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("admin"); // ✅ toggle between Admin and Branch
+const handleLogin = async (e) => {
+  e.preventDefault();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    console.log("Login attempt:", { username, password, rememberMe });
-  };
+  if (!username || !password) {
+    alert("Please enter username and password!");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    let res = null;
+    let role = "";
+    let userData = {};
+    let userId = "";
+    let token = "";
+
+    // 🔹 1️⃣ Try Admin Login first
+    try {
+      res = await ApiPost("/auth/admin/login", { username, password });
+      console.log("Admin login success:", res.data);
+      role = "admin";
+      userData = res.data?.user?.user;
+      userId = userData?.id;
+      token =
+        res.data?.tokens?.access?.token ||
+        res.data?.token ||
+        userData?.token ||
+        "";
+    } catch (adminErr) {
+      console.warn("Admin login failed, trying Branch login...");
+
+      // 🔹 2️⃣ Try Branch Login if Admin fails
+      try {
+        res = await ApiPost("/auth/branch/login", { username, password });
+        console.log("✅ Branch login success:", res.data);
+        role = "branch";
+        userData = res.data.data?.branch;
+        userId = userData?._id;
+        token = res.data?.token || "";
+      } catch (branchErr) {
+        throw branchErr; // both failed
+      }
+    }
+
+    // ✅ Handle success
+    if (res?.data?.success || res?.data?.user?.success) {
+      // Store in localStorage
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      console.log("Stored:", { role, userId, token, userData });
+
+      alert(`Login Successful!`);
+      window.location.href = "/stock-transfer";
+    } else {
+      alert(res?.data?.message || "Login failed!");
+    }
+  } catch (error) {
+    console.error("❌ Final Login Error:", error);
+    alert(
+      error?.response?.data?.message ||
+        "Invalid credentials! Please check username or password."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden flex items-center justify-center">
@@ -495,11 +564,17 @@ export default function Login() {
       </div>
 
       {/* 🔹 Login Card */}
-      <div className="relative z-10  font-Poppins w-full max-w-md p-8 backdrop-blur-xl bg-white/10 border border-white/30 rounded-2xl shadow-2xl">
+      <div className="relative z-10 font-Poppins w-full max-w-md p-8 backdrop-blur-xl bg-white/10 border border-white/30 rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-white font-Oregano mb-2 tracking-wide">Welcome Back</h1>
-          <p className="text-sm text-gray-200">Sign in to continue to your dashboard</p>
+          <h1 className="text-4xl font-extrabold text-white font-Oregano mb-2 tracking-wide">
+            Welcome Back
+          </h1>
+          <p className="text-sm text-gray-200">
+            {role === "admin"
+              ? "Sign in to Admin Dashboard"
+              : "Sign in to Branch Dashboard"}
+          </p>
         </div>
 
         {/* Form */}
@@ -534,7 +609,11 @@ export default function Login() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-purple-400 hover:text-purple-600 transition-colors"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
@@ -550,22 +629,43 @@ export default function Login() {
               />
               <span className="text-purple-200 font-medium">Remember me</span>
             </label>
-            <a href="#" className="text-purple-300 hover:text-purple-400 transition-colors">
+            {/* <a
+              href="#"
+              className="text-purple-300 hover:text-purple-400 transition-colors"
+            >
               Forgot password?
-            </a>
+            </a> */}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
+            disabled={loading}
             className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-full uppercase tracking-wide hover:scale-[1.02] active:scale-100 transition-all shadow-lg"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
+
+          {/* Role Switch */}
+          <div className="text-center mt-4">
+            <p className="text-sm text-white/80">
+              Login as{" "}
+              <span
+                onClick={() =>
+                  setRole(role === "admin" ? "branch" : "admin")
+                }
+                className="text-pink-400 underline cursor-pointer hover:text-pink-300"
+              >
+                {role === "admin" ? "Branch" : "Admin"}
+              </span>
+            </p>
+          </div>
         </form>
 
         {/* Footer */}
-        <p className="text-center text-white/60 text-xs mt-8">Designed by Grafizen International Private Limited</p>
+        <p className="text-center text-white/60 text-xs mt-8">
+          Designed by Grafizen International Private Limited
+        </p>
       </div>
     </div>
   );

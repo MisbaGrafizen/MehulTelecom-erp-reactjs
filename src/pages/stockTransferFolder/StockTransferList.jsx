@@ -24,7 +24,7 @@ import { loadTransfers, removeTransfer, updateTransfer } from "../../lib/transfe
 import { useNavigate } from "react-router-dom"
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
-import { ApiGet } from "../../helper/axios"
+import { ApiDelete, ApiGet } from "../../helper/axios"
 
 function formatINR(n) {
     try {
@@ -149,34 +149,57 @@ export default function StockTransferList() {
         navigate("/stock-transfer/new-transfer")
     }
 
+    const triggerAutoFail = async () => {
+  try {
+    const res = await ApiGet("/admin/auto-fail");
+    console.log("AutoFail result:", res?.data);
+  } catch (err) {
+    console.error("❌ AutoFail check failed:", err);
+  }
+};
+
 
     useEffect(() => {
-        const fetchTransfers = async () => {
-            try {
-                const queryParams = new URLSearchParams();
+  const fetchTransfers = async () => {
+    try {
+      // 🔹 Call auto-fail check before fetching
+      await triggerAutoFail();
 
-                if (from) queryParams.append("from", from);
-                if (to) queryParams.append("to", to);
-                if (company) queryParams.append("company", company);
-                if (branch) queryParams.append("branch", branch);
+      const userId = localStorage.getItem("userId");
+      const userType = (localStorage.getItem("role") || "").toLowerCase();
 
-                const url = queryParams.toString()
-                    ? `/admin/stock-transfer?${queryParams.toString()}`
-                    : `/admin/stock-transfer`;
+      const queryParams = new URLSearchParams();
+      if (from) queryParams.append("from", from);
+      if (to) queryParams.append("to", to);
+      if (company) queryParams.append("company", company);
+      if (branch) queryParams.append("branch", branch);
 
-                const res = await ApiGet(url);
-                console.log('res', res)
-                if (res?.data) {
-                    setList(res.data);
-                }
-            } catch (error) {
-                console.error("Error fetching transfers:", error);
-                setToast("Failed to load transfers");
-            }
-        };
+      let url = "";
+      if (userType === "admin") {
+        url = queryParams.toString()
+          ? `/admin/stock-transfer?${queryParams.toString()}`
+          : `/admin/stock-transfer`;
+      } else {
+        queryParams.append("userId", userId);
+        url = `/admin/stock/transfer/search?${queryParams.toString()}`;
+      }
 
-        fetchTransfers();
-    }, [from, to, company, branch]);
+      const res = await ApiGet(url);
+      console.log("📦 Transfers response:", res);
+
+      if (res?.data?.data) setList(res.data.data);
+      else if (Array.isArray(res?.data)) setList(res.data);
+      else setList([]);
+    } catch (error) {
+      console.error("Error fetching transfers:", error);
+      setToast("Failed to load transfers");
+    }
+  };
+
+  fetchTransfers();
+}, [from, to, company, branch]);
+
+
 
     console.log('list', list)
 
@@ -262,12 +285,29 @@ export default function StockTransferList() {
         setEditRow(null)
         setToast("Transfer updated")
     }
-    function onDelete() {
-        const updated = removeTransfer(confirmRow.id)
-        setList(updated)
-        setConfirmRow(null)
-        setToast("Transfer deleted")
+    const onDelete = async () => {
+  const id = confirmRow?._id || confirmRow?.id;
+  if (!id) return;
+
+  try {
+    const res = await ApiDelete(`/admin/stock-transfer/${id}`);
+    console.log("🗑️ Delete Response:", res.data);
+
+    if (res?.data?.success) {
+      // ✅ Remove deleted transfer from list
+      setList((prev) => prev.filter((t) => t._id !== id && t.id !== id));
+      setToast("Transfer deleted successfully");
+    } else {
+      setToast(res?.data?.message || "Failed to delete transfer");
     }
+  } catch (error) {
+    console.error("❌ Delete error:", error);
+    setToast("Error deleting transfer");
+  } finally {
+    setConfirmRow(null);
+  }
+};
+
 
     return (
         <>

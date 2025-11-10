@@ -275,10 +275,11 @@ const handleCloseModal = () => {
 };
     useEffect(() => {
         const fetchData = async () => {
+            const userId = localStorage.getItem("userId");
             try {
                 setLoading(true)
 
-                const purchaseRes = await ApiGet("/admin/purchase")
+                const purchaseRes = await ApiGet(`/admin/purchase/user/${userId}`)
                 console.log('purchaseRes', purchaseRes)
                 if (purchaseRes?.data && Array.isArray(purchaseRes.data)) {
                     setRows(purchaseRes.data)
@@ -314,27 +315,27 @@ const handleCloseModal = () => {
     }, [])
 
 
-    useEffect(() => {
-        const fetchPurchases = async () => {
-            try {
-                setLoading(true)
-                const res = await ApiGet("/admin/purchase")
-                console.log('res', res)
-                if (res) {
-                    setRows(res)
-                }
-            } catch (error) {
-                console.error("Error fetching purchases:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
+    // useEffect(() => {
+    //     const fetchPurchases = async () => {
+    //         try {
+    //             setLoading(true)
+    //             const res = await ApiGet("/admin/purchase")
+    //             console.log('res', res)
+    //             if (res) {
+    //                 setRows(res)
+    //             }
+    //         } catch (error) {
+    //             console.error("Error fetching purchases:", error)
+    //         } finally {
+    //             setLoading(false)
+    //         }
+    //     }
 
-        fetchPurchases()
-    }, [])
+    //     fetchPurchases()
+    // }, [])
 
     const filtered = useMemo(() => {
-        let result = [...rows]
+  let result = Array.isArray(rows) ? [...rows] : []
 
         if (firm) {
             result = result.filter((r) => {
@@ -723,7 +724,7 @@ const handleCloseModal = () => {
                                     </div>
 
 
-         <button className=" flex justify-center  bottom-[90px]  right-[30px] fixed items-center w-[50px]  bg-blue-600 rounded-[50px] h-[50px] "        onClick={handleCreate}>
+         <button className=" flex justify-center  md:hidden   bottom-[90px]  right-[30px] fixed items-center w-[50px]  bg-blue-600 rounded-[50px] h-[50px] "        onClick={handleCreate}>
    <i className="fa-solid text-[20px] text-[#fff] fa-plus"></i>
                                         </button>
                                     {/* Transactions section */}

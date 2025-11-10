@@ -68,7 +68,7 @@ export default function SellsInvoice() {
   useEffect(() => {
     const fetchParties = async () => {
       try {
-        const res = await ApiGet("/admin/sales-party");
+        const res = await ApiGet("/admin/party");
         if (res?.data) setParties(res.data);
       } catch (error) {
         console.error("Error fetching parties:", error);
@@ -78,72 +78,76 @@ export default function SellsInvoice() {
   }, []);
 
   useEffect(() => {
-  const fetchPurchasedProducts = async () => {
-    try {
-      const res = await ApiGet("/admin/purchase");
-      if (!res) return;
+    const fetchPurchasedProducts = async () => {
+      const userId = localStorage.getItem("userId");
+      try {
+        const res = await ApiGet(`/admin/purchase/user/${userId}`);
 
-      const purchases = res;
-      const productsData = {};
+        // ✅ FIXED: ensure array structure
+        const purchases = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
 
-      purchases.forEach((purchase) => {
-        purchase.items.forEach((item) => {
-          const name = item.itemName?.trim();
-          if (!name) return;
+        const productsData = {};
 
-          if (!productsData[name]) {
-            productsData[name] = {
-              colors: {},
-              specifications: {},
-              conditions: {},
-              totalStock: 0,
-            };
-          }
+        purchases.forEach((purchase) => {
+          (purchase.items || []).forEach((item) => {
+            const name = item.itemName?.trim?.();
+            if (!name) return;
 
-          const color = item.color?.trim?.() || "Unknown";
-          const spec =
-            item.specifications?.trim?.() ||
-            item.specification?.trim?.() ||
-            "Unknown";
-          const condition = item.condition?.trim?.() || "Unknown";
+            if (!productsData[name]) {
+              productsData[name] = {
+                colors: {},
+                specifications: {},
+                conditions: {},
+                totalStock: 0,
+              };
+            }
 
-          const available =
-            (item.serialNumbers || []).filter(
-              (s) => typeof s === "string" || !s.isSold
-            ).length || item.qty || 1;
+            const color = item.color?.trim?.() || "Unknown";
+            const spec =
+              item.specifications?.trim?.() ||
+              item.specification?.trim?.() ||
+              "Unknown";
+            const condition = item.condition?.trim?.() || "Unknown";
 
-          productsData[name].colors[color] =
-            (productsData[name].colors[color] || 0) + available;
-          productsData[name].specifications[spec] =
-            (productsData[name].specifications[spec] || 0) + available;
-          productsData[name].conditions[condition] =
-            (productsData[name].conditions[condition] || 0) + available;
-          productsData[name].totalStock += available;
+            const available =
+              (item.serialNumbers || []).filter(
+                (s) => typeof s === "string" || !s.isSold
+              ).length || item.qty || 1;
+
+            productsData[name].colors[color] =
+              (productsData[name].colors[color] || 0) + available;
+            productsData[name].specifications[spec] =
+              (productsData[name].specifications[spec] || 0) + available;
+            productsData[name].conditions[condition] =
+              (productsData[name].conditions[condition] || 0) + available;
+            productsData[name].totalStock += available;
+          });
         });
-      });
 
-      const formatted = Object.keys(productsData).map((name) => ({
-        name,
-        colors: productsData[name].colors,
-        specifications: productsData[name].specifications,
-        conditions: productsData[name].conditions,
-        stock: productsData[name].totalStock,
-      }));
+        const formatted = Object.keys(productsData).map((name) => ({
+          name,
+          colors: productsData[name].colors,
+          specifications: productsData[name].specifications,
+          conditions: productsData[name].conditions,
+          stock: productsData[name].totalStock,
+        }));
 
-      setProductSuggestions(formatted);
-    } catch (err) {
-      console.error("❌ Error fetching purchase products:", err);
-    }
-  };
+        console.log("✅ Formatted product suggestions:", formatted);
+        setProductSuggestions(formatted);
+      } catch (err) {
+        console.error("❌ Error fetching purchase products:", err);
+      }
+    };
 
-  fetchPurchasedProducts();
-}, []);
+    fetchPurchasedProducts();
+  }, []);
+
 
   useEffect(() => {
     const fetchPartyDetails = async () => {
       if (!selectedParty) return;
       try {
-        const res = await ApiGet(`/admin/sales-party-by-name/${selectedParty}`);
+        const res = await ApiGet(`/admin/party-by-name/${selectedParty}`);
         if (res?.data) {
           const party = res.data;
           setAddress(party.billingAddress || "");
@@ -179,7 +183,7 @@ export default function SellsInvoice() {
       (sum, item) => sum + (parseFloat(item.amount) || 0),
       0
     );
-   setTotalAmount(Number(total.toFixed(2)));
+    setTotalAmount(Number(total.toFixed(2)));
 
   };
 
@@ -208,29 +212,39 @@ export default function SellsInvoice() {
     const mappedItems = items.map((item) => ({
       itemName: item.itemName || item.productName || "",
       modelNo: item.modelNo || "",
-      // ✅ convert each serial to backend object format
-serialNumbers: (item.serialNumbers || [])
-  .filter((s) => s.isSold === true || s === true || typeof s === "string")
-  .map((s) => (typeof s === "object" ? s.number : s)),
-
-
+      serialNumbers: (item.serialNumbers || [])
+        .filter(
+          (s) =>
+            (typeof s === "string" && s.trim() !== "") ||
+            (!s.isSold && !s.inTransfer)
+        )
+        .map((s) => (typeof s === "object" ? s.number : s)),
       qty: item.serialNumbers?.length || parseFloat(item.unit) || 1,
       unit: item.unit || "PCS",
       pricePerUnit: parseFloat(item.pricePerUnit) || 0,
       amount: parseFloat(item.amount) || 0,
     }));
 
-
     const cashAmt = parseFloat(cashPayment) || 0;
     const bankAmt = parseFloat(bankPayment) || 0;
     const paidAmount = cashAmt + bankAmt;
     const unpaidAmount = Math.max((parseFloat(totalAmount) || 0) - paidAmount, 0);
 
+    // ✅ Determine userType automatically
+    const storedUserType = localStorage.getItem("role") || "";
+    const finalUserType =
+      storedUserType.toLowerCase() === "admin" ? "User" : "Branch";
+
+    // ✅ Build payload with audit info
     const payload = {
+      userId: localStorage.getItem("userId"),
+      userType: finalUserType,
       partyId,
+      billNumber: `BILL-${Date.now()}`,
       billDate: billDate ? new Date(billDate) : new Date(),
       time: new Date().toLocaleTimeString(),
-      paymentType: bankAmt > 0 && cashAmt > 0 ? "Mixed" : bankAmt > 0 ? "Bank" : "Cash",
+      paymentType:
+        bankAmt > 0 && cashAmt > 0 ? "Mixed" : bankAmt > 0 ? "Bank" : "Cash",
       items: mappedItems,
       totalAmount: parseFloat(totalAmount) || 0,
       payments: [
@@ -251,6 +265,7 @@ serialNumbers: (item.serialNumbers || [])
       alert("Failed to save sale");
     }
   };
+
 
 
 
@@ -302,10 +317,14 @@ serialNumbers: (item.serialNumbers || [])
 
   const handleSerialClick = async (product, index) => {
     if (!product.itemName) return;
-
     try {
-      const res = await ApiGet("/admin/purchase");
-      const purchases = res;
+      const userId = localStorage.getItem("userId");
+      const role = (localStorage.getItem("role") || "").toLowerCase();
+      const userType = role === "admin" ? "User" : "Branch";
+
+      // ✅ Attach query params
+      const res = await ApiGet(`/admin/purchase?userId=${userId}&userType=${userType}`);
+      const purchases = res?.data || res || [];
 
       // ✅ Find available serials for this product
       const serials = purchases.flatMap((p) =>
@@ -313,7 +332,7 @@ serialNumbers: (item.serialNumbers || [])
           .filter((i) => i.itemName === product.itemName)
           .flatMap((i) =>
             (i.serialNumbers || [])
-              .filter((s) => !s.isSold) // Only unsold
+              .filter((s) => !s.isSold && !s.inTransfer)
               .map((s) => s.number)
           )
       );
@@ -408,16 +427,18 @@ serialNumbers: (item.serialNumbers || [])
                           onChange={async (val) => {
                             setSelectedParty(val);
                             try {
-                              const res = await ApiGet(`/admin/sales-party-by-name/${val}`);
-                              console.log('res', res)
-                              if (res?.data) {
-                                const party = res.data;
+                              const res = await ApiGet(`/admin/party-by-name/${val}`);
+                              const party = res?.data?.data || res?.data || res; // ✅ safely unwrap any structure
+                              if (party?._id) {
                                 setPartyId(party._id);
                                 setAddress(party.billingAddress || "");
                                 setPhoneNumber(party.phoneNumber || "");
                                 setEmail(party.email || "");
                                 setCreditLimit(party.creditLimit || 0);
+                              } else {
+                                console.warn("⚠️ No party ID found:", party);
                               }
+
                             } catch (error) {
                               console.error("Error fetching party details:", error);
                             }
@@ -527,214 +548,207 @@ serialNumbers: (item.serialNumbers || [])
 
                                 {/* COLOR AUTOCOMPLETE DROPDOWN */}
                                 {/* ✅ COLOR DROPDOWN */}
-<td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
-  <input
-    type="text"
-    value={product.color}
-    disabled={!product.itemName}
-    onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
-    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-    placeholder={product.itemName ? "Select color" : "Select Product First"}
-    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
-      !product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-    }`}
-    readOnly
-  />
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.color}
+                                    disabled={!product.itemName}
+                                    onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select color" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+                                      }`}
+                                    readOnly
+                                  />
 
-  <AnimatePresence>
-    {activeDropdown === `color-${index}` && product.itemName && (
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="absolute z-30 left-0 top-[100%] mt-1 w-[240px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-      >
-        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-          <span>Color</span>
-          <span>Stock</span>
-        </div>
+                                  <AnimatePresence>
+                                    {activeDropdown === `color-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[240px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                      >
+                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                          <span>Color</span>
+                                          <span>Stock</span>
+                                        </div>
 
-        {Object.entries(
-          productSuggestions.find((p) => p.name === product.itemName)?.colors || {}
-        ).map(([color, stock], i) => (
-          <div
-            key={i}
-            onClick={() => {
-              if (stock === 0) return;
-              handleItemChange(index, "color", color);
-              setActiveDropdown(null);
-            }}
-            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${
-              stock === 0
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "hover:bg-blue-50 cursor-pointer text-gray-700"
-            }`}
-          >
-            <span>{color}</span>
-            <span
-              className={`font-medium ${
-                stock === 0
-                  ? "text-red-500"
-                  : stock === 1
-                  ? "text-blue-500"
-                  : "text-green-600"
-              }`}
-            >
-              {stock}
-            </span>
-          </div>
-        ))}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</td>
+                                        {Object.entries(
+                                          productSuggestions.find((p) => p.name === product.itemName)?.colors || {}
+                                        ).map(([color, stock], i) => (
+                                          <div
+                                            key={i}
+                                            onClick={() => {
+                                              if (stock === 0) return;
+                                              handleItemChange(index, "color", color);
+                                              setActiveDropdown(null);
+                                            }}
+                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${stock === 0
+                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                              }`}
+                                          >
+                                            <span>{color}</span>
+                                            <span
+                                              className={`font-medium ${stock === 0
+                                                  ? "text-red-500"
+                                                  : stock === 1
+                                                    ? "text-blue-500"
+                                                    : "text-green-600"
+                                                }`}
+                                            >
+                                              {stock}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
 
 
 
                                 {/* ✅ SPECIFICATION DROPDOWN */}
-<td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
-  <input
-    type="text"
-    value={product.specification}
-    disabled={!product.itemName}
-    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
-    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-    placeholder={product.itemName ? "Select specification" : "Select Product First"}
-    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
-      !product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-    }`}
-    readOnly
-  />
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.specification}
+                                    disabled={!product.itemName}
+                                    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select specification" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+                                      }`}
+                                    readOnly
+                                  />
 
-  <AnimatePresence>
-    {activeDropdown === `spec-${index}` && product.itemName && (
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-      >
-        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-          <span>Specification</span>
-          <span>Stock</span>
-        </div>
+                                  <AnimatePresence>
+                                    {activeDropdown === `spec-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                      >
+                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                          <span>Specification</span>
+                                          <span>Stock</span>
+                                        </div>
 
-        {(() => {
-          const found = productSuggestions.find(
-            (p) => p.name === product.itemName
-          );
-          const validSpecs = Object.entries(found?.specifications || {}).filter(
-            ([spec, stock]) =>
-              spec &&
-              spec.trim() !== "" &&
-              spec.toLowerCase() !== "unknown" &&
-              stock > 0
-          );
+                                        {(() => {
+                                          const found = productSuggestions.find(
+                                            (p) => p.name === product.itemName
+                                          );
+                                          const validSpecs = Object.entries(found?.specifications || {}).filter(
+                                            ([spec, stock]) =>
+                                              spec &&
+                                              spec.trim() !== "" &&
+                                              spec.toLowerCase() !== "unknown" &&
+                                              stock > 0
+                                          );
 
-          if (validSpecs.length === 0)
-            return (
-              <div className="px-3 py-2 text-sm text-gray-400 text-center">
-                No specification found
-              </div>
-            );
+                                          if (validSpecs.length === 0)
+                                            return (
+                                              <div className="px-3 py-2 text-sm text-gray-400 text-center">
+                                                No specification found
+                                              </div>
+                                            );
 
-          return validSpecs.map(([spec, stock], i) => (
-            <div
-              key={i}
-              onClick={() => {
-                handleItemChange(index, "specification", spec);
-                setActiveDropdown(null);
-              }}
-              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-            >
-              <span>{spec}</span>
-              <span
-                className={`font-medium ${
-                  stock === 1 ? "text-blue-500" : "text-green-600"
-                }`}
-              >
-                {stock}
-              </span>
-            </div>
-          ));
-        })()}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</td>
+                                          return validSpecs.map(([spec, stock], i) => (
+                                            <div
+                                              key={i}
+                                              onClick={() => {
+                                                handleItemChange(index, "specification", spec);
+                                                setActiveDropdown(null);
+                                              }}
+                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                            >
+                                              <span>{spec}</span>
+                                              <span
+                                                className={`font-medium ${stock === 1 ? "text-blue-500" : "text-green-600"
+                                                  }`}
+                                              >
+                                                {stock}
+                                              </span>
+                                            </div>
+                                          ));
+                                        })()}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
 
 
                                 {/* ✅ CONDITION DROPDOWN */}
-<td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
-  <input
-    type="text"
-    value={product.condition}
-    disabled={!product.itemName}
-    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
-    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-    placeholder={product.itemName ? "Select condition" : "Select Product First"}
-    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
-      !product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-    }`}
-    readOnly
-  />
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.condition}
+                                    disabled={!product.itemName}
+                                    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={product.itemName ? "Select condition" : "Select Product First"}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+                                      }`}
+                                    readOnly
+                                  />
 
-  <AnimatePresence>
-    {activeDropdown === `cond-${index}` && product.itemName && (
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
-      >
-        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-          <span>Condition</span>
-          <span>Stock</span>
-        </div>
+                                  <AnimatePresence>
+                                    {activeDropdown === `cond-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                      >
+                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                          <span>Condition</span>
+                                          <span>Stock</span>
+                                        </div>
 
-        {(() => {
-          const found = productSuggestions.find(
-            (p) => p.name === product.itemName
-          );
-          const allConditions = found?.conditions || {};
-          const validConditions = ["New", "Old"].map((label) => [
-            label,
-            allConditions[label] || 0,
-          ]);
+                                        {(() => {
+                                          const found = productSuggestions.find(
+                                            (p) => p.name === product.itemName
+                                          );
+                                          const allConditions = found?.conditions || {};
+                                          const validConditions = ["New", "Old"].map((label) => [
+                                            label,
+                                            allConditions[label] || 0,
+                                          ]);
 
-          return validConditions.map(([label, stock], i) => (
-            <div
-              key={i}
-              onClick={() => {
-                handleItemChange(index, "condition", label);
-                setActiveDropdown(null);
-              }}
-              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-            >
-              <span>{label}</span>
-              <span
-                className={`font-medium ${
-                  stock === 0
-                    ? "text-red-500"
-                    : stock === 1
-                    ? "text-blue-500"
-                    : "text-green-600"
-                }`}
-              >
-                {stock}
-              </span>
-            </div>
-          ));
-        })()}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</td>
+                                          return validConditions.map(([label, stock], i) => (
+                                            <div
+                                              key={i}
+                                              onClick={() => {
+                                                handleItemChange(index, "condition", label);
+                                                setActiveDropdown(null);
+                                              }}
+                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                            >
+                                              <span>{label}</span>
+                                              <span
+                                                className={`font-medium ${stock === 0
+                                                    ? "text-red-500"
+                                                    : stock === 1
+                                                      ? "text-blue-500"
+                                                      : "text-green-600"
+                                                  }`}
+                                              >
+                                                {stock}
+                                              </span>
+                                            </div>
+                                          ));
+                                        })()}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
@@ -846,39 +860,39 @@ serialNumbers: (item.serialNumbers || [])
                               </AnimatePresence>
 
                               <ImeiModal
-  isOpen={isImeiModalOpen}
-  onClose={() => setImeiModalOpen(false)}
-  modelName={items[selectedProductIndex]?.itemName || selectedModel}
-  productAttributes={{
-    color: items[selectedProductIndex]?.color,
-    specification: items[selectedProductIndex]?.specification,
-    condition: items[selectedProductIndex]?.condition,
-  }}
-  existingImeis={items[selectedProductIndex]?.serialNumbers || []}
-  onSave={(imeis) => {
-    if (selectedProductIndex !== null) {
-      const updated = [...items];
-      updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
-        number: n,
-        isSold: false,
-      }));
-      updated[selectedProductIndex].unit = imeis.length;
-      updated[selectedProductIndex].amount = (
-        imeis.length *
-        (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
-      ).toFixed(2);
+                                isOpen={isImeiModalOpen}
+                                onClose={() => setImeiModalOpen(false)}
+                                modelName={items[selectedProductIndex]?.itemName || selectedModel}
+                                productAttributes={{
+                                  color: items[selectedProductIndex]?.color,
+                                  specification: items[selectedProductIndex]?.specification,
+                                  condition: items[selectedProductIndex]?.condition,
+                                }}
+                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}
+                                onSave={(imeis) => {
+                                  if (selectedProductIndex !== null) {
+                                    const updated = [...items];
+                                    updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
+                                      number: n,
+                                      isSold: false,
+                                    }));
+                                    updated[selectedProductIndex].unit = imeis.length;
+                                    updated[selectedProductIndex].amount = (
+                                      imeis.length *
+                                      (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
+                                    ).toFixed(2);
 
-      setItems(updated);
+                                    setItems(updated);
 
-      const total = updated.reduce(
-        (sum, item) => sum + (parseFloat(item.amount) || 0),
-        0
-      );
-      setTotalAmount(total.toFixed(2));
-    }
-    setImeiModalOpen(false);
-  }}
-/>
+                                    const total = updated.reduce(
+                                      (sum, item) => sum + (parseFloat(item.amount) || 0),
+                                      0
+                                    );
+                                    setTotalAmount(total.toFixed(2));
+                                  }
+                                  setImeiModalOpen(false);
+                                }}
+                              />
 
 
 

@@ -75,71 +75,73 @@ export default function PurchesInvoice() {
   }, []);
 
   useEffect(() => {
-  const fetchPurchasedProducts = async () => {
-    try {
-      const res = await ApiGet("/admin/purchase");
-      if (!res) return;
+    const fetchPurchasedProducts = async () => {
+      const userId = localStorage.getItem("userId");
+      try {
+        const res = await ApiGet(`/admin/purchase/user/${userId}`);
+      console.log('res', res)
+        if (!res) return;
 
-      const purchases = res;
-      const productsData = {};
+        const purchases = res?.data;
+        const productsData = {};
 
-      purchases.forEach((purchase) => {
-        purchase.items.forEach((item) => {
-          const name = item.itemName?.trim();
-          if (!name) return;
+        purchases.forEach((purchase) => {
+          purchase.items.forEach((item) => {
+            const name = item.itemName?.trim();
+            if (!name) return;
 
-          if (!productsData[name]) {
-            productsData[name] = {
-              colors: {},
-              specifications: {},
-              conditions: {}, // ✅ added here
-              totalStock: 0,
-            };
-          }
+            if (!productsData[name]) {
+              productsData[name] = {
+                colors: {},
+                specifications: {},
+                conditions: {}, // ✅ added here
+                totalStock: 0,
+              };
+            }
 
-          // ✅ Normalize and capture all possible fields
-          const color =
-            item.color?.trim?.() || item.colour?.trim?.() || "Unknown";
-          const spec =
-            item.specifications?.trim?.() ||
-            item.specification?.trim?.() ||
-            item.specificationName?.trim?.() ||
-            item.spec?.trim?.() ||
-            "Unknown";
-          const condition = item.condition?.trim?.() || "Unknown";
+            // ✅ Normalize and capture all possible fields
+            const color =
+              item.color?.trim?.() || item.colour?.trim?.() || "Unknown";
+            const spec =
+              item.specifications?.trim?.() ||
+              item.specification?.trim?.() ||
+              item.specificationName?.trim?.() ||
+              item.spec?.trim?.() ||
+              "Unknown";
+            const condition = item.condition?.trim?.() || "Unknown";
 
-          // ✅ Available = unsold serials (or quantity fallback)
-          const available = (item.serialNumbers || []).filter(
-            (s) => typeof s === "string" || !s.isSold
-          ).length || item.qty || 1;
+            // ✅ Available = unsold serials (or quantity fallback)
+            const available = (item.serialNumbers || []).filter(
+              (s) => typeof s === "string" || !s.isSold
+            ).length || item.qty || 1;
 
-          // ✅ Aggregate counts
-          productsData[name].colors[color] =
-            (productsData[name].colors[color] || 0) + available;
-          productsData[name].specifications[spec] =
-            (productsData[name].specifications[spec] || 0) + available;
-          productsData[name].conditions[condition] =
-            (productsData[name].conditions[condition] || 0) + available;
-          productsData[name].totalStock += available;
+            // ✅ Aggregate counts
+            productsData[name].colors[color] =
+              (productsData[name].colors[color] || 0) + available;
+            productsData[name].specifications[spec] =
+              (productsData[name].specifications[spec] || 0) + available;
+            productsData[name].conditions[condition] =
+              (productsData[name].conditions[condition] || 0) + available;
+            productsData[name].totalStock += available;
+          });
         });
-      });
 
-      const formatted = Object.keys(productsData).map((name) => ({
-        name,
-        colors: productsData[name].colors,
-        specifications: productsData[name].specifications,
-        conditions: productsData[name].conditions, // ✅ ensure included
-        stock: productsData[name].totalStock,
-      }));
+        const formatted = Object.keys(productsData).map((name) => ({
+          name,
+          colors: productsData[name].colors,
+          specifications: productsData[name].specifications,
+          conditions: productsData[name].conditions, // ✅ ensure included
+          stock: productsData[name].totalStock,
+        }));
 
-      setProductSuggestions(formatted);
-    } catch (err) {
-      console.error("❌ Error fetching purchase products:", err);
-    }
-  };
+        setProductSuggestions(formatted);
+      } catch (err) {
+        console.error("❌ Error fetching purchase products:", err);
+      }
+    };
 
-  fetchPurchasedProducts();
-}, []);
+    fetchPurchasedProducts();
+  }, []);
 
 
   useEffect(() => {
@@ -223,8 +225,13 @@ export default function PurchesInvoice() {
     const paidAmount = cashAmt + bankAmt;
     const unpaidAmount = Math.max((parseFloat(totalAmount) || 0) - paidAmount, 0);
 
+    const loggedUserType = localStorage.getItem("role");
+const finalUserType = loggedUserType?.toLowerCase() === "admin" ? "User" : "Branch";
+
     // ✅ Payload matching backend schema
     const payload = {
+      userId: localStorage.getItem("userId"),      
+      userType: finalUserType,
       partyId,
       billNumber: `BILL-${Date.now()}`,
       billDate: billDate ? new Date(billDate) : new Date(),
@@ -287,14 +294,19 @@ export default function PurchesInvoice() {
   };
 
 
- const handleSerialClick = async (product, index) => {
+  const handleSerialClick = async (product, index) => {
   if (!product.itemName) return;
 
   try {
-    const res = await ApiGet("/admin/purchase");
-    const purchases = res || [];
+    const userId = localStorage.getItem("userId");
+    const role = (localStorage.getItem("role") || "").toLowerCase();
+    const userType = role === "admin" ? "User" : "Branch";
 
-    // ✅ Filter IMEIs by all matching conditions
+    // ✅ Attach query params
+    const res = await ApiGet(`/admin/purchase?userId=${userId}&userType=${userType}`);
+    const purchases = res?.data || res || [];
+
+    // ✅ Filter IMEIs by matching conditions
     const serials = purchases.flatMap((p) =>
       p.items
         .filter(
@@ -310,34 +322,37 @@ export default function PurchesInvoice() {
         )
         .flatMap((i) =>
           (i.serialNumbers || [])
-            .filter((s) => typeof s === "string" || !s.isSold)
+            .filter(
+              (s) =>
+                (typeof s === "string" && s.trim() !== "") ||
+                (!s.isSold && !s.inTransfer)
+            )
             .map((s) => (typeof s === "object" ? s.number : s))
         )
     );
 
-    // ✅ Handle no matches gracefully
-    if (serials.length === 0) {
-      alert("No available IMEI / serial numbers for this combination!");
-      return;
-    }
+    // if (serials.length === 0) {
+    //   alert("No available IMEI / serial numbers for this combination!");
+    //   return;
+    // }
 
-    // ✅ Store for modal display
+    // ✅ Open modal
     setSelectedModel(product.itemName);
     setSelectedProductIndex(index);
     setImeiModalOpen(true);
 
-    // Optionally store filtered serials for modal
+    // ✅ Store filtered serials for modal
     setProductSuggestions((prev) =>
       prev.map((p) =>
-        p.name === product.itemName
-          ? { ...p, availableSerials: serials }
-          : p
+        p.name === product.itemName ? { ...p, availableSerials: serials } : p
       )
     );
   } catch (err) {
     console.error("Error fetching serials:", err);
+    alert("Failed to fetch serial numbers. Please try again.");
   }
 };
+
 
 
 
@@ -567,17 +582,17 @@ export default function PurchesInvoice() {
                                               setActiveDropdown(null);
                                             }}
                                             className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${stock === 0
-                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                              ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                              : "hover:bg-blue-50 cursor-pointer text-gray-700"
                                               }`}
                                           >
                                             <span className="font-Poppins">{color}</span>
                                             <span
                                               className={`font-medium font-Poppins ${stock === 0
-                                                  ? "text-red-500"
-                                                  : stock === 1
-                                                    ? "text-blue-500"
-                                                    : "text-green-600"
+                                                ? "text-red-500"
+                                                : stock === 1
+                                                  ? "text-blue-500"
+                                                  : "text-green-600"
                                                 }`}
                                             >
                                               {stock}
@@ -593,168 +608,164 @@ export default function PurchesInvoice() {
 
 
                                 {/* SPECIFICATION FIELD (dropdown + free typing) */}
-<td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
-  <input
-    type="text"
-    value={product.specification}
-    disabled={!product.itemName}
-    onChange={(e) => {
-      if (!product.itemName) return;
-      handleItemChange(index, "specification", e.target.value);
-      setSearchTerm(e.target.value);
-      setActiveDropdown(`spec-${index}`);
-    }}
-    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
-    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-    placeholder={
-      product.itemName ? "Select or type specification" : "Select Product First"
-    }
-    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
-      !product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-    }`}
-  />
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.specification}
+                                    disabled={!product.itemName}
+                                    onChange={(e) => {
+                                      if (!product.itemName) return;
+                                      handleItemChange(index, "specification", e.target.value);
+                                      setSearchTerm(e.target.value);
+                                      setActiveDropdown(`spec-${index}`);
+                                    }}
+                                    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={
+                                      product.itemName ? "Select or type specification" : "Select Product First"
+                                    }
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+                                      }`}
+                                  />
 
-  {/* ✅ Specification Dropdown */}
-  <AnimatePresence>
-    {activeDropdown === `spec-${index}` && product.itemName && (
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700 font-Poppins">
-          <span>Specification</span>
-          <span>Stock</span>
-        </div>
+                                  {/* ✅ Specification Dropdown */}
+                                  <AnimatePresence>
+                                    {activeDropdown === `spec-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                      >
+                                        {/* Header */}
+                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700 font-Poppins">
+                                          <span>Specification</span>
+                                          <span>Stock</span>
+                                        </div>
 
-        {/* ✅ Dynamic list rendering */}
-        {(() => {
-          const foundProduct = productSuggestions.find(
-            (p) => p.name === product.itemName
-          );
+                                        {/* ✅ Dynamic list rendering */}
+                                        {(() => {
+                                          const foundProduct = productSuggestions.find(
+                                            (p) => p.name === product.itemName
+                                          );
 
-          const validSpecs = Object.entries(foundProduct?.specifications || {}).filter(
-            ([spec, stock]) =>
-              spec &&
-              spec.trim() !== "" &&
-              spec.toLowerCase() !== "unknown" &&
-              stock > 0
-          );
+                                          const validSpecs = Object.entries(foundProduct?.specifications || {}).filter(
+                                            ([spec, stock]) =>
+                                              spec &&
+                                              spec.trim() !== "" &&
+                                              spec.toLowerCase() !== "unknown" &&
+                                              stock > 0
+                                          );
 
-          if (validSpecs.length === 0) {
-            return (
-              <div className="px-3 py-2 text-sm text-gray-400 font-Poppins text-center">
-                No specification found
-              </div>
-            );
-          }
+                                          if (validSpecs.length === 0) {
+                                            return (
+                                              <div className="px-3 py-2 text-sm text-gray-400 font-Poppins text-center">
+                                                No specification found
+                                              </div>
+                                            );
+                                          }
 
-          return validSpecs.map(([spec, stock], i) => (
-            <div
-              key={i}
-              onClick={() => {
-                handleItemChange(index, "specification", spec);
-                setActiveDropdown(null);
-              }}
-              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700 transition-colors"
-            >
-              <span className="font-Poppins">{spec}</span>
-              <span
-                className={`font-medium font-Poppins ${
-                  stock === 1 ? "text-blue-500" : "text-green-600"
-                }`}
-              >
-                {stock}
-              </span>
-            </div>
-          ));
-        })()}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</td>
+                                          return validSpecs.map(([spec, stock], i) => (
+                                            <div
+                                              key={i}
+                                              onClick={() => {
+                                                handleItemChange(index, "specification", spec);
+                                                setActiveDropdown(null);
+                                              }}
+                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700 transition-colors"
+                                            >
+                                              <span className="font-Poppins">{spec}</span>
+                                              <span
+                                                className={`font-medium font-Poppins ${stock === 1 ? "text-blue-500" : "text-green-600"
+                                                  }`}
+                                              >
+                                                {stock}
+                                              </span>
+                                            </div>
+                                          ));
+                                        })()}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
 
-{/* ✅ CONDITION FIELD (always show New & Old, with live stock if available) */}
-<td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
-  <input
-    type="text"
-    value={product.condition || ""}
-    disabled={!product.itemName}
-    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
-    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-    placeholder={
-      product.itemName ? "Select condition (New / Old)" : "Select Product First"
-    }
-    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
-      !product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-    }`}
-    readOnly
-  />
+                                {/* ✅ CONDITION FIELD (always show New & Old, with live stock if available) */}
+                                <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
+                                  <input
+                                    type="text"
+                                    value={product.condition || ""}
+                                    disabled={!product.itemName}
+                                    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
+                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    placeholder={
+                                      product.itemName ? "Select condition (New / Old)" : "Select Product First"
+                                    }
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+                                      }`}
+                                    readOnly
+                                  />
 
-  <AnimatePresence>
-    {activeDropdown === `cond-${index}` && product.itemName && (
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700 font-Poppins">
-          <span>Condition</span>
-          <span>Stock</span>
-        </div>
+                                  <AnimatePresence>
+                                    {activeDropdown === `cond-${index}` && product.itemName && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                      >
+                                        {/* Header */}
+                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700 font-Poppins">
+                                          <span>Condition</span>
+                                          <span>Stock</span>
+                                        </div>
 
-        {/* ✅ Condition list logic */}
-        {(() => {
-          const found = productSuggestions.find((p) => p.name === product.itemName);
-          const allConditions = found?.conditions || {};
+                                        {/* ✅ Condition list logic */}
+                                        {(() => {
+                                          const found = productSuggestions.find((p) => p.name === product.itemName);
+                                          const allConditions = found?.conditions || {};
 
-          // ✅ Always include "New" and "Old" (even if not found)
-          const defaultConditions = ["New", "Old"];
+                                          // ✅ Always include "New" and "Old" (even if not found)
+                                          const defaultConditions = ["New", "Old"];
 
-          const mergedConditions = defaultConditions.map((cond) => ({
-            label: cond,
-            stock: allConditions[cond] || 0,
-          }));
+                                          const mergedConditions = defaultConditions.map((cond) => ({
+                                            label: cond,
+                                            stock: allConditions[cond] || 0,
+                                          }));
 
-          return mergedConditions.map(({ label, stock }, i) => (
-            <div
-              key={i}
-              onClick={() => {
-                handleItemChange(index, "condition", label);
-                setActiveDropdown(null);
-              }}
-              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700 transition-colors"
-            >
-              <span className="font-Poppins">{label}</span>
-              {stock > 0 ? (
-                <span
-                  className={`font-medium font-Poppins ${
-                    stock === 1
-                      ? "text-blue-500"
-                      : stock > 1
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  {stock}
-                </span>
-              ) : (
-                <span className="font-medium font-Poppins text-gray-400">0</span>
-              )}
-            </div>
-          ));
-        })()}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</td>
+                                          return mergedConditions.map(({ label, stock }, i) => (
+                                            <div
+                                              key={i}
+                                              onClick={() => {
+                                                handleItemChange(index, "condition", label);
+                                                setActiveDropdown(null);
+                                              }}
+                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer text-gray-700 transition-colors"
+                                            >
+                                              <span className="font-Poppins">{label}</span>
+                                              {stock > 0 ? (
+                                                <span
+                                                  className={`font-medium font-Poppins ${stock === 1
+                                                    ? "text-blue-500"
+                                                    : stock > 1
+                                                      ? "text-green-600"
+                                                      : "text-red-500"
+                                                    }`}
+                                                >
+                                                  {stock}
+                                                </span>
+                                              ) : (
+                                                <span className="font-medium font-Poppins text-gray-400">0</span>
+                                              )}
+                                            </div>
+                                          ));
+                                        })()}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
 
 
                                 {/* IMEI / SERIAL NO. FIELD */}
@@ -831,7 +842,7 @@ export default function PurchesInvoice() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -5 }}
                                     transition={{ duration: 0.2 }}
-                                    className="absolute z-30 left-[150px] top-[68%] mt-1 w-[300px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                    className="absolute z-30 left-[70px] top-[68%] mt-1 w-[300px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
                                   >
                                     {/* Header Row */}
                                     <div className="flex font-Poppins justify-between bg-blue-50 px-3 py-2 border-b border-gray-200 text-[13px] font-semibold text-gray-700">
@@ -849,10 +860,10 @@ export default function PurchesInvoice() {
                                         <span className="font-Poppins text-gray-700">{p.name}</span>
                                         <span
                                           className={`font-medium font-Poppins ${p.stock === 0
-                                              ? "text-red-500"
-                                              : p.stock === 1
-                                                ? "text-blue-500"
-                                                : "text-green-600"
+                                            ? "text-red-500"
+                                            : p.stock === 1
+                                              ? "text-blue-500"
+                                              : "text-green-600"
                                             }`}
                                         >
                                           {p.stock}
@@ -865,34 +876,34 @@ export default function PurchesInvoice() {
 
 
                               <ImeiModal
-  isOpen={isImeiModalOpen}
-  onClose={() => setImeiModalOpen(false)}
-  modelName={items[selectedProductIndex]?.itemName || selectedModel}
-  existingImeis={
-    productSuggestions.find((p) => p.name === items[selectedProductIndex]?.itemName)
-      ?.availableSerials || []
-  }
-  onSave={(imeis) => {
-    const cleanImeis = imeis.filter((num) => !!num && num.trim() !== "");
-    if (selectedProductIndex !== null) {
-      const updated = [...items];
-      updated[selectedProductIndex].serialNumbers = cleanImeis;
-      updated[selectedProductIndex].unit = cleanImeis.length;
-      updated[selectedProductIndex].amount = (
-        cleanImeis.length *
-        (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
-      ).toFixed(2);
-      setItems(updated);
+                                isOpen={isImeiModalOpen}
+                                onClose={() => setImeiModalOpen(false)}
+                                modelName={items[selectedProductIndex]?.itemName || selectedModel}
+                                existingImeis={
+                                  productSuggestions.find((p) => p.name === items[selectedProductIndex]?.itemName)
+                                    ?.availableSerials || []
+                                }
+                                onSave={(imeis) => {
+                                  const cleanImeis = imeis.filter((num) => !!num && num.trim() !== "");
+                                  if (selectedProductIndex !== null) {
+                                    const updated = [...items];
+                                    updated[selectedProductIndex].serialNumbers = cleanImeis;
+                                    updated[selectedProductIndex].unit = cleanImeis.length;
+                                    updated[selectedProductIndex].amount = (
+                                      cleanImeis.length *
+                                      (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
+                                    ).toFixed(2);
+                                    setItems(updated);
 
-      const total = updated.reduce(
-        (sum, item) => sum + (parseFloat(item.amount) || 0),
-        0
-      );
-      setTotalAmount(total.toFixed(2));
-    }
-    setImeiModalOpen(false);
-  }}
-/>
+                                    const total = updated.reduce(
+                                      (sum, item) => sum + (parseFloat(item.amount) || 0),
+                                      0
+                                    );
+                                    setTotalAmount(total.toFixed(2));
+                                  }
+                                  setImeiModalOpen(false);
+                                }}
+                              />
 
 
                             </>
