@@ -64,10 +64,29 @@ export default function NewStockTransferPage() {
 
                 // ✅ Fetch all branches
                 const branchRes = await ApiGet("/admin/branch");
-                console.log('branchRes', branchRes)
+                console.log('branchRes', branchRes);
                 if (branchRes?.data) {
                     setBranches(branchRes.data);
+
+                    // ✅ Auto-select logged-in user's branch + its company
+                    const userId = localStorage.getItem("userId");
+                    const userRole = (localStorage.getItem("role") || "").toLowerCase();
+
+                    if (userRole === "branch") {
+                        const currentBranch = branchRes.data.find(
+                            (b) => b.userId?._id === userId || b._id === userId
+                        );
+
+                        if (currentBranch) {
+                            setFromId(currentBranch._id);                    // ✅ auto-select "From" branch
+                            setCompanyId(currentBranch.company?._id || null); // ✅ auto-select its company
+
+                            console.log("✅ Auto-selected Branch:", currentBranch.name);
+                            console.log("✅ Auto-selected Company:", currentBranch.company?.firmName);
+                        }
+                    }
                 }
+
             } catch (error) {
                 console.error("Error loading companies or branches", error);
                 setToast("Failed to load companies or branches");
@@ -112,10 +131,14 @@ export default function NewStockTransferPage() {
                             "Unknown";
                         const condition = item.condition?.trim?.() || "Unknown";
 
-                        const available =
-                            (item.serialNumbers || []).filter(
-                                (s) => typeof s === "string" || !s.isSold
-                            ).length || item.qty || 1;
+                        // ✅ Count only unsold serials; if no serialNumbers field at all, fallback to qty
+                        const available = Array.isArray(item.serialNumbers)
+                            ? item.serialNumbers.filter((s) => {
+                                if (typeof s === "string") return true; // legacy string serials
+                                return s && s.isSold === false && s.inTransfer !== true; // ✅ only available stock
+                            }).length
+                            : (item.qty || 0);
+
 
                         productsData[name].colors[color] =
                             (productsData[name].colors[color] || 0) + available;
@@ -301,55 +324,55 @@ export default function NewStockTransferPage() {
     };
 
     const handleSerialClick = async (product, index) => {
-  if (!product.itemName) {
-    setToast("Please select a product first!");
-    return;
-  }
+        if (!product.itemName) {
+            setToast("Please select a product first!");
+            return;
+        }
 
-  try {
-    const userId = localStorage.getItem("userId");
-    const role = (localStorage.getItem("role") || "").toLowerCase();
-    const userType = role === "admin" ? "User" : "Branch";
+        try {
+            const userId = localStorage.getItem("userId");
+            const role = (localStorage.getItem("role") || "").toLowerCase();
+            const userType = role === "admin" ? "User" : "Branch";
 
-    // ✅ Fetch purchases belonging only to this user
-    const res = await ApiGet(`/admin/purchase/user/${userId}?userType=${userType}`);
+            // ✅ Fetch purchases belonging only to this user
+            const res = await ApiGet(`/admin/purchase/user/${userId}?userType=${userType}`);
 
-    // ✅ Normalize the response
-    const raw = res?.data?.data || res?.data || res;
-    const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
+            // ✅ Normalize the response
+            const raw = res?.data?.data || res?.data || res;
+            const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
-    // ✅ Filter serials by product name
-    const serials = purchases.flatMap((p) =>
-      (Array.isArray(p.items) ? p.items : [])
-        .filter((i) => i.itemName === product.itemName)
-        .flatMap((i) =>
-          (Array.isArray(i.serialNumbers) ? i.serialNumbers : [])
-            .filter((s) => !s.isSold && !s.inTransfer)
-            .map((s) => s.number)
-        )
-    );
+            // ✅ Filter serials by product name
+            const serials = purchases.flatMap((p) =>
+                (Array.isArray(p.items) ? p.items : [])
+                    .filter((i) => i.itemName === product.itemName)
+                    .flatMap((i) =>
+                        (Array.isArray(i.serialNumbers) ? i.serialNumbers : [])
+                            .filter((s) => !s.isSold && !s.inTransfer)
+                            .map((s) => s.number)
+                    )
+            );
 
-    // ✅ Log for debugging
-    console.log("✅ Available serial numbers for", product.itemName, ":", serials);
+            // ✅ Log for debugging
+            console.log("✅ Available serial numbers for", product.itemName, ":", serials);
 
-    // ✅ Open modal and show the selected product
-    setSelectedModel(product.itemName);
-    setSelectedProductIndex(index);
-    setImeiModalOpen(true);
+            // ✅ Open modal and show the selected product
+            setSelectedModel(product.itemName);
+            setSelectedProductIndex(index);
+            setImeiModalOpen(true);
 
-    // Optional: preload serials for modal display
-    if (serials.length > 0) {
-      setItems((prev) => {
-        const updated = [...prev];
-        updated[index].availableSerials = serials; // store temporarily
-        return updated;
-      });
-    }
-  } catch (err) {
-    console.error("❌ Error fetching serials:", err);
-    setToast("Failed to fetch serial numbers!");
-  }
-};
+            // Optional: preload serials for modal display
+            if (serials.length > 0) {
+                setItems((prev) => {
+                    const updated = [...prev];
+                    updated[index].availableSerials = serials; // store temporarily
+                    return updated;
+                });
+            }
+        } catch (err) {
+            console.error("❌ Error fetching serials:", err);
+            setToast("Failed to fetch serial numbers!");
+        }
+    };
 
 
 
@@ -501,31 +524,32 @@ export default function NewStockTransferPage() {
                                                                                 </div>
 
                                                                                 {/* Filtered Product List */}
-                                                                                {filteredSuggestions(searchTerm).length > 0 ? (
-                                                                                    filteredSuggestions(searchTerm).map((p, i) => (
-                                                                                        <div
-                                                                                            key={i}
-                                                                                            onClick={() => handleSelectProduct(index, p.name)}
-                                                                                            className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
+                                                                                {filteredSuggestions(searchTerm).map((p, i) => (
+                                                                                    <div
+                                                                                        key={i}
+                                                                                        onClick={() => {
+                                                                                            if (p.stock === 0) return;
+                                                                                            handleSelectProduct(index, p.name);
+                                                                                        }}
+                                                                                        className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${p.stock === 0
+                                                                                            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                                                            : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                                            }`}
+                                                                                    >
+                                                                                        <span className="font-Poppins">{p.name}</span>
+                                                                                        <span
+                                                                                            className={`font-medium font-Poppins ${p.stock === 0
+                                                                                                ? "text-red-500"
+                                                                                                : p.stock === 1
+                                                                                                    ? "text-blue-500"
+                                                                                                    : "text-green-600"
+                                                                                                }`}
                                                                                         >
-                                                                                            <span className="font-Poppins text-gray-700">{p.name}</span>
-                                                                                            <span
-                                                                                                className={`font-medium font-Poppins ${p.stock === 0
-                                                                                                    ? "text-red-500"
-                                                                                                    : p.stock === 1
-                                                                                                        ? "text-blue-500"
-                                                                                                        : "text-green-600"
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {p.stock}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    ))
-                                                                                ) : (
-                                                                                    <div className="px-3 py-2 text-sm text-gray-500">
-                                                                                        No products found
+                                                                                            {p.stock}
+                                                                                        </span>
                                                                                     </div>
-                                                                                )}
+                                                                                ))}
+
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>
