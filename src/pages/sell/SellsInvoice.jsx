@@ -411,15 +411,11 @@ export default function SellsInvoice() {
               <div className="flex flex-col gap-[15px] w-[100%]">
                 <div className=" w-[100%] ] flex-col gap-[15px] flex ">
                   <div className=" flex justify-between w-[100%] ">
-
-                    <div className=" flex  w-[200px]  items-center gap-[10px]">
-
-                    </div>
+                    <div className=" flex  w-[200px]  items-center gap-[10px]"></div>
                   </div>
 
                   <div className=" md:w-[600px] flex md:flex-row flex-col   gap-[15px] border-[1px] relative bg-white shadow1-blue py-[15px]  px-[15px] rounded-[10px] h-fit">
                     <div className=" flex md:w-[48%] flex-col gap-[16px]">
-
                       <div className=" flex ">
                         <SellsMotionDropdown
                           label="Select Party"
@@ -427,7 +423,9 @@ export default function SellsInvoice() {
                           onChange={async (val) => {
                             setSelectedParty(val);
                             try {
-                              const res = await ApiGet(`/admin/party-by-name/${val}`);
+                              const res = await ApiGet(
+                                `/admin/party-by-name/${val}`
+                              );
                               const party = res?.data?.data || res?.data || res; // ✅ safely unwrap any structure
                               if (party?._id) {
                                 setPartyId(party._id);
@@ -438,12 +436,13 @@ export default function SellsInvoice() {
                               } else {
                                 console.warn("⚠️ No party ID found:", party);
                               }
-
                             } catch (error) {
-                              console.error("Error fetching party details:", error);
+                              console.error(
+                                "Error fetching party details:",
+                                error
+                              );
                             }
                           }}
-
                           onPartyCreated={(newParty) => {
                             setParties((prev) => [...prev, newParty]);
                             setSelectedParty(newParty.partyName);
@@ -451,7 +450,6 @@ export default function SellsInvoice() {
                             setAddress(newParty.billingAddress || "");
                           }}
                         />
-
                       </div>
 
                       <FloatingTextarea
@@ -482,16 +480,13 @@ export default function SellsInvoice() {
                         value={creditLimit}
                         onChange={(e) => setCreditLimit(e.target.value)}
                       />
-
-
                     </div>
                   </div>
-
 
                   {/* Table Header */}
                   <div className="bg-white w-[100%] relative rounded-lg shadow1-blue">
                     <div className="flex-shrink-0 bg-white overflow-x-auto md:overflow-x-visible rounded-lg w-[100%]">
-                      <table className="w-full min-w-[1100px] md:min-w-[100%] border-collapse">
+                      <table className="w-full   md:min-w-[100%] border-collapse">
                         <thead>
                           <tr className="bg-[#f0f1f364]">
                             <th className="py-3 px-2 text-left text-[13px] font-medium font-Poppins text-gray-600 w-20 border-r border-gray-200">
@@ -500,9 +495,15 @@ export default function SellsInvoice() {
                             <th className="py-3 w-[280px]    tracking-wide px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
                               Product Name
                             </th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">COLOR</th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">SPECIFICATION</th>
-                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">CONDITION</th>
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
+                              COLOR
+                            </th>
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
+                              SPECIFICATION
+                            </th>
+                            <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 border-r border-gray-200">
+                              CONDITION
+                            </th>
 
                             <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[200px] border-r border-gray-200">
                               SERIAL NO.
@@ -516,14 +517,16 @@ export default function SellsInvoice() {
                             <th className="py-3 px-2 text-center text-[13px] font-medium font-Poppins text-gray-600 w-[100px] border-r border-gray-200">
                               AMOUNT
                             </th>
-
                           </tr>
                         </thead>
 
                         <tbody>
                           {items.map((product, index) => (
                             <>
-                              <tr key={index} className="border-t relative border-gray-200">
+                              <tr
+                                key={index}
+                                className="border-t relative border-gray-200"
+                              >
                                 <td className="py-2 px-4 text-sm text-gray-600 font-Poppins border-r border-gray-200">
                                   {index + 1}
                                 </td>
@@ -531,19 +534,31 @@ export default function SellsInvoice() {
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.itemName || product.productName || ""}
+                                    value={
+                                      product.itemName ||
+                                      product.productName ||
+                                      ""
+                                    }
                                     onChange={(e) => {
                                       const value = e.target.value;
-                                      handleItemChange(index, "itemName", value);
+                                      handleItemChange(
+                                        index,
+                                        "itemName",
+                                        value
+                                      );
                                       setSearchTerm(value);
                                       setActiveDropdown(index);
                                     }}
                                     onFocus={() => setActiveDropdown(index)}
-                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                                    onBlur={() =>
+                                      setTimeout(
+                                        () => setActiveDropdown(null),
+                                        150
+                                      )
+                                    }
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
                                     placeholder="Product name"
                                   />
-
                                 </td>
 
                                 {/* COLOR AUTOCOMPLETE DROPDOWN */}
@@ -553,63 +568,84 @@ export default function SellsInvoice() {
                                     type="text"
                                     value={product.color}
                                     disabled={!product.itemName}
-                                    onFocus={() => product.itemName && setActiveDropdown(`color-${index}`)}
-                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                    placeholder={product.itemName ? "Select color" : "Select Product First"}
-                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-                                      }`}
+                                    onFocus={() =>
+                                      product.itemName &&
+                                      setActiveDropdown(`color-${index}`)
+                                    }
+                                    onBlur={() =>
+                                      setTimeout(
+                                        () => setActiveDropdown(null),
+                                        150
+                                      )
+                                    }
+                                    placeholder={
+                                      product.itemName
+                                        ? "Select color"
+                                        : "Select Product First"
+                                    }
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
+                                      !product.itemName
+                                        ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                        : ""
+                                    }`}
                                     readOnly
                                   />
 
                                   <AnimatePresence>
-                                    {activeDropdown === `color-${index}` && product.itemName && (
-                                      <motion.div
-                                        initial={{ opacity: 0, y: -5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -5 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[240px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-                                      >
-                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                          <span>Color</span>
-                                          <span>Stock</span>
-                                        </div>
+                                    {activeDropdown === `color-${index}` &&
+                                      product.itemName && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: -5 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: -5 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="absolute z-30 left-0 top-[100%] mt-1 w-[240px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                        >
+                                          <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                            <span>Color</span>
+                                            <span>Stock</span>
+                                          </div>
 
-                                        {Object.entries(
-                                          productSuggestions.find((p) => p.name === product.itemName)?.colors || {}
-                                        ).map(([color, stock], i) => (
-                                          <div
-                                            key={i}
-                                            onClick={() => {
-                                              if (stock === 0) return;
-                                              handleItemChange(index, "color", color);
-                                              setActiveDropdown(null);
-                                            }}
-                                            className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${stock === 0
-                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                          {Object.entries(
+                                            productSuggestions.find(
+                                              (p) => p.name === product.itemName
+                                            )?.colors || {}
+                                          ).map(([color, stock], i) => (
+                                            <div
+                                              key={i}
+                                              onClick={() => {
+                                                if (stock === 0) return;
+                                                handleItemChange(
+                                                  index,
+                                                  "color",
+                                                  color
+                                                );
+                                                setActiveDropdown(null);
+                                              }}
+                                              className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${
+                                                stock === 0
+                                                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                  : "hover:bg-blue-50 cursor-pointer text-gray-700"
                                               }`}
-                                          >
-                                            <span>{color}</span>
-                                            <span
-                                              className={`font-medium ${stock === 0
-                                                  ? "text-red-500"
-                                                  : stock === 1
+                                            >
+                                              <span>{color}</span>
+                                              <span
+                                                className={`font-medium ${
+                                                  stock === 0
+                                                    ? "text-red-500"
+                                                    : stock === 1
                                                     ? "text-blue-500"
                                                     : "text-green-600"
                                                 }`}
-                                            >
-                                              {stock}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </motion.div>
-                                    )}
+                                              >
+                                                {stock}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </motion.div>
+                                      )}
                                   </AnimatePresence>
                                 </td>
-
-
-
 
                                 {/* ✅ SPECIFICATION DROPDOWN */}
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
@@ -617,72 +653,100 @@ export default function SellsInvoice() {
                                     type="text"
                                     value={product.specification}
                                     disabled={!product.itemName}
-                                    onFocus={() => product.itemName && setActiveDropdown(`spec-${index}`)}
-                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                    placeholder={product.itemName ? "Select specification" : "Select Product First"}
-                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-                                      }`}
+                                    onFocus={() =>
+                                      product.itemName &&
+                                      setActiveDropdown(`spec-${index}`)
+                                    }
+                                    onBlur={() =>
+                                      setTimeout(
+                                        () => setActiveDropdown(null),
+                                        150
+                                      )
+                                    }
+                                    placeholder={
+                                      product.itemName
+                                        ? "Select specification"
+                                        : "Select Product First"
+                                    }
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
+                                      !product.itemName
+                                        ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                        : ""
+                                    }`}
                                     readOnly
                                   />
 
                                   <AnimatePresence>
-                                    {activeDropdown === `spec-${index}` && product.itemName && (
-                                      <motion.div
-                                        initial={{ opacity: 0, y: -5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -5 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
-                                      >
-                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                          <span>Specification</span>
-                                          <span>Stock</span>
-                                        </div>
+                                    {activeDropdown === `spec-${index}` &&
+                                      product.itemName && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: -5 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: -5 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="absolute z-30 left-0 top-[100%] mt-1 w-[260px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[220px] overflow-y-auto"
+                                        >
+                                          <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                            <span>Specification</span>
+                                            <span>Stock</span>
+                                          </div>
 
-                                        {(() => {
-                                          const found = productSuggestions.find(
-                                            (p) => p.name === product.itemName
-                                          );
-                                          const validSpecs = Object.entries(found?.specifications || {}).filter(
-                                            ([spec, stock]) =>
-                                              spec &&
-                                              spec.trim() !== "" &&
-                                              spec.toLowerCase() !== "unknown" &&
-                                              stock > 0
-                                          );
-
-                                          if (validSpecs.length === 0)
-                                            return (
-                                              <div className="px-3 py-2 text-sm text-gray-400 text-center">
-                                                No specification found
-                                              </div>
+                                          {(() => {
+                                            const found =
+                                              productSuggestions.find(
+                                                (p) =>
+                                                  p.name === product.itemName
+                                              );
+                                            const validSpecs = Object.entries(
+                                              found?.specifications || {}
+                                            ).filter(
+                                              ([spec, stock]) =>
+                                                spec &&
+                                                spec.trim() !== "" &&
+                                                spec.toLowerCase() !==
+                                                  "unknown" &&
+                                                stock > 0
                                             );
 
-                                          return validSpecs.map(([spec, stock], i) => (
-                                            <div
-                                              key={i}
-                                              onClick={() => {
-                                                handleItemChange(index, "specification", spec);
-                                                setActiveDropdown(null);
-                                              }}
-                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-                                            >
-                                              <span>{spec}</span>
-                                              <span
-                                                className={`font-medium ${stock === 1 ? "text-blue-500" : "text-green-600"
-                                                  }`}
-                                              >
-                                                {stock}
-                                              </span>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </motion.div>
-                                    )}
+                                            if (validSpecs.length === 0)
+                                              return (
+                                                <div className="px-3 py-2 text-sm text-gray-400 text-center">
+                                                  No specification found
+                                                </div>
+                                              );
+
+                                            return validSpecs.map(
+                                              ([spec, stock], i) => (
+                                                <div
+                                                  key={i}
+                                                  onClick={() => {
+                                                    handleItemChange(
+                                                      index,
+                                                      "specification",
+                                                      spec
+                                                    );
+                                                    setActiveDropdown(null);
+                                                  }}
+                                                  className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                                >
+                                                  <span>{spec}</span>
+                                                  <span
+                                                    className={`font-medium ${
+                                                      stock === 1
+                                                        ? "text-blue-500"
+                                                        : "text-green-600"
+                                                    }`}
+                                                  >
+                                                    {stock}
+                                                  </span>
+                                                </div>
+                                              )
+                                            );
+                                          })()}
+                                        </motion.div>
+                                      )}
                                   </AnimatePresence>
                                 </td>
-
-
 
                                 {/* ✅ CONDITION DROPDOWN */}
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 relative">
@@ -690,82 +754,120 @@ export default function SellsInvoice() {
                                     type="text"
                                     value={product.condition}
                                     disabled={!product.itemName}
-                                    onFocus={() => product.itemName && setActiveDropdown(`cond-${index}`)}
-                                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
-                                    placeholder={product.itemName ? "Select condition" : "Select Product First"}
-                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
-                                      }`}
+                                    onFocus={() =>
+                                      product.itemName &&
+                                      setActiveDropdown(`cond-${index}`)
+                                    }
+                                    onBlur={() =>
+                                      setTimeout(
+                                        () => setActiveDropdown(null),
+                                        150
+                                      )
+                                    }
+                                    placeholder={
+                                      product.itemName
+                                        ? "Select condition"
+                                        : "Select Product First"
+                                    }
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
+                                      !product.itemName
+                                        ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                        : ""
+                                    }`}
                                     readOnly
                                   />
 
                                   <AnimatePresence>
-                                    {activeDropdown === `cond-${index}` && product.itemName && (
-                                      <motion.div
-                                        initial={{ opacity: 0, y: -5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -5 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
-                                      >
-                                        <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
-                                          <span>Condition</span>
-                                          <span>Stock</span>
-                                        </div>
+                                    {activeDropdown === `cond-${index}` &&
+                                      product.itemName && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: -5 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: -5 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="absolute z-30 left-0 top-[100%] mt-1 w-[220px] bg-white border border-gray-200 shadow-lg rounded-md max-h-[200px] overflow-y-auto"
+                                        >
+                                          <div className="flex justify-between bg-blue-50 px-3 py-2 border-b text-[13px] font-semibold text-gray-700">
+                                            <span>Condition</span>
+                                            <span>Stock</span>
+                                          </div>
 
-                                        {(() => {
-                                          const found = productSuggestions.find(
-                                            (p) => p.name === product.itemName
-                                          );
-                                          const allConditions = found?.conditions || {};
-                                          const validConditions = ["New", "Old"].map((label) => [
-                                            label,
-                                            allConditions[label] || 0,
-                                          ]);
+                                          {(() => {
+                                            const found =
+                                              productSuggestions.find(
+                                                (p) =>
+                                                  p.name === product.itemName
+                                              );
+                                            const allConditions =
+                                              found?.conditions || {};
+                                            const validConditions = [
+                                              "New",
+                                              "Old",
+                                            ].map((label) => [
+                                              label,
+                                              allConditions[label] || 0,
+                                            ]);
 
-                                          return validConditions.map(([label, stock], i) => (
-                                            <div
-                                              key={i}
-                                              onClick={() => {
-                                                handleItemChange(index, "condition", label);
-                                                setActiveDropdown(null);
-                                              }}
-                                              className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-                                            >
-                                              <span>{label}</span>
-                                              <span
-                                                className={`font-medium ${stock === 0
-                                                    ? "text-red-500"
-                                                    : stock === 1
-                                                      ? "text-blue-500"
-                                                      : "text-green-600"
-                                                  }`}
-                                              >
-                                                {stock}
-                                              </span>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </motion.div>
-                                    )}
+                                            return validConditions.map(
+                                              ([label, stock], i) => (
+                                                <div
+                                                  key={i}
+                                                  onClick={() => {
+                                                    handleItemChange(
+                                                      index,
+                                                      "condition",
+                                                      label
+                                                    );
+                                                    setActiveDropdown(null);
+                                                  }}
+                                                  className="flex justify-between items-center px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                                >
+                                                  <span>{label}</span>
+                                                  <span
+                                                    className={`font-medium ${
+                                                      stock === 0
+                                                        ? "text-red-500"
+                                                        : stock === 1
+                                                        ? "text-blue-500"
+                                                        : "text-green-600"
+                                                    }`}
+                                                  >
+                                                    {stock}
+                                                  </span>
+                                                </div>
+                                              )
+                                            );
+                                          })()}
+                                        </motion.div>
+                                      )}
                                   </AnimatePresence>
                                 </td>
-
 
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="text"
-                                    value={product.serialNumbers?.map((s) =>
-                                      typeof s === "object" ? s.number : s
-                                    ).join(", ") || ""}
+                                    value={
+                                      product.serialNumbers
+                                        ?.map((s) =>
+                                          typeof s === "object" ? s.number : s
+                                        )
+                                        .join(", ") || ""
+                                    }
                                     readOnly
                                     disabled={!product.itemName}
                                     onFocus={() => {
-                                      if (product.itemName) handleSerialClick(product, index);
+                                      if (product.itemName)
+                                        handleSerialClick(product, index);
                                     }}
-                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${!product.itemName ? "cursor-not-allowed bg-gray-100 text-gray-400" : "cursor-pointer"
-                                      }`}
+                                    className={`w-full border-0 outline-none font-Poppins focus:ring-0 text-sm ${
+                                      !product.itemName
+                                        ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                        : "cursor-pointer"
+                                    }`}
                                     placeholder={
-                                      product.itemName ? "Select IMEI / Serial" : "Select product first"
+                                      product.itemName
+                                        ? "Select IMEI / Serial"
+                                        : "Select product first"
                                     }
                                   />
                                 </td>
@@ -775,21 +877,27 @@ export default function SellsInvoice() {
                                     type="number"
                                     value={product.unit}
                                     onChange={(e) =>
-                                      handleItemChange(index, "unit", e.target.value)
+                                      handleItemChange(
+                                        index,
+                                        "unit",
+                                        e.target.value
+                                      )
                                     }
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
                                     placeholder="0"
                                   />
                                 </td>
 
-
-
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200">
                                   <input
                                     type="number"
                                     value={product.pricePerUnit}
                                     onChange={(e) =>
-                                      handleItemChange(index, "pricePerUnit", e.target.value)
+                                      handleItemChange(
+                                        index,
+                                        "pricePerUnit",
+                                        e.target.value
+                                      )
                                     }
                                     className="w-full border-0 outline-none font-Poppins focus:ring-0 text-sm"
                                     placeholder="0.00"
@@ -799,7 +907,6 @@ export default function SellsInvoice() {
                                 <td className="py-2 px-4 border-r font-Poppins border-gray-200 text-right pr-3">
                                   ₹ {product.amount || "0.00"}
                                 </td>
-
 
                                 {items.length > 1 && (
                                   <button
@@ -811,7 +918,6 @@ export default function SellsInvoice() {
                                   </button>
                                 )}
                               </tr>
-
 
                               <AnimatePresence>
                                 {activeDropdown === index && (
@@ -829,32 +935,40 @@ export default function SellsInvoice() {
                                     </div>
 
                                     {/* Filtered Product List */}
-                                    {filteredSuggestions(searchTerm).map((p, i) => (
-                                      <div
-                                        key={i}
-                                        onClick={() => {
-                                          if (p.stock > 0) handleSelectProduct(index, p.name);
-                                        }}
-                                        className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${p.stock === 0
-                                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                          : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                    {filteredSuggestions(searchTerm).map(
+                                      (p, i) => (
+                                        <div
+                                          key={i}
+                                          onClick={() => {
+                                            if (p.stock > 0)
+                                              handleSelectProduct(
+                                                index,
+                                                p.name
+                                              );
+                                          }}
+                                          className={`flex justify-between items-center px-3 py-2 text-sm transition-colors ${
+                                            p.stock === 0
+                                              ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                              : "hover:bg-blue-50 cursor-pointer text-gray-700"
                                           }`}
-                                      >
-
-                                        <span className="font-Poppins text-gray-700">{p.name}</span>
-                                        <span
-                                          className={`font-medium font-Poppins ${p.stock === 0
-                                            ? "text-red-500"
-                                            : p.stock === 1
-                                              ? "text-blue-500"
-                                              : "text-green-600"
-                                            }`}
                                         >
-                                          {p.stock}
-                                        </span>
-                                      </div>
-                                    ))}
-
+                                          <span className="font-Poppins text-gray-700">
+                                            {p.name}
+                                          </span>
+                                          <span
+                                            className={`font-medium font-Poppins ${
+                                              p.stock === 0
+                                                ? "text-red-500"
+                                                : p.stock === 1
+                                                ? "text-blue-500"
+                                                : "text-green-600"
+                                            }`}
+                                          >
+                                            {p.stock}
+                                          </span>
+                                        </div>
+                                      )
+                                    )}
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -862,30 +976,45 @@ export default function SellsInvoice() {
                               <ImeiModal
                                 isOpen={isImeiModalOpen}
                                 onClose={() => setImeiModalOpen(false)}
-                                modelName={items[selectedProductIndex]?.itemName || selectedModel}
+                                modelName={
+                                  items[selectedProductIndex]?.itemName ||
+                                  selectedModel
+                                }
                                 productAttributes={{
                                   color: items[selectedProductIndex]?.color,
-                                  specification: items[selectedProductIndex]?.specification,
-                                  condition: items[selectedProductIndex]?.condition,
+                                  specification:
+                                    items[selectedProductIndex]?.specification,
+                                  condition:
+                                    items[selectedProductIndex]?.condition,
                                 }}
-                                existingImeis={items[selectedProductIndex]?.serialNumbers || []}
+                                existingImeis={
+                                  items[selectedProductIndex]?.serialNumbers ||
+                                  []
+                                }
                                 onSave={(imeis) => {
                                   if (selectedProductIndex !== null) {
                                     const updated = [...items];
-                                    updated[selectedProductIndex].serialNumbers = imeis.map((n) => ({
+                                    updated[
+                                      selectedProductIndex
+                                    ].serialNumbers = imeis.map((n) => ({
                                       number: n,
                                       isSold: false,
                                     }));
-                                    updated[selectedProductIndex].unit = imeis.length;
+                                    updated[selectedProductIndex].unit =
+                                      imeis.length;
                                     updated[selectedProductIndex].amount = (
                                       imeis.length *
-                                      (parseFloat(updated[selectedProductIndex].pricePerUnit) || 0)
+                                      (parseFloat(
+                                        updated[selectedProductIndex]
+                                          .pricePerUnit
+                                      ) || 0)
                                     ).toFixed(2);
 
                                     setItems(updated);
 
                                     const total = updated.reduce(
-                                      (sum, item) => sum + (parseFloat(item.amount) || 0),
+                                      (sum, item) =>
+                                        sum + (parseFloat(item.amount) || 0),
                                       0
                                     );
                                     setTotalAmount(total.toFixed(2));
@@ -893,9 +1022,6 @@ export default function SellsInvoice() {
                                   setImeiModalOpen(false);
                                 }}
                               />
-
-
-
                             </>
                           ))}
 
@@ -921,7 +1047,6 @@ export default function SellsInvoice() {
                             <td className="py-3 px-2  border-r text-right text-[14px] font-semibold text-[#083aef]">
                               ₹ {totalAmount || "0.00"}
                             </td>
-
                           </tr>
                         </tbody>
                       </table>
@@ -929,11 +1054,8 @@ export default function SellsInvoice() {
                   </div>
                   <div className=" flex w-[100%]  justify-between md:gap-[20px]  mt-[19px] mb-[20px]">
                     <div className=" hidden md:flex w-[50%]  flex-col  gap-[15px] ">
-                      <div className="bg-white  w-[100%] rounded-lg shadow1-blue  ">
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-4">
-                      </div>
-
+                      <div className="bg-white  w-[100%] rounded-lg shadow1-blue  "></div>
+                      <div className="grid md:grid-cols-2 gap-4"></div>
                     </div>
                     {/* 🔹 PAYMENT SECTION */}
                     <div className="flex md:w-[42%] w-[100%]">
@@ -946,30 +1068,45 @@ export default function SellsInvoice() {
 
                           {/* 🔹 Dynamic Payment Rows */}
                           {paymentRows.map((row, index) => (
-                            <div key={index} className="flex items-center justify-between gap-3">
+                            <div
+                              key={index}
+                              className="flex items-center justify-between gap-3"
+                            >
                               {/* Dropdown */}
                               <div className="flex-1  relative max-w-[230px]">
-                                <label className="absolute  z-[10] left-3 top-[-10px] text-[12px] text-blue-700 px-[3px] font-Poppins bg-white ">Payment Method</label>
+                                <label className="absolute  z-[10] left-3 top-[-10px] text-[12px] text-blue-700 px-[3px] font-Poppins bg-white ">
+                                  Payment Method
+                                </label>
                                 <NormalDropdown
                                   label="Select Method"
                                   options={options}
                                   value={row.method}
-                                  onChange={(value) => handlePaymentChange(index, "method", value)}
+                                  onChange={(value) =>
+                                    handlePaymentChange(index, "method", value)
+                                  }
                                 />
                               </div>
 
                               {/* Input */}
                               <div className="flex-1 max-w-[240px]">
                                 <div className="relative w-full h-10 border border-[#dedede] rounded-lg shadow flex items-center space-x-2 text-[#00000099] cursor-pointer">
-                                  <label className="absolute left-3 top-[-10px] text-[12px] text-blue-500 px-[3px] font-Poppins bg-white ">Amount</label>
+                                  <label className="absolute left-3 top-[-10px] text-[12px] text-blue-500 px-[3px] font-Poppins bg-white ">
+                                    Amount
+                                  </label>
                                   <input
                                     type="number"
                                     value={row.amount}
                                     placeholder="0.00"
                                     onChange={(e) =>
-                                      handlePaymentChange(index, "amount", e.target.value)
+                                      handlePaymentChange(
+                                        index,
+                                        "amount",
+                                        e.target.value
+                                      )
                                     }
-                                    onBlur={() => handleAddNewRowIfNeeded(index)}
+                                    onBlur={() =>
+                                      handleAddNewRowIfNeeded(index)
+                                    }
                                     className="w-full outline-none text-[15px] py-[9px] px-[6px] font-Poppins font-[400] bg-transparent"
                                   />
                                 </div>
@@ -1013,15 +1150,26 @@ export default function SellsInvoice() {
                               </div>
                             </div>
                           </div>
+
+                          <div className="flex items-center justify-between gap-4">
+                            <label className="text-gray-600 font-Poppins text-md font-medium">
+                              Sales Man Name
+                            </label>
+                            <div className="flex-1 max-w-[320px]">
+                          <FloatingInput 
+                          label="Name"
+
+
+                          />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-
                   </div>
                   <button
                     className=" bs-spj  font-[500] font-Poppins text-[#fff] rounded-[8px] py-[5px] justify-center  text-[18px] mx-auto mt-[px] flex w-[120px]"
                     onClick={handleSave}
-
                   >
                     Save
                   </button>
@@ -1031,7 +1179,6 @@ export default function SellsInvoice() {
           </div>
         </div>
       </section>
-
     </>
   );
 }
