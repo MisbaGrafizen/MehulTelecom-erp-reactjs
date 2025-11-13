@@ -75,74 +75,76 @@ export default function NewStockTransferPage() {
         };
 
         fetchData();
-    }, []);
+    }, []);         
 
     useEffect(() => {
-        const fetchPurchasedProducts = async () => {
-            const userId = localStorage.getItem("userId");
-            try {
-                const res = await ApiGet(`/admin/purchase/user/${userId}`);
-                if (!res) return;
+  const fetchPurchasedProducts = async () => {
+    const userId = localStorage.getItem("userId");
+    try {
+      const res = await ApiGet(`/admin/purchase/user/${userId}`);
+      if (!res) return;
 
-                const raw = res?.data?.data || res?.data || res;
+      const raw = res?.data?.data || res?.data || res;
+      const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      const productsData = {};
 
-                // ✅ Always normalize to an array
-                const purchases = Array.isArray(raw) ? raw : raw ? [raw] : [];
-                const productsData = {};
+      purchases.forEach((purchase) => {
+        const items = Array.isArray(purchase?.items) ? purchase.items : [];
+        items.forEach((item) => {
+          const name = item.itemName?.trim();
+          if (!name) return;
 
-                purchases.forEach((purchase) => {
-                    const items = Array.isArray(purchase?.items) ? purchase.items : [];
-                    items.forEach((item) => {
-                        const name = item.itemName?.trim();
-                        if (!name) return;
+          if (!productsData[name]) {
+            productsData[name] = {
+              colors: {},
+              specifications: {},
+              conditions: {},
+              totalStock: 0,
+            };
+          }
 
-                        if (!productsData[name]) {
-                            productsData[name] = {
-                                colors: {},
-                                specifications: {},
-                                conditions: {},
-                                totalStock: 0,
-                            };
-                        }
+          const color = item.color?.trim?.() || "Unknown";
+          const spec =
+            item.specifications?.trim?.() ||
+            item.specification?.trim?.() ||
+            "Unknown";
+          const condition = item.condition?.trim?.() || "Unknown";
 
-                        const color = item.color?.trim?.() || "Unknown";
-                        const spec =
-                            item.specifications?.trim?.() ||
-                            item.specification?.trim?.() ||
-                            "Unknown";
-                        const condition = item.condition?.trim?.() || "Unknown";
+          // ✅ Only count serials that are not sold
+          const availableSerials = (item.serialNumbers || []).filter(
+            (s) => !s?.isSold
+          );
 
-                        const available =
-                            (item.serialNumbers || []).filter(
-                                (s) => typeof s === "string" || !s.isSold
-                            ).length || item.qty || 1;
+          const available =
+            availableSerials.length > 0 ? availableSerials.length : item.qty || 0;
 
-                        productsData[name].colors[color] =
-                            (productsData[name].colors[color] || 0) + available;
-                        productsData[name].specifications[spec] =
-                            (productsData[name].specifications[spec] || 0) + available;
-                        productsData[name].conditions[condition] =
-                            (productsData[name].conditions[condition] || 0) + available;
-                        productsData[name].totalStock += available;
-                    });
-                });
+          productsData[name].colors[color] =
+            (productsData[name].colors[color] || 0) + available;
+          productsData[name].specifications[spec] =
+            (productsData[name].specifications[spec] || 0) + available;
+          productsData[name].conditions[condition] =
+            (productsData[name].conditions[condition] || 0) + available;
+          productsData[name].totalStock += available;
+        });
+      });
 
-                const formatted = Object.keys(productsData).map((name) => ({
-                    name,
-                    colors: productsData[name].colors,
-                    specifications: productsData[name].specifications,
-                    conditions: productsData[name].conditions,
-                    stock: productsData[name].totalStock,
-                }));
+      const formatted = Object.keys(productsData).map((name) => ({
+        name,
+        colors: productsData[name].colors,
+        specifications: productsData[name].specifications,
+        conditions: productsData[name].conditions,
+        stock: productsData[name].totalStock,
+      }));
 
-                setProductSuggestions(formatted);
-            } catch (err) {
-                console.error("❌ Error fetching products:", err);
-            }
-        };
+      setProductSuggestions(formatted);
+    } catch (err) {
+      console.error("❌ Error fetching products:", err);
+    }
+  };
 
-        fetchPurchasedProducts();
-    }, []);
+  fetchPurchasedProducts();
+}, []);
+
 
 
 

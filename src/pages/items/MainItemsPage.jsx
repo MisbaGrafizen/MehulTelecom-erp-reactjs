@@ -77,57 +77,62 @@ export default function MianItemspage() {
     const [txns, setTxns] = useState([])
     // ✅ Fetch real data from backend
     useEffect(() => {
-        const fetchTransactions = async () => {
-            try {
-                const res = await ApiGet("/admin/transactions");
-                console.log("res", res);
+  const fetchTransactions = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        console.error("❌ No userId found in localStorage");
+        return;
+      }
 
-                if (res?.success && Array.isArray(res.transactions)) {
-                    const txns = res.transactions;
+      // ✅ Fetch with userId in query
+      const res = await ApiGet(`/admin/transactions?userId=${userId}`);
+      console.log("🔹 Transaction Response:", res);
 
-                    // 🟢 Build unique item list (keep both latest sale & purchase prices)
-                    const itemMap = new Map();
+      const txns = res?.transactions || res?.data?.transactions || [];
 
-                    txns.forEach((t) => {
-                        if (!itemMap.has(t.itemName)) {
-                            itemMap.set(t.itemName, {
-                                id: t.itemName,
-                                name: t.itemName,
-                                salePrice: t.type === "Sale" ? t.pricePerUnit : 0,
-                                purchasePrice: t.type === "Purchase" ? t.pricePerUnit : 0,
-                                qty: t.currentStock ?? 0,
-                                unsoldSerials: t.unsoldSerialCount ?? 0,
-                                serialCount: t.serialCount ?? 0,
-                            });
-                        } else {
-                            const existing = itemMap.get(t.itemName);
-                            if (t.type === "Sale" && t.pricePerUnit) existing.salePrice = t.pricePerUnit;
-                            if (t.type === "Purchase" && t.pricePerUnit) existing.purchasePrice = t.pricePerUnit;
-                            existing.qty = t.currentStock ?? existing.qty;
-                            existing.unsoldSerials = t.unsoldSerialCount ?? existing.unsoldSerials;
-                            existing.serialCount = t.serialCount ?? existing.serialCount;
-                        }
-                    });
+      if (Array.isArray(txns)) {
+        // 🟢 Build unique item list (track sale/purchase prices)
+        const itemMap = new Map();
 
-                    const uniqueItems = Array.from(itemMap.values());
+        txns.forEach((t) => {
+          if (!itemMap.has(t.itemName)) {
+            itemMap.set(t.itemName, {
+              id: t.itemName,
+              name: t.itemName,
+              salePrice: t.type === "Sale" ? t.pricePerUnit : 0,
+              purchasePrice: t.type === "Purchase" ? t.pricePerUnit : 0,
+              qty: t.currentStock ?? 0,
+              unsoldSerials: t.unsoldSerialCount ?? 0,
+              serialCount: t.serialCount ?? 0,
+            });
+          } else {
+            const existing = itemMap.get(t.itemName);
+            if (t.type === "Sale" && t.pricePerUnit)
+              existing.salePrice = t.pricePerUnit;
+            if (t.type === "Purchase" && t.pricePerUnit)
+              existing.purchasePrice = t.pricePerUnit;
+            existing.qty = t.currentStock ?? existing.qty;
+            existing.unsoldSerials =
+              t.unsoldSerialCount ?? existing.unsoldSerials;
+            existing.serialCount = t.serialCount ?? existing.serialCount;
+          }
+        });
 
-                    setItems(uniqueItems);
-                    setTxns(txns);
+        const uniqueItems = Array.from(itemMap.values());
+        setItems(uniqueItems);
+        setTxns(txns);
+      } else {
+        console.error("❌ Invalid transaction format:", res);
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch user transactions:", err);
+    }
+  };
 
+  fetchTransactions();
+}, []);
 
-                    setItems(uniqueItems);
-                    setTxns(txns);
-                } else {
-                    console.error("❌ Invalid response:", res);
-                }
-
-            } catch (err) {
-                console.error("❌ Failed to fetch transactions:", err);
-            }
-        };
-
-        fetchTransactions();
-    }, []);
 
 
     // Left list

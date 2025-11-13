@@ -149,14 +149,27 @@ export default function StockTransferList() {
         navigate("/stock-transfer/new-transfer")
     }
 
-    const triggerAutoFail = async () => {
+const triggerAutoFail = async () => {
   try {
-    const res = await ApiGet("/admin/auto-fail");
-    console.log("AutoFail result:", res?.data);
+    // ✅ Get userId from localStorage
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      console.error("No userId found in localStorage");
+      return;
+    }
+
+    // ✅ Pass userId in query
+    const res = await ApiGet(`/admin/auto-fail?userId=${userId}`);
+    console.log("AutoFail result:", res?.data || res);
+
+    if (res?.data?.message) {
+      console.log("AutoFail Message:", res.data.message);
+    }
   } catch (err) {
-    console.error("❌ AutoFail check failed:", err);
+    console.error("AutoFail check failed:", err);
   }
 };
+
 
 
     useEffect(() => {
