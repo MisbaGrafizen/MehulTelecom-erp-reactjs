@@ -15,6 +15,9 @@ import StockTransferList from "./pages/stockTransferFolder/StockTransferList";
 import NewStockTransferPage from "./pages/stockTransferFolder/NewStockTransferPage";
 import MianItemspage from "./pages/items/MainItemsPage";
 import PartyList from "./pages/party/PartyList";
+import PurchaseReport from "./pages/Reports/PurchaseReport";
+import SalesReport from "./pages/Reports/SalesReport";
+import StockTransferReport from "./pages/Reports/StockTransferReport";
 
 
 
@@ -28,25 +31,19 @@ function App() {
 
           <Route path="/" element={<Login />} />
           <Route path="/purches-list" element={<Purchasemain />} />
-
-
           <Route path="/purches-invoice" element={<PurchesInvoice />} />
           <Route path ="/create-account" element={<CreateCompany />} />
-
           <Route path="/company-listing" element={<ComapnyListing />} />
-
-
-
-
-
           <Route path="/sells" element={<SellListing />} />
           <Route path="/sells-invoice" element={<SellsInvoice />} />
           <Route path="/stock-transfer" element={<StockTransferList />} />
           <Route path="/stock-transfer/new-transfer" element={<NewStockTransferPage />} />
           <Route path="/items" element={<MianItemspage />} />
           <Route path="/party-listing" element={<PartyList />} />
-
-         
+          <Route path="/reports/purchase-report" element={<PurchaseReport />} />
+          <Route path="/reports/sales-report" element={<SalesReport />} />
+                    <Route path="/reports/purchase-report" element={<PurchaseReport />} />
+          <Route path="/reports/transfer-report" element={<StockTransferReport />} />
 
 
 

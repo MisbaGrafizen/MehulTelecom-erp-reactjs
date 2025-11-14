@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,6 +9,12 @@ import {
   faCog,
   faBoxes,
   faUsers,
+  faChartBar,
+  faFileInvoiceDollar,
+  faCashRegister,
+  faFileAlt,
+  faChartPie,
+  faUserTie,
 } from "@fortawesome/free-solid-svg-icons";
 
 import inventory from "../../../public/imges/sidebar/inventory.png";
@@ -18,42 +24,75 @@ import purches from "../../../public/imges/sidebar/purches.png";
 import expan from "../../../public/imges/sidebar/expan.png";
 import newsales from "../../../public/imges/sidebar/newsales.png";
 import Party from "../../../public/imges/sidebar/people.png";
+import reports from "../../../public/imges/sidebar/reports.png";
+
 
 export default function SideBar() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // 🔹 Get current user role
   const role = (localStorage.getItem("role") || "").toLowerCase();
 
-  // 🔹 Base menu items
+  const [openReports, setOpenReports] = useState(false);
+  const sidebarRef = useRef(null);
+  const reportsRef = useRef(null);
+
+  // 🔹 Detect click outside of Reports sidebar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        reportsRef.current &&
+        !reportsRef.current.contains(event.target) &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target)
+      ) {
+        setOpenReports(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 🔹 Menu items
   let menuItems = [
     { name: "Transfer", icon: inventory, path: "/stock-transfer", faIcon: faExchangeAlt },
     { name: "Sales", icon: sales, path: "/sells", faIcon: faShoppingCart },
     { name: "Purchases", icon: purches, path: "/purches-list", faIcon: faIndustry },
     { name: "Items", icon: expan, path: "/items", faIcon: faBoxes },
     { name: "Party", icon: Party, path: "/party-listing", faIcon: faUsers },
+    { name: "Reports", icon: reports, path: "/reports", faIcon: faChartBar },
   ];
 
-  // 🔹 Only Admin sees these
   if (role === "admin") {
     menuItems.splice(3, 0, { name: "Company", icon: newsales, path: "/company-listing", faIcon: faBuilding });
     menuItems.push({ name: "Settings", icon: settings, path: "/create-account", faIcon: faCog });
   }
 
-  // 🔹 Active path checker
-  const isActive = (path) => {
-    const base = path.endsWith("/") ? path.slice(0, -1) : path;
-    return location.pathname === base || location.pathname.startsWith(base + "/");
-  };
+  // 🔹 Reports submenu
+  const reportsSubmenu = [
+    { name: "Purchase Report", icon: faFileInvoiceDollar, path: "/reports/purchase-report" },
+    { name: "Sells Report", icon: faFileInvoiceDollar, path: "/reports/sales-report" },
+    { name: "Total Upi Payment", icon: faCashRegister, path: "/reports/upi-payment" },
+    { name: "Total Transfer", icon: faExchangeAlt, path: "/reports/transfer-report" },
+    { name: "Total Cash", icon: faFileAlt, path: "/reports/total-cash" },
+    { name: "Total Purchase Value", icon: faIndustry, path: "/reports/purchase-value" },
+    { name: "Edging Stock REPORT", icon: faChartPie, path: "/reports/edging-stock" },
+    { name: "SALESMAN WISE PROFIT/LOSS", icon: faUserTie, path: "/reports/salesman-profit" },
+  ];
+
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <>
-      {/* 🔹 Desktop Sidebar */}
-      <div className="hidden md:flex min-w-[110px] max-w-[120px] overflow-y-auto rounded-[10px] py-[10px] bs-giri h-[86vh]">
+    <div className="relative flex">
+      {/* 🔹 Main Sidebar */}
+      <div
+        ref={sidebarRef}
+        className="hidden md:flex min-w-[110px] max-w-[120px] flex-col overflow-y-auto rounded-[10px] py-[10px] bs-giri h-[86vh]"
+      >
         <div className="flex flex-col gap-[7px] w-full">
           {menuItems.map((item, index) => {
             const active = isActive(item.path);
+
             return (
               <div
                 key={index}
@@ -62,7 +101,14 @@ export default function SideBar() {
                     ? "bg-[#F68D18] text-white shadow-md scale-[1.03]"
                     : "bg-transparent text-white hover:bg-white/10"
                 }`}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  if (item.name === "Reports") {
+                    setOpenReports((prev) => !prev); // toggle on click
+                  } else {
+                    navigate(item.path);
+                    setOpenReports(false); // close when navigating elsewhere
+                  }
+                }}
               >
                 <img className="w-[29px] h-[29px]" src={item.icon} alt={item.name} />
                 <p className="flex text-[12px] font-medium">{item.name}</p>
@@ -72,6 +118,40 @@ export default function SideBar() {
         </div>
       </div>
 
+      {/* 🔹 Reports Sub-sidebar (Click to open, click outside to close) */}
+      {openReports && (
+        <div
+          ref={reportsRef}
+          className="absolute left-[115px] top-0 w-[210px] font-Poppins h-[85vh] bg-white text-gray-800 shadow-xl rounded-r-[10px] overflow-y-auto transition-all duration-300 z-50"
+        >
+          <div className="p-3 border-b border-dashed border-gray-200 font-semibold text-[#F68D18] text-sm">
+            Reports
+          </div>
+          <div className="flex flex-col mt-2">
+            {reportsSubmenu.map((report, i) => {
+              const active = isActive(report.path);
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center  border-b gap-2 px-1 py-[7px] text-sm cursor-pointer border-l-4 ${
+                    active
+                      ? "border-[#F68D18] bg-orange-50 text-[#F68D18] font-semibold"
+                      : " border-l-transparent border-b-blue-100 text-gray-600 hover:bg-blue-50 hover:text-[#291eff]"
+                  } transition-all`}
+                  onClick={() => {
+                    navigate(report.path);
+                    setOpenReports(true); // keep open when inside reports
+                  }}
+                >
+                  <FontAwesomeIcon icon={report.icon} className="w-3 h-3" />
+                  <span className=" font-[400] text-[12px]">{report.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 🔹 Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 bs-giri left-0 right-0 z-50 text-white shadow-lg h-[70px] flex justify-around items-center rounded-t-[10px] px-2">
         {menuItems.map((item, index) => (
@@ -79,16 +159,19 @@ export default function SideBar() {
             key={index}
             to={item.path}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center text-[11px] transition-all duration-200 ${
+              `flex flex-col items-center  justify-center text-[11px] transition-all duration-200 ${
                 isActive ? "text-[#F68D18] scale-110" : "text-gray-300"
               }`
             }
           >
             <FontAwesomeIcon icon={item.faIcon} className="text-[18px] mb-[3px]" />
+            <p className=" font-[600]">
+
+            </p>
             {item.name}
           </NavLink>
         ))}
       </div>
-    </>
+    </div>
   );
 }
