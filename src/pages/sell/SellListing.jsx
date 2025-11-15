@@ -294,7 +294,7 @@ useEffect(() => {
       setLoading(true);
 
       const userId = localStorage.getItem("userId");
-      const userType = (localStorage.getItem("userType") || "").toLowerCase();
+      const userType = (localStorage.getItem("role") || "").toLowerCase();
 
       const queryParams = new URLSearchParams();
 

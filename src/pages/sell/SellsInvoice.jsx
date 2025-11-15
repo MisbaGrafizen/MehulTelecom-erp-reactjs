@@ -89,40 +89,53 @@ export default function SellsInvoice() {
         const productsData = {};
 
         purchases.forEach((purchase) => {
-          (purchase.items || []).forEach((item) => {
-            const name = item.itemName?.trim?.();
-            if (!name) return;
+  (purchase.items || []).forEach((item) => {
+    const name = item.itemName?.trim?.();
+    if (!name) return;
 
-            if (!productsData[name]) {
-              productsData[name] = {
-                colors: {},
-                specifications: {},
-                conditions: {},
-                totalStock: 0,
-              };
-            }
+    if (!productsData[name]) {
+      productsData[name] = {
+        colors: {},
+        specifications: {},
+        conditions: {},
+        totalStock: 0,
+        serials: []
+      };
+    }
 
-            const color = item.color?.trim?.() || "Unknown";
-            const spec =
-              item.specifications?.trim?.() ||
-              item.specification?.trim?.() ||
-              "Unknown";
-            const condition = item.condition?.trim?.() || "Unknown";
+    const color = item.color?.trim?.() || "Unknown";
+    const spec =
+      item.specifications?.trim?.() ||
+      item.specification?.trim?.() ||
+      "Unknown";
 
-            const available =
-              (item.serialNumbers || []).filter(
-                (s) => typeof s === "string" || !s.isSold
-              ).length || item.qty || 1;
+    const condition = item.condition?.trim?.() || "Unknown";
 
-            productsData[name].colors[color] =
-              (productsData[name].colors[color] || 0) + available;
-            productsData[name].specifications[spec] =
-              (productsData[name].specifications[spec] || 0) + available;
-            productsData[name].conditions[condition] =
-              (productsData[name].conditions[condition] || 0) + available;
-            productsData[name].totalStock += available;
-          });
-        });
+    // 🔥 Correct stock logic
+    const availableSerials = (item.serialNumbers || []).filter((s) => {
+      if (typeof s === "string") return true; // fallback
+      return !s.isSold && !s.inTransfer;
+    });
+
+    const available = availableSerials.length;
+
+    // Save serials for modal
+    productsData[name].serials.push(...availableSerials);
+
+    // Aggregate stock
+    productsData[name].colors[color] =
+      (productsData[name].colors[color] || 0) + available;
+
+    productsData[name].specifications[spec] =
+      (productsData[name].specifications[spec] || 0) + available;
+
+    productsData[name].conditions[condition] =
+      (productsData[name].conditions[condition] || 0) + available;
+
+    productsData[name].totalStock += available;
+  });
+});
+
 
         const formatted = Object.keys(productsData).map((name) => ({
           name,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect ,useRef} from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Calendar as CalendarIcon, Eye, Printer, Download, Search, TrendingUp, TrendingDown, ChevronDown, X, MoreVertical, DollarSign, Smartphone, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -9,6 +9,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
 import SideBar from "../../Component/sidebar/SideBar"
 import Header from "../../Component/header/Header"
+import { ApiGet } from "../../helper/axios"
 
 
 const DateRangePicker = ({ label, defaultValue, onChange }) => {
@@ -178,11 +179,10 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
                       setIsOpen(false)
                     }}
                     whileHover={{ backgroundColor: "var(--color-secondary)" }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                      value === option
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "text-foreground hover:bg-gray-200"
-                    }`}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${value === option
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-foreground hover:bg-gray-200"
+                      }`}
                   >
                     {option}
                   </motion.button>
@@ -217,12 +217,36 @@ const FilterSection = ({ filters, setFilters }) => {
               key={option}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setFilters({ ...filters, dateRange: option })}
-              className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-200 whitespace-nowrap ${
-                filters.dateRange === option
-                  ? "bg-gradient-to-r from-blue-unpaid to-accent text-white shadow-lg"
-                  : "bg-gray-200 text-foreground hover:bg-border"
-              }`}
+              onClick={() => {
+                let from = null;
+                let to = new Date();
+
+                if (option === "Today") {
+                  from = new Date();
+                }
+
+                if (option === "This Week") {
+                  const d = new Date();
+                  from = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7);
+                }
+
+                if (option === "This Month") {
+                  const d = new Date();
+                  from = new Date(d.getFullYear(), d.getMonth(), 1);
+                }
+
+                setFilters({
+                  ...filters,
+                  dateRange: option,
+                  fromDate: from,
+                  toDate: to
+                });
+              }}
+
+              className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
+                ? "bg-gradient-to-r from-blue-unpaid to-accent text-white shadow-lg"
+                : "bg-gray-200 text-foreground hover:bg-border"
+                }`}
             >
               {option}
             </motion.button>
@@ -234,12 +258,23 @@ const FilterSection = ({ filters, setFilters }) => {
           <DateRangePickerMUI
             label="From Date"
             value={filters.fromDate}
-            onChange={(date) => setFilters({ ...filters, fromDate: date })}
+            onChange={(date) =>
+              setFilters({
+                ...filters,
+                fromDate: date ? date.toDate() : null
+              })
+            }
           />
+
           <DateRangePickerMUI
             label="To Date"
             value={filters.toDate}
-            onChange={(date) => setFilters({ ...filters, toDate: date })}
+            onChange={(date) =>
+              setFilters({
+                ...filters,
+                toDate: date ? date.toDate() : null
+              })
+            }
           />
           <AnimatedDropdown
             label="Firms"
@@ -321,11 +356,10 @@ const KPICard = ({ title, amount, icon: IconComponent, bgColor, lightBgColor, tr
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className={`text-xs font-bold flex items-center gap-1 px-2 py-1 rounded-full ${
-                  trend > 0
-                    ? "bg-green-light text-green-paid"
-                    : "bg-destructive/10 text-destructive"
-                }`}
+                className={`text-xs font-bold flex items-center gap-1 px-2 py-1 rounded-full ${trend > 0
+                  ? "bg-green-light text-green-paid"
+                  : "bg-destructive/10 text-destructive"
+                  }`}
               >
                 {trend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {Math.abs(trend)}%
@@ -346,7 +380,7 @@ const KPICard = ({ title, amount, icon: IconComponent, bgColor, lightBgColor, tr
   )
 }
 
-const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }) => {
+const SalesTable = ({ salesData = [], onViewInvoice, currentPage, setCurrentPage, itemsPerPage }) => {
   const [selectedRow, setSelectedRow] = useState(null)
 
   const allTableData = [
@@ -452,10 +486,13 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
     },
   ]
 
-  const totalPages = Math.ceil(allTableData.length / itemsPerPage)
+  const totalPages = Math.ceil(salesData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const tableData = allTableData.slice(startIndex, endIndex)
+  const tableData = salesData.slice(startIndex, endIndex)
+
+  console.log('tableData', tableData)
+  console.log('salesData', salesData)
 
   const getPaymentBadgeClass = (type) => {
     const badges = {
@@ -504,7 +541,7 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
               </th>
             </tr>
           </thead>
-          <tbody>
+          {/* <tbody>
             {tableData.map((row, idx) => (
               <motion.tr
                 key={idx}
@@ -568,7 +605,73 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
                 </td>
               </motion.tr>
             ))}
-          </tbody>
+          </tbody> */}
+          <tbody>
+  {tableData.map((row, idx) => (
+    <motion.tr
+      key={idx}
+      onMouseEnter={() => setSelectedRow(idx)}
+      onMouseLeave={() => setSelectedRow(null)}
+      animate={selectedRow === idx ? { backgroundColor: "var(--color-secondary)" } : {}}
+      transition={{ duration: 0.2 }}
+      className="border-b border-border hover:bg-gray-200 transition-colors"
+    >
+      <td className="px-6 py-4 text-sm text-foreground">
+        {row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "-"}
+      </td>
+      <td className="px-6 py-4 text-sm font-semibold text-foreground">
+        {row.billNumber || "-"}
+      </td>
+      <td className="px-6 py-4 text-sm text-foreground">
+        {row.partyId?.partyName || "—"}
+      </td>
+      <td className="px-6 py-4 text-sm text-foreground">
+        {row.userId?.name || "—"}
+      </td>
+      <td className="px-6 py-4 text-sm">
+        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getPaymentBadgeClass(row.paymentType)}`}>
+          {row.paymentType || "—"}
+        </span>
+      </td>
+      <td className="px-6 py-4 text-sm font-semibold text-foreground">
+        ₹{(row.totalAmount || 0).toLocaleString("en-IN")}
+      </td>
+      <td className="px-6 py-4 text-sm text-green-600 font-semibold">
+        ₹{(row.paidAmount || 0).toLocaleString("en-IN")}
+      </td>
+      <td className="px-6 py-4 text-sm text-red-600 font-semibold">
+        ₹{(row.unpaidAmount || 0).toLocaleString("en-IN")}
+      </td>
+      <td className="px-6 py-4 text-sm">
+        <div className="flex items-center gap-2">
+          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => onViewInvoice(row)} className="p-2 hover:bg-border rounded-lg transition-colors" title="View">
+            <Eye size={16} className="text-muted-foreground" />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Print">
+            <Printer size={16} className="text-muted-foreground" />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Download">
+            <Download size={16} className="text-muted-foreground" />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="More">
+            <MoreVertical size={16} className="text-muted-foreground" />
+          </motion.button>
+        </div>
+      </td>
+    </motion.tr>
+  ))}
+
+  {tableData.length === 0 && (
+    <tr>
+      <td colSpan={9} className="text-center py-5 text-gray-500 text-sm">
+        No sales records found.
+      </td>
+    </tr>
+  )}
+</tbody>
+
+
+
         </table>
       </div>
 
@@ -583,11 +686,10 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
             whileTap={currentPage > 1 ? { scale: 0.95 } : {}}
             onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`p-2 rounded-lg transition-all ${
-              currentPage === 1
-                ? "text-muted-foreground opacity-50 cursor-not-allowed"
-                : "text-foreground hover:bg-border"
-            }`}
+            className={`p-2 rounded-lg transition-all ${currentPage === 1
+              ? "text-muted-foreground opacity-50 cursor-not-allowed"
+              : "text-foreground hover:bg-border"
+              }`}
           >
             <ChevronLeft size={18} />
           </motion.button>
@@ -618,11 +720,10 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
                   initial={isActive ? { scale: 1.15 } : {}}
                   animate={isActive ? { scale: 1.15 } : { scale: 1 }}
                   transition={{ duration: 0.2 }}
-                  className={`w-9 h-9 rounded-lg font-semibold text-sm transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-lg"
-                      : "border border-border text-foreground hover:bg-border"
-                  }`}
+                  className={`w-9 h-9 rounded-lg font-semibold text-sm transition-all ${isActive
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "border border-border text-foreground hover:bg-border"
+                    }`}
                 >
                   {pageNum}
                 </motion.button>
@@ -636,11 +737,10 @@ const SalesTable = ({ onViewInvoice, currentPage, setCurrentPage, itemsPerPage }
             whileTap={currentPage < totalPages ? { scale: 0.95 } : {}}
             onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-lg transition-all ${
-              currentPage === totalPages
-                ? "text-muted-foreground opacity-50 cursor-not-allowed"
-                : "text-foreground hover:bg-border"
-            }`}
+            className={`p-2 rounded-lg transition-all ${currentPage === totalPages
+              ? "text-muted-foreground opacity-50 cursor-not-allowed"
+              : "text-foreground hover:bg-border"
+              }`}
           >
             <ChevronRight size={18} />
           </motion.button>
@@ -891,9 +991,20 @@ export default function SalesReport() {
     toDate: dayjs("2024-12-31").toDate(),
   });
 
+  // 📦 API data states
+  const [salesData, setSalesData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // 📊 KPI values
+  const [paidTotal, setPaidTotal] = useState(0);
+  const [unpaidTotal, setUnpaidTotal] = useState(0);
+  const [grandTotal, setGrandTotal] = useState(0);
+
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
+
 
   // 📅 Local States
   const [fromDate, setFromDate] = useState(filters.fromDate);
@@ -919,6 +1030,44 @@ export default function SalesReport() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        setLoading(true);
+
+        const params = {
+          fromDate: filters.fromDate,
+          toDate: filters.toDate,
+          firm: filters.firm !== "All Firms" ? filters.firm : undefined,
+          user: filters.user !== "All Users" ? filters.user : undefined,
+          paymentType: filters.payment !== "All" ? filters.payment : undefined,
+        };
+
+        const res = await ApiGet("/admin/sales-report", { params });
+        console.log('res', res)
+        const data = res?.data?.data || [];
+        const kpiData = res?.data?.kpi || {
+          paidTotal: 0,
+          unpaidTotal: 0,
+          grandTotal: 0,
+        };
+
+        setSalesData(data);
+        setPaidTotal(kpiData.paidTotal);
+        setUnpaidTotal(kpiData.unpaidTotal);
+        setGrandTotal(kpiData.grandTotal);
+      } catch (err) {
+        console.error("❌ Error fetching sales report:", err);
+        setError("Failed to load sales data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSalesData();
+  }, [filters]);
+
 
   return (
     <section className="flex w-full font-Poppins h-full select-none p-[15px] pr-0 overflow-hidden">
@@ -948,11 +1097,10 @@ export default function SalesReport() {
                             onClick={() =>
                               setFilters({ ...filters, dateRange: option })
                             }
-                            className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                              filters.dateRange === option
-                                ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                            className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
+                              ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
                           >
                             {option}
                           </motion.button>
@@ -962,21 +1110,21 @@ export default function SalesReport() {
 
                     {/* Date Filters + Dropdowns */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-         
+
 
 
                       <DateRangePickerMUI
-                label="From Date"
-                value={fromDate.from}
-                onChange={(date) => setFromDate({ ...dateRange, from: date })}
-              />
+                        label="From Date"
+                        value={fromDate.from}
+                        onChange={(date) => setFromDate({ ...dateRange, from: date })}
+                      />
 
 
-              <DateRangePickerMUI
-                label="To Date"
-                value={toDate.to}
-                onChange={(date) => setToDate({ ...toDate, to: date })}
-              />
+                      <DateRangePickerMUI
+                        label="To Date"
+                        value={toDate.to}
+                        onChange={(date) => setToDate({ ...toDate, to: date })}
+                      />
 
                       <AnimatedDropdown
                         label="Firm"
@@ -1028,7 +1176,7 @@ export default function SalesReport() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <KPICard
                     title="Paid"
-                    amount="₹2,44,500"
+                    amount={`₹${paidTotal.toLocaleString("en-IN")}`}
                     icon={DollarSign}
                     bgColor="var(--green-paid)"
                     lightBgColor="var(--green-light)"
@@ -1036,7 +1184,7 @@ export default function SalesReport() {
                   />
                   <KPICard
                     title="Unpaid"
-                    amount="₹1,36,900"
+                    amount={`₹${unpaidTotal.toLocaleString("en-IN")}`}
                     icon={AlertCircle}
                     bgColor="var(--blue-unpaid)"
                     lightBgColor="var(--blue-light)"
@@ -1044,21 +1192,25 @@ export default function SalesReport() {
                   />
                   <KPICard
                     title="Total"
-                    amount="₹3,81,400"
+                    amount={`₹${grandTotal.toLocaleString("en-IN")}`}
                     icon={DollarSign}
                     bgColor="var(--orange-total)"
                     lightBgColor="var(--orange-light)"
                     trend={8}
                   />
+
                 </div>
 
                 {/* Sales Table */}
                 <SalesTable
+                  salesData={salesData}
                   onViewInvoice={setSelectedInvoice}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
                   itemsPerPage={itemsPerPage}
                 />
+
+
 
                 {/* Invoice Modal */}
                 <AnimatePresence>

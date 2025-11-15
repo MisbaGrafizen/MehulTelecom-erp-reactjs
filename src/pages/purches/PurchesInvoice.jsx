@@ -86,45 +86,55 @@ export default function PurchesInvoice() {
         const productsData = {};
 
         purchases.forEach((purchase) => {
-          purchase.items.forEach((item) => {
-            const name = item.itemName?.trim();
-            if (!name) return;
+  purchase.items.forEach((item) => {
+    const name = item.itemName?.trim();
+    if (!name) return;
 
-            if (!productsData[name]) {
-              productsData[name] = {
-                colors: {},
-                specifications: {},
-                conditions: {}, // ✅ added here
-                totalStock: 0,
-              };
-            }
+    if (!productsData[name]) {
+      productsData[name] = {
+        colors: {},
+        specifications: {},
+        conditions: {},
+        totalStock: 0,
+        serials: []
+      };
+    }
 
-            // ✅ Normalize and capture all possible fields
-            const color =
-              item.color?.trim?.() || item.colour?.trim?.() || "Unknown";
-            const spec =
-              item.specifications?.trim?.() ||
-              item.specification?.trim?.() ||
-              item.specificationName?.trim?.() ||
-              item.spec?.trim?.() ||
-              "Unknown";
-            const condition = item.condition?.trim?.() || "Unknown";
+    const color = item.color?.trim?.() || "Unknown";
+    const spec =
+      item.specifications?.trim?.() ||
+      item.specification?.trim?.() ||
+      item.specificationName?.trim?.() ||
+      item.spec?.trim?.() ||
+      "Unknown";
 
-            // ✅ Available = unsold serials (or quantity fallback)
-            const available = (item.serialNumbers || []).filter(
-              (s) => typeof s === "string" || !s.isSold
-            ).length || item.qty || 1;
+    const condition = item.condition?.trim?.() || "Unknown";
 
-            // ✅ Aggregate counts
-            productsData[name].colors[color] =
-              (productsData[name].colors[color] || 0) + available;
-            productsData[name].specifications[spec] =
-              (productsData[name].specifications[spec] || 0) + available;
-            productsData[name].conditions[condition] =
-              (productsData[name].conditions[condition] || 0) + available;
-            productsData[name].totalStock += available;
-          });
-        });
+    // ✅ SERIAL FILTER: Only available serials
+    const availableSerials = (item.serialNumbers || []).filter((s) => {
+      if (typeof s === "string") return true; // legacy fallback
+      return !s.isSold && !s.inTransfer;
+    });
+
+    const available = availableSerials.length;
+
+    // Store serials for modal
+    productsData[name].serials.push(...availableSerials);
+
+    // Aggregate stock
+    productsData[name].colors[color] =
+      (productsData[name].colors[color] || 0) + available;
+
+    productsData[name].specifications[spec] =
+      (productsData[name].specifications[spec] || 0) + available;
+
+    productsData[name].conditions[condition] =
+      (productsData[name].conditions[condition] || 0) + available;
+
+    productsData[name].totalStock += available;
+  });
+});
+ 
 
         const formatted = Object.keys(productsData).map((name) => ({
           name,

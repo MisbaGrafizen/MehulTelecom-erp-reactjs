@@ -274,45 +274,51 @@ const handleCloseModal = () => {
   setSelectedRow(null);
 };
     useEffect(() => {
-        const fetchData = async () => {
-            const userId = localStorage.getItem("userId");
-            try {
-                setLoading(true)
+    const fetchData = async () => {
+        const userId = localStorage.getItem("userId");
+        const role = localStorage.getItem("role");
 
-                const purchaseRes = await ApiGet(`/admin/purchase/user/${userId}`)
-                console.log('purchaseRes', purchaseRes)
-                if (purchaseRes?.data && Array.isArray(purchaseRes.data)) {
-                    setRows(purchaseRes.data)
-                } else if (Array.isArray(purchaseRes)) {
-                    setRows(purchaseRes)
-                } else {
-                    setRows([])
-                }
+        // Convert role → correct userType used in mongo refPath
+        let userType = "User";
+        if (role === "admin") userType = "User  ";
+        if (role === "branch") userType = "Branch";
 
+        try {
+            setLoading(true);
 
-                const companyRes = await ApiGet("/admin/info")
-                console.log('companyRes', companyRes)
-                if (companyRes?.data) {
-                    const firmNames = companyRes.data?.map(c => c.firmName)
-                    setFirms(firmNames)
-                }
+            // Pass userType to backend
+            const purchaseRes = await ApiGet(`/admin/purchase/user/${userId}?userType=${userType}`);
+            console.log("purchaseRes", purchaseRes);
 
-                const userRes = await ApiGet("/admin/party")
-                console.log('userRes', userRes)
-                if (userRes?.data) {
-                    const userNames = userRes.data.map(u => u.partyName)
-                    setUsers(userNames)
-                }
-
-            } catch (error) {
-                console.error("Error fetching data:", error)
-            } finally {
-                setLoading(false)
+            if (purchaseRes?.data && Array.isArray(purchaseRes.data)) {
+                setRows(purchaseRes.data);
+            } else if (Array.isArray(purchaseRes)) {
+                setRows(purchaseRes);
+            } else {
+                setRows([]);
             }
-        }
 
-        fetchData()
-    }, [])
+            const companyRes = await ApiGet("/admin/info");
+            if (companyRes?.data) {
+                const firmNames = companyRes.data?.map((c) => c.firmName);
+                setFirms(firmNames);
+            }
+
+            const userRes = await ApiGet("/admin/party");
+            if (userRes?.data) {
+                const userNames = userRes.data.map((u) => u.partyName);
+                setUsers(userNames);
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchData();
+}, []);
+
 
 
     // useEffect(() => {

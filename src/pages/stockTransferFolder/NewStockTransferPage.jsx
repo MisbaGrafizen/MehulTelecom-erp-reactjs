@@ -143,7 +143,6 @@ export default function NewStockTransferPage() {
                             }).length
                             : (item.qty || 0);
 
-
           productsData[name].colors[color] =
             (productsData[name].colors[color] || 0) + available;
           productsData[name].specifications[spec] =

@@ -1,12 +1,13 @@
 import React from 'react'
 
-import { useState, useEffect ,useRef} from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Calendar, Eye, Printer, Download, Search, TrendingUp, TrendingDown, ChevronDown, X } from "lucide-react"
 import SideBar from '../../Component/sidebar/SideBar'
 import Header from '../../Component/header/Header'
 import { Calendar as ModernCalendar } from "react-modern-calendar-datepicker";
 import "react-modern-calendar-datepicker/lib/DatePicker.css";
+import { ApiGet } from '../../helper/axios'
 
 
 
@@ -103,240 +104,247 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
     )
 }
 
-const FilterSection = ({ filters, setFilters }) => {
-  const dateRangeOptions = ["Today", "This Week", "This Month"];
-  const firmOptions = ["All Firms", "Firm 1", "Firm 2", "Firm 3"];
-  const userOptions = ["All Users", "User 1", "User 2", "User 3"];
+const FilterSection = ({ filters, setFilters, getRangeFromQuickFilter }) => {
+    const dateRangeOptions = ["Today", "This Week", "This Month"];
+    const firmOptions = ["All Firms", "Firm 1", "Firm 2", "Firm 3"];
+    const userOptions = ["All Users", "User 1", "User 2", "User 3"];
 
-  const [isFirmOpen, setIsFirmOpen] = useState(false);
-  const [isUserOpen, setIsUserOpen] = useState(false);
-  const [showFromCalendar, setShowFromCalendar] = useState(false);
-  const [showToCalendar, setShowToCalendar] = useState(false);
+    const [isFirmOpen, setIsFirmOpen] = useState(false);
+    const [isUserOpen, setIsUserOpen] = useState(false);
+    const [showFromCalendar, setShowFromCalendar] = useState(false);
+    const [showToCalendar, setShowToCalendar] = useState(false);
 
-  const [fromDate, setFromDate] = useState({
-    day: 12,
-    month: 11,
-    year: 2025,
-  });
-  const [toDate, setToDate] = useState({
-    day: 12,
-    month: 11,
-    year: 2025,
-  });
+    // const today = new Date();
+    // const [fromDate, setFromDate] = useState({
+    //     day: today.getDate(),
+    //     month: today.getMonth() + 1,
+    //     year: today.getFullYear(),
+    // });
+    // const [toDate, setToDate] = useState({
+    //     day: today.getDate(),
+    //     month: today.getMonth() + 1,
+    //     year: today.getFullYear(),
+    // });
 
-  const formatDate = (d) => `${d.day}/${d.month}/${d.year}`;
 
-  // 🔒 Refs for click-outside detection
-  const firmRef = useRef(null);
-  const userRef = useRef(null);
-  const fromCalendarRef = useRef(null);
-  const toCalendarRef = useRef(null);
+    const formatDate = (d) => `${d.day}/${d.month}/${d.year}`;
 
-  // 🧠 Close all dropdowns/calendars on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (firmRef.current && !firmRef.current.contains(event.target))
-        setIsFirmOpen(false);
-      if (userRef.current && !userRef.current.contains(event.target))
-        setIsUserOpen(false);
-      if (fromCalendarRef.current && !fromCalendarRef.current.contains(event.target))
-        setShowFromCalendar(false);
-      if (toCalendarRef.current && !toCalendarRef.current.contains(event.target))
-        setShowToCalendar(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    // 🔒 Refs for click-outside detection
+    const firmRef = useRef(null);
+    const userRef = useRef(null);
+    const fromCalendarRef = useRef(null);
+    const toCalendarRef = useRef(null);
 
-  return (
-    <div className="w-full mb-6 bg-white/60 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-lg px-4 py-3 flex flex-wrap gap-3 items-center justify-start transition-all duration-300">
+    // 🧠 Close all dropdowns/calendars on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (firmRef.current && !firmRef.current.contains(event.target))
+                setIsFirmOpen(false);
+            if (userRef.current && !userRef.current.contains(event.target))
+                setIsUserOpen(false);
+            if (fromCalendarRef.current && !fromCalendarRef.current.contains(event.target))
+                setShowFromCalendar(false);
+            if (toCalendarRef.current && !toCalendarRef.current.contains(event.target))
+                setShowToCalendar(false);
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document?.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-      {/* 🔹 Date Range Quick Buttons */}
-      {dateRangeOptions.map((option) => (
-        <motion.button
-          key={option}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setFilters({ ...filters, dateRange: option })}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-            filters.dateRange === option
-              ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          {option}
-        </motion.button>
-      ))}
+    return (
+        <div className="w-full mb-6 bg-white/60 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-lg px-4 py-3 flex flex-wrap gap-3 items-center justify-start transition-all duration-300">
 
-      {/* 🔹 From Date Picker */}
-      <div className="relative" ref={fromCalendarRef}>
-        <button
-          onClick={() => {
-            setShowFromCalendar(!showFromCalendar);
-            setShowToCalendar(false);
-          }}
-          className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
-        >
-          <Calendar size={16} className="text-[#0044ff]" />
-          From: {formatDate(fromDate)}
-        </button>
-
-        {showFromCalendar && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
-          >
-            <ModernCalendar
-              value={fromDate}
-              onChange={(date) => {
-                setFromDate(date);
-                setFilters({ ...filters, fromDate: date });
-              }}
-            //   colorPrimary="#0044ff"
-            //   calendarClassName="custom-calendar"
-              shouldHighlightWeekends
-            />
-          </motion.div>
-        )}
-      </div>
-
-      {/* 🔹 To Date Picker */}
-      <div className="relative" ref={toCalendarRef}>
-        <button
-          onClick={() => {
-            setShowToCalendar(!showToCalendar);
-            setShowFromCalendar(false);
-          }}
-          className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
-        >
-          <Calendar size={16} className="text-[#ff2688]" />
-          To: {formatDate(toDate)}
-        </button>
-
-        {showToCalendar && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
-          >
-            <ModernCalendar
-              value={toDate}
-              onChange={(date) => {
-                setToDate(date);
-                setFilters({ ...filters, toDate: date });
-              }}
-              colorPrimary="#ff2688"
-              calendarClassName="custom-calendar"
-              shouldHighlightWeekends
-            />
-          </motion.div>
-        )}
-      </div>
-
-      {/* 🔹 Firm Dropdown */}
-      <div className="relative" ref={firmRef}>
-        <button
-          onClick={() => setIsFirmOpen(!isFirmOpen)}
-          className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
-        >
-          {filters.firm}
-          <ChevronDown
-            size={16}
-            className={`transition-transform ${
-              isFirmOpen ? "rotate-180" : "rotate-0"
-            }`}
-          />
-        </button>
-
-        {isFirmOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
-          >
-            {firmOptions.map((firm) => (
-              <button
-                key={firm}
-                onClick={() => {
-                  setFilters({ ...filters, firm });
-                  setIsFirmOpen(false);
-                }}
-                className={`block w-full text-left px-4 py-2 text-sm ${
-                  filters.firm === firm
-                    ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
-                    : "hover:bg-gray-100 text-gray-700"
-                }`}
-              >
-                {firm}
-              </button>
+            {/* 🔹 Date Range Quick Buttons */}
+            {dateRangeOptions.map((option) => (
+                <motion.button
+                    key={option}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                        const range = getRangeFromQuickFilter(option);  // ← NEW
+                        setFilters((prev) => ({
+                            ...prev,
+                            dateRange: option,
+                            fromDate: range.from,
+                            toDate: range.to,
+                        }));
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
+                        ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                >
+                    {option}
+                </motion.button>
             ))}
-          </motion.div>
-        )}
-      </div>
 
-      {/* 🔹 User Dropdown */}
-      <div className="relative" ref={userRef}>
-        <button
-          onClick={() => setIsUserOpen(!isUserOpen)}
-          className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
-        >
-          {filters.user}
-          <ChevronDown
-            size={16}
-            className={`transition-transform ${
-              isUserOpen ? "rotate-180" : "rotate-0"
-            }`}
-          />
-        </button>
+            {/* 🔹 From Date Picker */}
+            <div className="relative" ref={fromCalendarRef}>
+                <button
+                    onClick={() => {
+                        setShowFromCalendar(!showFromCalendar);
+                        setShowToCalendar(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
+                >
+                    <Calendar size={16} className="text-[#0044ff]" />
+                    From: {filters.fromDate ? new Date(filters.fromDate).toLocaleDateString() : "Select"}
+                </button>
 
-        {isUserOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
-          >
-            {userOptions.map((user) => (
-              <button
-                key={user}
-                onClick={() => {
-                  setFilters({ ...filters, user });
-                  setIsUserOpen(false);
-                }}
-                className={`block w-full text-left px-4 py-2 text-sm ${
-                  filters.user === user
-                    ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
-                    : "hover:bg-gray-100 text-gray-700"
-                }`}
-              >
-                {user}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </div>
+                {showFromCalendar && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
+                    >
+                        <ModernCalendar
+                            value={fromDate}
+                            onChange={(date) => {
+                                const jsDate = new Date(date.year, date.month - 1, date.day);
+                                setFilters((prev) => ({ ...prev, fromDate: jsDate }));
+                            }}
 
-      {/* 🔹 Modern Search Bar */}
-      <div className="relative w-[300px] ml-auto">
-        <input
-          type="text"
-          placeholder="Search invoice, party, or ID..."
-          className="pl-12 py-2 border w-full border-gray-300 rounded-[10px] text-sm text-gray-700 bg-gray-50 outline-none focus:ring-2 focus:ring-[#0044ff]"
-        />
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 rounded-full"
-        >
-          <Search size={16} />
-        </motion.button>
-      </div>
-    </div>
-  );
+                            //   colorPrimary="#0044ff"
+                            //   calendarClassName="custom-calendar"
+                            shouldHighlightWeekends
+                        />
+                    </motion.div>
+                )}
+            </div>
+
+            {/* 🔹 To Date Picker */}
+            <div className="relative" ref={toCalendarRef}>
+                <button
+                    onClick={() => {
+                        setShowToCalendar(!showToCalendar);
+                        setShowFromCalendar(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
+                >
+                    <Calendar size={16} className="text-[#ff2688]" />
+                    To: {filters.toDate ? new Date(filters.toDate).toLocaleDateString() : "Select"}
+                </button>
+
+                {showToCalendar && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
+                    >
+                        <ModernCalendar
+                            value={toDate}
+                            onChange={(date) => {
+                                const jsDate = new Date(date.year, date.month - 1, date.day);
+                                setFilters((prev) => ({ ...prev, toDate: jsDate }));
+                            }}
+
+                            colorPrimary="#ff2688"
+                            calendarClassName="custom-calendar"
+                            shouldHighlightWeekends
+                        />
+                    </motion.div>
+                )}
+            </div>
+
+            {/* 🔹 Firm Dropdown */}
+            <div className="relative" ref={firmRef}>
+                <button
+                    onClick={() => setIsFirmOpen(!isFirmOpen)}
+                    className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
+                >
+                    {filters.firm}
+                    <ChevronDown
+                        size={16}
+                        className={`transition-transform ${isFirmOpen ? "rotate-180" : "rotate-0"
+                            }`}
+                    />
+                </button>
+
+                {isFirmOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
+                    >
+                        {firmOptions.map((firm) => (
+                            <button
+                                key={firm}
+                                onClick={() => {
+                                    setFilters((prev) => ({ ...prev, firm }));
+                                    setIsFirmOpen(false);
+                                }}
+                                className={`block w-full text-left px-4 py-2 text-sm ${filters.firm === firm
+                                    ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
+                                    : "hover:bg-gray-100 text-gray-700"
+                                    }`}
+                            >
+                                {firm}
+                            </button>
+                        ))}
+                    </motion.div>
+                )}
+            </div>
+
+            {/* 🔹 User Dropdown */}
+            <div className="relative" ref={userRef}>
+                <button
+                    onClick={() => setIsUserOpen(!isUserOpen)}
+                    className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
+                >
+                    {filters.user}
+                    <ChevronDown
+                        size={16}
+                        className={`transition-transform ${isUserOpen ? "rotate-180" : "rotate-0"
+                            }`}
+                    />
+                </button>
+
+                {isUserOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
+                    >
+                        {userOptions.map((user) => (
+                            <button
+                                key={user}
+                                onClick={() => {
+                                    setFilters((prev) => ({ ...prev, user }));
+                                    setIsUserOpen(false);
+                                }}
+                                className={`block w-full text-left px-4 py-2 text-sm ${filters.user === user
+                                    ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
+                                    : "hover:bg-gray-100 text-gray-700"
+                                    }`}
+                            >
+                                {user}
+                            </button>
+                        ))}
+                    </motion.div>
+                )}
+            </div>
+
+            {/* 🔹 Modern Search Bar */}
+            <div className="relative w-[300px] ml-auto">
+                <input
+                    type="text"
+                    placeholder="Search invoice, party, or ID..."
+                    className="pl-12 py-2 border w-full border-gray-300 rounded-[10px] text-sm text-gray-700 bg-gray-50 outline-none focus:ring-2 focus:ring-[#0044ff]"
+                />
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 rounded-full"
+                >
+                    <Search size={16} />
+                </motion.button>
+            </div>
+        </div>
+    );
 };
 
 
@@ -404,56 +412,20 @@ const KPICard = ({ title, amount, icon: IconComponent, bgColor, lightBgColor, tr
 }
 
 // Purchase Table Component
-const PurchaseTable = ({ onViewInvoice }) => {
+const PurchaseTable = ({ onViewInvoice, rows }) => {
     const [selectedRow, setSelectedRow] = useState(null)
 
-    const tableData = [
-        {
-            id: 1,
-            date: "2024-01-15",
-            invoice: "INV-001",
-            party: "ABC Electronics",
-            paymentType: "Online",
-            amount: "₹ 45,000",
-            balance: "₹ 0",
-        },
-        {
-            id: 2,
-            date: "2024-01-14",
-            invoice: "INV-002",
-            party: "XYZ Retail",
-            paymentType: "Cash",
-            amount: "₹ 32,500",
-            balance: "₹ 8,000",
-        },
-        {
-            id: 3,
-            date: "2024-01-13",
-            invoice: "INV-003",
-            party: "Mobile Hub",
-            paymentType: "UPI",
-            amount: "₹ 67,200",
-            balance: "₹ 0",
-        },
-        {
-            id: 4,
-            date: "2024-01-12",
-            invoice: "INV-004",
-            party: "Tech Store",
-            paymentType: "Transfer",
-            amount: "₹ 28,900",
-            balance: "₹ 28,900",
-        },
-        {
-            id: 5,
-            date: "2024-01-11",
-            invoice: "INV-005",
-            party: "Digital World",
-            paymentType: "Online",
-            amount: "₹ 55,300",
-            balance: "₹ 0",
-        },
-    ]
+    const tableData = rows.map((r) => ({
+        id: r._id,
+        date: new Date(r.billDate).toISOString().split("T")[0],
+        invoice: r.billNumber,
+        party: r.partyId?.name || r.partyId?.partyName,
+        paymentType: r.paymentType,
+        amount: `₹ ${r.totalAmount}`,
+        balance: `₹ ${r.unpaidAmount}`,
+        fullRow: r,
+    }));
+
 
     const getPaymentColor = (type) => {
         const colors = {
@@ -509,7 +481,7 @@ const PurchaseTable = ({ onViewInvoice }) => {
                                         <motion.button
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => onViewInvoice(row)}
+                                            onClick={() => onViewInvoice(row.fullRow)}
                                             className="p-2 hover:bg-border rounded-lg transition-colors"
                                             title="View"
                                         >
@@ -664,7 +636,7 @@ const InvoiceDetails = ({ invoice, onClose }) => {
                     <div>
                         <h3 className="font-semibold text-foreground mb-4">Items Purchased</h3>
                         <div className="space-y-3">
-                            {[
+                            {/* {[
                                 {
                                     name: "iPhone 15 Pro",
                                     color: "Space Black",
@@ -709,7 +681,33 @@ const InvoiceDetails = ({ invoice, onClose }) => {
                                         </div>
                                     </div>
                                 </div>
+                            ))} */}
+                            {invoice.items?.map((item, idx) => (
+                                <div key={idx} className="flex gap-4 p-4 bg-gray-200 border border-border rounded-lg">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-unpaid to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span className="text-2xl">📱</span>
+                                    </div>
+                                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground">Product Name</p>
+                                            <p className="font-medium">{item.itemName}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Color</p>
+                                            <p className="font-medium">{item.color}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Specification</p>
+                                            <p className="font-medium">{item.specification}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Price/Unit</p>
+                                            <p className="font-medium">₹ {item.pricePerUnit}</p>
+                                        </div>
+                                    </div>
+                                </div>
                             ))}
+
                         </div>
                     </div>
 
@@ -747,8 +745,107 @@ export default function PurchaseReport() {
         firm: "All Firms",
         user: "All Users",
         payment: "All",
-    })
+        fromDate: null,
+        toDate: null,
+    });
     const [selectedInvoice, setSelectedInvoice] = useState(null)
+    const [rows, setRows] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [kpi, setKpi] = useState({
+        paid: 0,
+        unpaid: 0,
+        total: 0,
+    });
+
+    const getRangeFromQuickFilter = (range) => {
+        const now = new Date();
+
+        if (range === "Today") {
+            const from = new Date(now.setHours(0, 0, 0, 0));
+            const to = new Date();
+            return { from, to };
+        }
+
+        if (range === "This Week") {
+            const first = new Date(now);
+            first.setDate(now.getDate() - now.getDay()); // Monday
+            first.setHours(0, 0, 0, 0);
+
+            const last = new Date(first);
+            last.setDate(first.getDate() + 6); // Sunday
+            last.setHours(23, 59, 59, 999);
+
+            return { from: first, to: last };
+        }
+
+        if (range === "This Month") {
+            const first = new Date(now.getFullYear(), now.getMonth(), 1);
+            const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            return { from: first, to: last };
+        }
+
+        return { from: null, to: null };
+    };
+
+
+    useEffect(() => {
+    const fetchPurchases = async () => {
+        try {
+            setLoading(true);
+
+            const userId = localStorage.getItem("userId");
+            const role = localStorage.getItem("role");
+            const userType = role === "branch" ? "Branch" : "User";
+
+            const from = filters.fromDate ? new Date(filters.fromDate) : null;
+            const to = filters.toDate ? new Date(filters.toDate) : null;
+
+            const params = new URLSearchParams({
+                userType,
+                dateRange: filters.dateRange,
+                from: from ? from.toISOString() : "",
+                to: to ? to.toISOString() : "",
+            });
+
+            const res = await ApiGet(`/admin/purchase/user/${userId}?${params.toString()}`);
+
+            const data = Array.isArray(res?.data) ? res.data : [];
+
+            console.log("📌 FILTER APPLIED:", {
+                dateRange: filters.dateRange,
+                from,
+                to,
+                results: data.length,
+            });
+
+            setRows(data);
+
+            // KPI UPDATE
+            const paid = data.reduce((s, p) => s + (p.paidAmount || 0), 0);
+            const unpaid = data.reduce((s, p) => s + (p.unpaidAmount || 0), 0);
+            const total = data.reduce((s, p) => s + (p.totalAmount || 0), 0);
+
+            setKpi({ paid, unpaid, total });
+        } catch (err) {
+            console.error("❌ Purchase Fetch Error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 👇 converting dates to timestamps ensures re-render
+    const fromTs = filters.fromDate ? new Date(filters.fromDate).getTime() : null;
+    const toTs = filters.toDate ? new Date(filters.toDate).getTime() : null;
+
+    fetchPurchases();
+}, [
+    filters.dateRange,
+    filters.fromDate ? new Date(filters.fromDate).getTime() : null,
+    filters.toDate ? new Date(filters.toDate).getTime() : null,
+]);
+
+
 
     return (
 
@@ -766,38 +863,42 @@ export default function PurchaseReport() {
 
 
                                     {/* Filter Section */}
-                                    <FilterSection filters={filters} setFilters={setFilters} />
+                                    <FilterSection
+                                        filters={filters}
+                                        setFilters={setFilters}
+                                        getRangeFromQuickFilter={getRangeFromQuickFilter}
+                                    />
+
 
                                     {/* KPI Cards */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                         <KPICard
                                             title="Paid"
-                                            amount="₹ 2,44,500"
+                                            amount={`₹ ${kpi.paid}`}
                                             icon={Download}
                                             bgColor="var(--green-paid)"
                                             lightBgColor="var(--green-light)"
-                                            trend={12}
                                         />
+
                                         <KPICard
                                             title="Unpaid"
-                                            amount="₹ 1,36,900"
+                                            amount={`₹ ${kpi.unpaid}`}
                                             icon={TrendingUp}
                                             bgColor="var(--blue-unpaid)"
                                             lightBgColor="var(--blue-light)"
-                                            trend={-5}
                                         />
+
                                         <KPICard
                                             title="Total"
-                                            amount="₹ 3,81,400"
+                                            amount={`₹ ${kpi.total}`}
                                             icon={Download}
                                             bgColor="var(--orange-total)"
                                             lightBgColor="var(--orange-light)"
-                                            trend={8}
                                         />
                                     </div>
 
                                     {/* Purchase Table */}
-                                    <PurchaseTable onViewInvoice={setSelectedInvoice} />
+                                    <PurchaseTable onViewInvoice={setSelectedInvoice} rows={rows} />
 
                                     {/* Invoice Details Modal */}
                                     {selectedInvoice && <InvoiceDetails invoice={selectedInvoice} onClose={() => setSelectedInvoice(null)} />}
