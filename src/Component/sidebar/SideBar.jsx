@@ -51,8 +51,6 @@ export default function SideBar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // 🔹 Menu items
   let menuItems = [
     { name: "Transfer", icon: inventory, path: "/stock-transfer", faIcon: faExchangeAlt },
     { name: "Sales", icon: sales, path: "/sells", faIcon: faShoppingCart },
@@ -61,22 +59,23 @@ export default function SideBar() {
     { name: "Party", icon: Party, path: "/party-listing", faIcon: faUsers },
     { name: "Reports", icon: reports, path: "/reports", faIcon: faChartBar },
   ];
-
   if (role === "admin") {
     menuItems.splice(3, 0, { name: "Company", icon: newsales, path: "/company-listing", faIcon: faBuilding });
     menuItems.push({ name: "Settings", icon: settings, path: "/create-account", faIcon: faCog });
   }
-
-  // 🔹 Reports submenu
   const reportsSubmenu = [
     { name: "Purchase Report", icon: faFileInvoiceDollar, path: "/reports/purchase-report" },
     { name: "Sells Report", icon: faFileInvoiceDollar, path: "/reports/sales-report" },
+    { name: " Transfer Report", icon: faExchangeAlt, path: "/reports/transfer-report" },
+    { name: "Day Book", icon: faChartPie, path: "/reports/day-book" },
     { name: "Total Upi Payment", icon: faCashRegister, path: "/reports/upi-payment" },
-    { name: "Total Transfer", icon: faExchangeAlt, path: "/reports/transfer-report" },
     { name: "Total Cash", icon: faFileAlt, path: "/reports/total-cash" },
     { name: "Total Purchase Value", icon: faIndustry, path: "/reports/purchase-value" },
     { name: "Edging Stock REPORT", icon: faChartPie, path: "/reports/edging-stock" },
+
+
     { name: "SALESMAN WISE PROFIT/LOSS", icon: faUserTie, path: "/reports/salesman-profit" },
+
   ];
 
   const isActive = (path) =>
@@ -96,11 +95,10 @@ export default function SideBar() {
             return (
               <div
                 key={index}
-                className={`flex w-[80%] rounded-[10px] flex-col text-[10px] gap-[3px] items-center font-Poppins py-[5px] mx-auto justify-center h-fit cursor-pointer transition-all duration-200 ${
-                  active
-                    ? "bg-[#F68D18] text-white shadow-md scale-[1.03]"
-                    : "bg-transparent text-white hover:bg-white/10"
-                }`}
+                className={`flex w-[80%] rounded-[10px] flex-col text-[10px] gap-[3px] items-center font-Poppins py-[5px] mx-auto justify-center h-fit cursor-pointer transition-all duration-200 ${active
+                  ? "bg-[#F68D18] text-white shadow-md scale-[1.03]"
+                  : "bg-transparent text-white hover:bg-white/10"
+                  }`}
                 onClick={() => {
                   if (item.name === "Reports") {
                     setOpenReports((prev) => !prev); // toggle on click
@@ -133,11 +131,10 @@ export default function SideBar() {
               return (
                 <div
                   key={i}
-                  className={`flex items-center  border-b gap-2 px-1 py-[7px] text-sm cursor-pointer border-l-4 ${
-                    active
-                      ? "border-[#F68D18] bg-orange-50 text-[#F68D18] font-semibold"
-                      : " border-l-transparent border-b-blue-100 text-gray-600 hover:bg-blue-50 hover:text-[#291eff]"
-                  } transition-all`}
+                  className={`flex items-center  border-b gap-2 px-1 py-[7px] text-sm cursor-pointer border-l-4 ${active
+                    ? "border-[#F68D18] bg-orange-50 text-[#F68D18] font-semibold"
+                    : " border-l-transparent border-b-blue-100 text-gray-600 hover:bg-blue-50 hover:text-[#291eff]"
+                    } transition-all`}
                   onClick={() => {
                     navigate(report.path);
                     setOpenReports(true); // keep open when inside reports
@@ -159,8 +156,7 @@ export default function SideBar() {
             key={index}
             to={item.path}
             className={({ isActive }) =>
-              `flex flex-col items-center  justify-center text-[11px] transition-all duration-200 ${
-                isActive ? "text-[#F68D18] scale-110" : "text-gray-300"
+              `flex flex-col items-center  justify-center text-[11px] transition-all duration-200 ${isActive ? "text-[#F68D18] scale-110" : "text-gray-300"
               }`
             }
           >

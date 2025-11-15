@@ -41,7 +41,7 @@ const DateRangePicker = ({ label, defaultValue, onChange }) => {
                     initial={{ opacity: 0, y: -8 }}
                     animate={isOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
-                    className={`absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50 ${isOpen ? "pointer-events-auto" : "pointer-events-none"
+                    className={`absolute top-full left-0 right-0 mt-2 bg-white  border border-border rounded-lg shadow-lg z-50 ${isOpen ? "pointer-events-auto" : "pointer-events-none"
                         }`}
                 >
                     <div className="p-4 space-y-3">
@@ -80,7 +80,7 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
                     initial={{ opacity: 0, y: -8 }}
                     animate={isOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
-                    className={`absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50 ${isOpen ? "pointer-events-auto" : "pointer-events-none"
+                    className={`absolute top-full left-0 right-0 mt-2 bg-white  border border-border rounded-lg shadow-lg z-50 ${isOpen ? "pointer-events-auto" : "pointer-events-none"
                         }`}
                 >
                     <div className="py-2 space-y-1">
@@ -438,7 +438,7 @@ const PurchaseTable = ({ onViewInvoice, rows }) => {
     }
 
     return (
-        <div className="bg-card border border-border rounded-xl shadow-md overflow-hidden animate-fade-in-up">
+        <div className="bg-white  border border-border rounded-xl shadow-md overflow-hidden animate-fade-in-up">
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead>
@@ -566,10 +566,10 @@ const InvoiceDetails = ({ invoice, onClose }) => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-card border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                className="bg-white  border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card">
+                <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white ">
                     <h2 className="text-2xl font-bold text-foreground">Invoice Details</h2>
                     <motion.button
                         whileHover={{ scale: 1.1 }}

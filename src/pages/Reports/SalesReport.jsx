@@ -52,7 +52,7 @@ const DateRangePicker = ({ label, defaultValue, onChange }) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50"
+              className="absolute top-full left-0 right-0 mt-2 bg-white  border border-border rounded-lg shadow-xl z-50"
             >
               <div className="p-4">
                 <input
@@ -73,9 +73,9 @@ const DateRangePicker = ({ label, defaultValue, onChange }) => {
 const DateRangePickerMUI = ({ label, value, onChange }) => {
   return (
     <div>
-      <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wider">
+      {/* <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wider">
         {label}
-      </label>
+      </label> */}
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <motion.div className=" border rounded-[10px]" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <DatePicker
@@ -141,9 +141,9 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
 
   return (
     <div>
-      <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wider">
+      {/* <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wider">
         {label}
-      </label>
+      </label> */}
       <motion.div className="relative">
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
@@ -168,7 +168,7 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden"
+              className="absolute top-full left-0 right-0 mt-2 bg-white  border border-border rounded-lg shadow-xl z-50 overflow-hidden"
             >
               <div className="py-2 max-h-48 overflow-y-auto">
                 {options.map((option) => (
@@ -207,7 +207,7 @@ const FilterSection = ({ filters, setFilters }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mb-8 p-6 bg-card border border-border rounded-xl shadow-md overflow-x-auto"
+      className="mb-8 p-6 bg-white  border border-border rounded-xl shadow-md overflow-x-auto"
     >
       <div className="space-y-5">
         {/* Quick Date Filters */}
@@ -509,7 +509,7 @@ const SalesTable = ({ salesData = [], onViewInvoice, currentPage, setCurrentPage
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="bg-card border border-border rounded-xl shadow-md overflow-hidden"
+      className="bg-white  border border-border rounded-xl shadow-md overflow-hidden"
     >
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -607,68 +607,68 @@ const SalesTable = ({ salesData = [], onViewInvoice, currentPage, setCurrentPage
             ))}
           </tbody> */}
           <tbody>
-  {tableData.map((row, idx) => (
-    <motion.tr
-      key={idx}
-      onMouseEnter={() => setSelectedRow(idx)}
-      onMouseLeave={() => setSelectedRow(null)}
-      animate={selectedRow === idx ? { backgroundColor: "var(--color-secondary)" } : {}}
-      transition={{ duration: 0.2 }}
-      className="border-b border-border hover:bg-gray-200 transition-colors"
-    >
-      <td className="px-6 py-4 text-sm text-foreground">
-        {row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "-"}
-      </td>
-      <td className="px-6 py-4 text-sm font-semibold text-foreground">
-        {row.billNumber || "-"}
-      </td>
-      <td className="px-6 py-4 text-sm text-foreground">
-        {row.partyId?.partyName || "—"}
-      </td>
-      <td className="px-6 py-4 text-sm text-foreground">
-        {row.userId?.name || "—"}
-      </td>
-      <td className="px-6 py-4 text-sm">
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getPaymentBadgeClass(row.paymentType)}`}>
-          {row.paymentType || "—"}
-        </span>
-      </td>
-      <td className="px-6 py-4 text-sm font-semibold text-foreground">
-        ₹{(row.totalAmount || 0).toLocaleString("en-IN")}
-      </td>
-      <td className="px-6 py-4 text-sm text-green-600 font-semibold">
-        ₹{(row.paidAmount || 0).toLocaleString("en-IN")}
-      </td>
-      <td className="px-6 py-4 text-sm text-red-600 font-semibold">
-        ₹{(row.unpaidAmount || 0).toLocaleString("en-IN")}
-      </td>
-      <td className="px-6 py-4 text-sm">
-        <div className="flex items-center gap-2">
-          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => onViewInvoice(row)} className="p-2 hover:bg-border rounded-lg transition-colors" title="View">
-            <Eye size={16} className="text-muted-foreground" />
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Print">
-            <Printer size={16} className="text-muted-foreground" />
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Download">
-            <Download size={16} className="text-muted-foreground" />
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="More">
-            <MoreVertical size={16} className="text-muted-foreground" />
-          </motion.button>
-        </div>
-      </td>
-    </motion.tr>
-  ))}
+            {tableData.map((row, idx) => (
+              <motion.tr
+                key={idx}
+                onMouseEnter={() => setSelectedRow(idx)}
+                onMouseLeave={() => setSelectedRow(null)}
+                animate={selectedRow === idx ? { backgroundColor: "var(--color-secondary)" } : {}}
+                transition={{ duration: 0.2 }}
+                className="border-b border-border hover:bg-gray-200 transition-colors"
+              >
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.billDate ? new Date(row.billDate).toLocaleDateString("en-IN") : "-"}
+                </td>
+                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                  {row.billNumber || "-"}
+                </td>
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.partyId?.partyName || "—"}
+                </td>
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.userId?.name || "—"}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getPaymentBadgeClass(row.paymentType)}`}>
+                    {row.paymentType || "—"}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                  ₹{(row.totalAmount || 0).toLocaleString("en-IN")}
+                </td>
+                <td className="px-6 py-4 text-sm text-green-600 font-semibold">
+                  ₹{(row.paidAmount || 0).toLocaleString("en-IN")}
+                </td>
+                <td className="px-6 py-4 text-sm text-red-600 font-semibold">
+                  ₹{(row.unpaidAmount || 0).toLocaleString("en-IN")}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => onViewInvoice(row)} className="p-2 hover:bg-border rounded-lg transition-colors" title="View">
+                      <Eye size={16} className="text-muted-foreground" />
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Print">
+                      <Printer size={16} className="text-muted-foreground" />
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="Download">
+                      <Download size={16} className="text-muted-foreground" />
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="p-2 hover:bg-border rounded-lg transition-colors" title="More">
+                      <MoreVertical size={16} className="text-muted-foreground" />
+                    </motion.button>
+                  </div>
+                </td>
+              </motion.tr>
+            ))}
 
-  {tableData.length === 0 && (
-    <tr>
-      <td colSpan={9} className="text-center py-5 text-gray-500 text-sm">
-        No sales records found.
-      </td>
-    </tr>
-  )}
-</tbody>
+            {tableData.length === 0 && (
+              <tr>
+                <td colSpan={9} className="text-center py-5 text-gray-500 text-sm">
+                  No sales records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
 
 
 
@@ -787,10 +787,10 @@ const SellInvoiceDetails = ({ invoice, onClose }) => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-white  border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-card">
+        <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-white ">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-foreground mb-2">{invoice.invoice}</h2>
             <div className="flex gap-2 flex-wrap">
@@ -1083,12 +1083,12 @@ export default function SalesReport() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mb-8 p-6 bg-white/70 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg overflow-x-auto"
+                  className="mb-8 p-4 bg-white/70 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg overflow-x-auto"
                 >
-                  <div className="space-y-6">
+                  <div className="justify-between items-center flex">
                     {/* Quick Date Filters */}
-                    <div className="flex gap-3 pb-3 overflow-x-auto scrollbar-hide">
-                      {["Today", "This Week", "This Month", "Custom"].map(
+                    <div className="flex gap-3  w-[500px]">
+                      {["Today", "This Week", "This Month"].map(
                         (option) => (
                           <motion.button
                             key={option}
@@ -1109,25 +1109,25 @@ export default function SalesReport() {
                     </div>
 
                     {/* Date Filters + Dropdowns */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="grid   lg:grid-cols-5 gap-4">
 
 
 
                       <DateRangePickerMUI
-                        label="From Date"
+                        // label="From Date"
                         value={fromDate.from}
                         onChange={(date) => setFromDate({ ...dateRange, from: date })}
                       />
 
 
                       <DateRangePickerMUI
-                        label="To Date"
+                        // label="To Date"
                         value={toDate.to}
                         onChange={(date) => setToDate({ ...toDate, to: date })}
                       />
 
                       <AnimatedDropdown
-                        label="Firm"
+                        // label="Firm"
                         options={["All Firms", "Firm 1", "Firm 2", "Firm 3"]}
                         value={filters.firm}
                         onChange={(firm) =>
@@ -1135,7 +1135,7 @@ export default function SalesReport() {
                         }
                       />
                       <AnimatedDropdown
-                        label="User"
+                        // label="User"
                         options={["All Users", "User 1", "User 2", "User 3"]}
                         value={filters.user}
                         onChange={(user) =>
@@ -1143,7 +1143,7 @@ export default function SalesReport() {
                         }
                       />
                       <AnimatedDropdown
-                        label="Payment Type"
+                        // label="Payment Type"
                         options={["All", "Cash", "Online", "UPI", "Card"]}
                         value={filters.payment}
                         onChange={(payment) =>
@@ -1153,21 +1153,23 @@ export default function SalesReport() {
                     </div>
 
                     {/* Search Bar */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 mb-2 block uppercase tracking-wider">
+
+                  </div>
+
+                  <div>
+                    {/* <label className="text-xs font-semibold text-gray-500 mb-2 block uppercase tracking-wider">
                         Search
-                      </label>
-                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2.5 focus-within:ring-2 focus-within:ring-[#0044ff] transition">
-                        <Search
-                          size={16}
-                          className="text-gray-400 flex-shrink-0"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Search invoice, party, or ID..."
-                          className="flex-1 bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
-                        />
-                      </div>
+                      </label> */}
+                    <div className="flex mt-[10px] items-center gap-2 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 transition">
+                      <Search
+                        size={16}
+                        className="text-gray-400 flex-shrink-0"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search invoice, party, or ID..."
+                        className="flex-1 bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
+                      />
                     </div>
                   </div>
                 </motion.div>
