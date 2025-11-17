@@ -2120,3 +2120,8 @@ border-color: #fff;
   background: linear-gradient(to bottom, #047dc8, var(--theme-default));
   color: #fff;
 }
+.css-14i5s8z-MuiFormControl-root-MuiTextField-root .MuiOutlinedInput-root {
+  border-width: 1px !important;
+  border-radius: 8px !important;
+
+}

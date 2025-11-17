@@ -383,42 +383,42 @@ const TransferTable = ({ data, onViewTransfer, currentPage, setCurrentPage, item
                 className="border-b border-border hover:bg-gray-100 transition-colors"
               >
                 <td className="px-6 py-4 text-sm text-foreground">
-  {row.transferDate ? dayjs(row.transferDate).format("DD MMM YYYY") : "-"}
-</td>
+                  {row.transferDate ? dayjs(row.transferDate).format("DD MMM YYYY") : "-"}
+                </td>
 
-<td className="px-6 py-4 text-sm font-semibold text-foreground">
-  {row._id ? `TRN-${row._id.slice(-6).toUpperCase()}` : "-"}
-</td>
+                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                  {row._id ? `TRN-${row._id.slice(-6).toUpperCase()}` : "-"}
+                </td>
 
-<td className="px-6 py-4 text-sm text-foreground">
-  {row.companyId?.companyName || "—"}
-</td>
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.companyId?.companyName || "—"}
+                </td>
 
-<td className="px-6 py-4 text-sm text-foreground">
-  {row.fromBranchId?._id ? row.fromBranchId._id.slice(-6).toUpperCase() : "-"}
-</td>
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.fromBranchId?._id ? row.fromBranchId._id.slice(-6).toUpperCase() : "-"}
+                </td>
 
-<td className="px-6 py-4 text-sm text-foreground">
-  {row.toBranchId?._id ? row.toBranchId._id.slice(-6).toUpperCase() : "-"}
-</td>
+                <td className="px-6 py-4 text-sm text-foreground">
+                  {row.toBranchId?._id ? row.toBranchId._id.slice(-6).toUpperCase() : "-"}
+                </td>
 
-<td className="px-6 py-4 text-sm font-semibold text-foreground">
-  {Array.isArray(row.items) ? row.items.length : 0}
-</td>
+                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                  {Array.isArray(row.items) ? row.items.length : 0}
+                </td>
 
-<td className="px-6 py-4 text-sm font-semibold text-foreground">
-  ₹{row.totalAmount?.toLocaleString("en-IN") || 0}
-</td>
+                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                  ₹{row.totalAmount?.toLocaleString("en-IN") || 0}
+                </td>
 
-<td className="px-6 py-4 text-sm">
-  <span
-    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-      row.status?.toLowerCase()
-    )}`}
-  >
-    {row.status?.charAt(0).toUpperCase() + row.status?.slice(1) || "-"}
-  </span>
-</td>
+                <td className="px-6 py-4 text-sm">
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                      row.status?.toLowerCase()
+                    )}`}
+                  >
+                    {row.status?.charAt(0).toUpperCase() + row.status?.slice(1) || "-"}
+                  </span>
+                </td>
 
                 <td className="px-6 py-4 text-sm">
                   <div className="flex items-center gap-2">
@@ -807,13 +807,13 @@ const TransferDetailsModal = ({ transfer, onClose }) => {
 
 export default function StockTransferReport() {
   const [filters, setFilters] = useState({
-    dateRange: "Today", 
+    dateRange: "Today",
     company: "All Companies",
     branch: "All Branches",
     status: "All Status",
     fromDate: null,
-  toDate: null,
- search: "",
+    toDate: null,
+    search: "",
   })
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -824,67 +824,67 @@ export default function StockTransferReport() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-  const fetchTransferData = async () => {
-    try {
-      setLoading(true);
+    const fetchTransferData = async () => {
+      try {
+        setLoading(true);
 
-      const params = {};
+        const params = {};
 
-      // 🗓️ Only send from/to date if filters are applied
-      if (filters.dateRange === "Today") {
-  params.fromDate = dayjs().startOf("day").format("YYYY-MM-DD");
-  params.toDate = dayjs().endOf("day").format("YYYY-MM-DD");
-} else if (filters.dateRange === "This Week") {
-  params.fromDate = dayjs().startOf("week").format("YYYY-MM-DD");
-  params.toDate = dayjs().endOf("week").format("YYYY-MM-DD");
-} else if (filters.dateRange === "This Month") {
-  params.fromDate = dayjs().startOf("month").format("YYYY-MM-DD");
-  params.toDate = dayjs().endOf("month").format("YYYY-MM-DD");
-} else if (filters.fromDate && filters.toDate) {
-  params.fromDate = dayjs(filters.fromDate).format("YYYY-MM-DD");
-  params.toDate = dayjs(filters.toDate).format("YYYY-MM-DD");
-}
+        // 🗓️ Only send from/to date if filters are applied
+        if (filters.dateRange === "Today") {
+          params.fromDate = dayjs().startOf("day").format("YYYY-MM-DD");
+          params.toDate = dayjs().endOf("day").format("YYYY-MM-DD");
+        } else if (filters.dateRange === "This Week") {
+          params.fromDate = dayjs().startOf("week").format("YYYY-MM-DD");
+          params.toDate = dayjs().endOf("week").format("YYYY-MM-DD");
+        } else if (filters.dateRange === "This Month") {
+          params.fromDate = dayjs().startOf("month").format("YYYY-MM-DD");
+          params.toDate = dayjs().endOf("month").format("YYYY-MM-DD");
+        } else if (filters.fromDate && filters.toDate) {
+          params.fromDate = dayjs(filters.fromDate).format("YYYY-MM-DD");
+          params.toDate = dayjs(filters.toDate).format("YYYY-MM-DD");
+        }
 
-      // 🏢 Dropdown filters
-      if (filters.company && filters.company !== "All Companies") {
-        params.company = filters.company;
+        // 🏢 Dropdown filters
+        if (filters.company && filters.company !== "All Companies") {
+          params.company = filters.company;
+        }
+        if (filters.branch && filters.branch !== "All Branches") {
+          params.branch = filters.branch;
+        }
+        if (filters.status && filters.status !== "All Status") {
+          params.status = filters.status.toLowerCase();
+        }
+
+        console.log("📤 Fetching from /admin/transfer-report with params:", params);
+
+        const res = await ApiGet("/admin/transfer-report", { params });
+        console.log("✅ Response:", res);
+
+        const data = res?.data || [];
+        const kpiData = res?.kpi || { completed: 0, pending: 0, total: 0 };
+
+        setTransferData(data);
+        setKpi(kpiData);
+        if (filters.search?.trim()) {
+          const keyword = filters.search.toLowerCase();
+          const filtered = data.filter((t) =>
+            t._id?.toLowerCase().includes(keyword) ||
+            t.fromBranchId?.branchName?.toLowerCase().includes(keyword) ||
+            t.toBranchId?.branchName?.toLowerCase().includes(keyword)
+          );
+          setTransferData(filtered);
+        }
+
+      } catch (err) {
+        console.error("❌ Error fetching transfer report:", err);
+      } finally {
+        setLoading(false);
       }
-      if (filters.branch && filters.branch !== "All Branches") {
-        params.branch = filters.branch;
-      }
-      if (filters.status && filters.status !== "All Status") {
-        params.status = filters.status.toLowerCase();
-      }
+    };
 
-      console.log("📤 Fetching from /admin/transfer-report with params:", params);
-
-      const res = await ApiGet("/admin/transfer-report", { params });
-      console.log("✅ Response:", res);
-
-      const data = res?.data || [];
-      const kpiData = res?.kpi || { completed: 0, pending: 0, total: 0 };
-
-      setTransferData(data);
-      setKpi(kpiData);
-      if (filters.search?.trim()) {
-  const keyword = filters.search.toLowerCase();
-  const filtered = data.filter((t) =>
-    t._id?.toLowerCase().includes(keyword) ||
-    t.fromBranchId?.branchName?.toLowerCase().includes(keyword) ||
-    t.toBranchId?.branchName?.toLowerCase().includes(keyword)
-  );
-  setTransferData(filtered);
-}
-
-    } catch (err) {
-      console.error("❌ Error fetching transfer report:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchTransferData();
-}, [filters]);
+    fetchTransferData();
+  }, [filters]);
 
 
 
@@ -919,11 +919,11 @@ export default function StockTransferReport() {
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => setFilters({
-    ...filters,
-    dateRange: option,
-    fromDate: null,
-    toDate: null,
-  })}
+                                ...filters,
+                                dateRange: option,
+                                fromDate: null,
+                                toDate: null,
+                              })}
                               className={`px-4 py-2 rounded-lg  shadow-md font-medium transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
                                 ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -984,7 +984,7 @@ export default function StockTransferReport() {
                               placeholder="Search transfer no, serial no, branch…"
                               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder-muted-foreground"
                               value={filters.search}
- onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                             />
                           </div>
 
@@ -998,40 +998,40 @@ export default function StockTransferReport() {
                   {/* KPI Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <KPICard
-  title="Transferred"
-  amount={`₹${kpi.completed || 0}`}
-  icon={Package}
-  bgColor="var(--green-paid)"
-  lightBgColor="var(--green-light)"
-  trend={12}
-/>
-<KPICard
-  title="Pending"
-  amount={`₹${kpi.pending || 0}`}
-  icon={MapPin}
-  bgColor="var(--blue-unpaid)"
-  lightBgColor="var(--blue-light)"
-  trend={-3}
-/>
-<KPICard
-  title="Total"
-  amount={`₹${kpi.total || 0}`}
-  icon={Package}
-  bgColor="var(--orange-total)"
-  lightBgColor="var(--orange-light)"
-  trend={8}
-/>
+                      title="Transferred"
+                      amount={`₹${kpi.completed || 0}`}
+                      icon={Package}
+                      bgColor="var(--green-paid)"
+                      lightBgColor="var(--green-light)"
+                      trend={12}
+                    />
+                    <KPICard
+                      title="Pending"
+                      amount={`₹${kpi.pending || 0}`}
+                      icon={MapPin}
+                      bgColor="var(--blue-unpaid)"
+                      lightBgColor="var(--blue-light)"
+                      trend={-3}
+                    />
+                    <KPICard
+                      title="Total"
+                      amount={`₹${kpi.total || 0}`}
+                      icon={Package}
+                      bgColor="var(--orange-total)"
+                      lightBgColor="var(--orange-light)"
+                      trend={8}
+                    />
 
                   </div>
 
                   {/* Transfer Table */}
-                  <TransferTable  
-  data={transferData}
-  onViewTransfer={setSelectedTransfer}
-  currentPage={currentPage}
-  setCurrentPage={setCurrentPage}
-  itemsPerPage={itemsPerPage}
-/>
+                  <TransferTable
+                    data={transferData}
+                    onViewTransfer={setSelectedTransfer}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                  />
 
 
 

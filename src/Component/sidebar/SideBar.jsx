@@ -68,12 +68,11 @@ export default function SideBar() {
     { name: "Sells Report", icon: faFileInvoiceDollar, path: "/reports/sales-report" },
     { name: " Transfer Report", icon: faExchangeAlt, path: "/reports/transfer-report" },
     { name: "Day Book", icon: faChartPie, path: "/reports/day-book" },
-    { name: "Total Upi Payment", icon: faCashRegister, path: "/reports/upi-payment" },
-    { name: "Total Cash", icon: faFileAlt, path: "/reports/total-cash" },
-    { name: "Total Purchase Value", icon: faIndustry, path: "/reports/purchase-value" },
+    // { name: "Total Upi Payment", icon: faCashRegister, path: "/reports/upi-payment" },
+
+    { name: "Cash Flow Report", icon: faFileAlt, path: "/reports/cash-flow-report" },
+    { name: "Sotck Summary Report", icon: faIndustry, path: "/reports/stock-summery-report" },
     { name: "Edging Stock REPORT", icon: faChartPie, path: "/reports/edging-stock" },
-
-
     { name: "SALESMAN WISE PROFIT/LOSS", icon: faUserTie, path: "/reports/salesman-profit" },
 
   ];

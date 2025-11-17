@@ -19,6 +19,8 @@ import PurchaseReport from "./pages/Reports/PurchaseReport";
 import SalesReport from "./pages/Reports/SalesReport";
 import StockTransferReport from "./pages/Reports/StockTransferReport";
 import DayBookReport from "./pages/Reports/DayBookReport";
+import CashflowReport from "./pages/Reports/CashflowReport";
+import StockSummaryReport from "./pages/Reports/StockSummaryReport";
 
 
 
@@ -46,6 +48,10 @@ function App() {
                     <Route path="/reports/purchase-report" element={<PurchaseReport />} />
           <Route path="/reports/transfer-report" element={<StockTransferReport />} />
           <Route path="/reports/day-book" element={<DayBookReport />} />
+          <Route path="/reports/cash-flow-report" element={<CashflowReport />} />
+          <Route path="/reports/stock-summery-report" element={<StockSummaryReport />} />
+
+
 
 
 
