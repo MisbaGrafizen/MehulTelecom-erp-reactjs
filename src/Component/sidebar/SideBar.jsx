@@ -72,8 +72,8 @@ export default function SideBar() {
 
     { name: "Cash Flow Report", icon: faFileAlt, path: "/reports/cash-flow-report" },
     { name: "Sotck Summary Report", icon: faIndustry, path: "/reports/stock-summery-report" },
-    { name: "Edging Stock REPORT", icon: faChartPie, path: "/reports/edging-stock" },
-    { name: "SALESMAN WISE PROFIT/LOSS", icon: faUserTie, path: "/reports/salesman-profit" },
+    { name: "Edging Stock REPORT", icon: faChartPie, path: "/reports/stock-ageing-report" },
+    { name: "SALESMAN WISE PROFIT/LOSS", icon: faUserTie, path: "/reports/salesman-wise-profit&loss" },
 
   ];
 

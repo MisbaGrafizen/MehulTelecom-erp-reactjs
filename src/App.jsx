@@ -21,6 +21,8 @@ import StockTransferReport from "./pages/Reports/StockTransferReport";
 import DayBookReport from "./pages/Reports/DayBookReport";
 import CashflowReport from "./pages/Reports/CashflowReport";
 import StockSummaryReport from "./pages/Reports/StockSummaryReport";
+import { StockAgeingReport } from "./pages/Reports/StockAgeingReport";
+import SalesmanProfitLoss from "./pages/Reports/SalesmanProfitLoss";
 
 
 
@@ -50,6 +52,10 @@ function App() {
           <Route path="/reports/day-book" element={<DayBookReport />} />
           <Route path="/reports/cash-flow-report" element={<CashflowReport />} />
           <Route path="/reports/stock-summery-report" element={<StockSummaryReport />} />
+          <Route path="/reports/stock-ageing-report" element={<StockAgeingReport />} />
+          <Route path="/reports/salesman-wise-profit&loss" element={<SalesmanProfitLoss />} />
+
+
 
 
 
