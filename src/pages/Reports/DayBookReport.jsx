@@ -17,6 +17,8 @@ import FilterBar from '../../Component/DayBookReports/FilterBar'
 import SearchBar from '../../Component/DayBookReports/SearchBar'
 import Header from "../../Component/header/Header"
 import SideBar from "../../Component/sidebar/SideBar"
+import { ApiGet } from "../../helper/axios"
+
 
 
 export default function DayBookReport() {
@@ -25,218 +27,292 @@ export default function DayBookReport() {
     const [modalType, setModalType] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [filters, setFilters] = useState({
-        company: "All Companies",
-        transactionType: "All Types",
-    })
+    company: "All Companies",
+    transactionType: "All Types",
+    dateRange: "Today",  // ✅ Default selected filter
+    fromDate: null,
+    toDate: null,
+})
+
+    const [dayBookData, setDayBookData] = useState([])
+const [loading, setLoading] = useState(false)
+
 
     const itemsPerPage = 10
 
     // Mock data
-    const dayBookData = [
-        {
-            id: 1,
-            time: "09:15 AM",
-            type: "purchase",
-            invoiceNo: "PUR-001",
-            party: "ABC Suppliers",
-            paymentMode: "Cash",
-            amount: "₹45,000",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                partyName: "ABC Suppliers",
-                items: 3,
-                totalAmount: 45000
-            }
-        },
-        {
-            id: 2,
-            time: "10:30 AM",
-            type: "sale",
-            invoiceNo: "INV-001",
-            party: "Customer 1",
-            paymentMode: "UPI",
-            amount: "₹23,500",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                customerName: "Customer 1",
-                items: 2,
-                totalAmount: 23500,
-                remainingAmount: 0,
-                salesman: "John Doe"
-            }
-        },
-        {
-            id: 3,
-            time: "11:45 AM",
-            type: "transfer",
-            invoiceNo: "TRN-001",
-            party: "Mumbai Branch",
-            paymentMode: "None",
-            amount: "₹15,000",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                fromBranch: "Delhi Branch",
-                toBranch: "Mumbai Branch",
-                items: 5,
-                totalAmount: 15000
-            }
-        },
-        {
-            id: 4,
-            time: "01:00 PM",
-            type: "sale",
-            invoiceNo: "INV-002",
-            party: "Customer 2",
-            paymentMode: "Online",
-            amount: "₹34,200",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                customerName: "Customer 2",
-                items: 3,
-                totalAmount: 34200,
-                remainingAmount: 5000,
-                salesman: "Jane Smith"
-            }
-        },
-        {
-            id: 5,
-            time: "02:15 PM",
-            type: "purchase",
-            invoiceNo: "PUR-002",
-            party: "XYZ Distributors",
-            paymentMode: "Online",
-            amount: "₹67,800",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                partyName: "XYZ Distributors",
-                items: 5,
-                totalAmount: 67800
-            }
-        },
-        {
-            id: 6,
-            time: "03:30 PM",
-            type: "sale",
-            invoiceNo: "INV-003",
-            party: "Customer 3",
-            paymentMode: "Cash",
-            amount: "₹12,300",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                customerName: "Customer 3",
-                items: 1,
-                totalAmount: 12300,
-                remainingAmount: 0,
-                salesman: "Mike Johnson"
-            }
-        },
-        {
-            id: 7,
-            time: "04:45 PM",
-            type: "transfer",
-            invoiceNo: "TRN-002",
-            party: "Bangalore Branch",
-            paymentMode: "None",
-            amount: "₹28,500",
-            status: "Pending",
-            details: {
-                company: "ABC Mobile Store",
-                fromBranch: "Delhi Branch",
-                toBranch: "Bangalore Branch",
-                items: 8,
-                totalAmount: 28500
-            }
-        },
-        {
-            id: 8,
-            time: "05:20 PM",
-            type: "purchase",
-            invoiceNo: "PUR-003",
-            party: "Tech Wholesale",
-            paymentMode: "UPI",
-            amount: "₹56,400",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                partyName: "Tech Wholesale",
-                items: 4,
-                totalAmount: 56400
-            }
-        },
-        {
-            id: 9,
-            time: "06:00 PM",
-            type: "sale",
-            invoiceNo: "INV-004",
-            party: "Customer 4",
-            paymentMode: "Cash",
-            amount: "₹18,900",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                customerName: "Customer 4",
-                items: 2,
-                totalAmount: 18900,
-                remainingAmount: 0,
-                salesman: "Sarah Lee"
-            }
-        },
-        {
-            id: 10,
-            time: "06:45 PM",
-            type: "transfer",
-            invoiceNo: "TRN-003",
-            party: "Chennai Branch",
-            paymentMode: "None",
-            amount: "₹9,200",
-            status: "Completed",
-            details: {
-                company: "ABC Mobile Store",
-                fromBranch: "Delhi Branch",
-                toBranch: "Chennai Branch",
-                items: 3,
-                totalAmount: 9200
-            }
-        },
-    ]
+    // const dayBookData = [
+    //     {
+    //         id: 1,
+    //         time: "09:15 AM",
+    //         type: "purchase",
+    //         invoiceNo: "PUR-001",
+    //         party: "ABC Suppliers",
+    //         paymentMode: "Cash",
+    //         amount: "₹45,000",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             partyName: "ABC Suppliers",
+    //             items: 3,
+    //             totalAmount: 45000
+    //         }
+    //     },
+    //     {
+    //         id: 2,
+    //         time: "10:30 AM",
+    //         type: "sale",
+    //         invoiceNo: "INV-001",
+    //         party: "Customer 1",
+    //         paymentMode: "UPI",
+    //         amount: "₹23,500",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             customerName: "Customer 1",
+    //             items: 2,
+    //             totalAmount: 23500,
+    //             remainingAmount: 0,
+    //             salesman: "John Doe"
+    //         }
+    //     },
+    //     {
+    //         id: 3,
+    //         time: "11:45 AM",
+    //         type: "transfer",
+    //         invoiceNo: "TRN-001",
+    //         party: "Mumbai Branch",
+    //         paymentMode: "None",
+    //         amount: "₹15,000",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             fromBranch: "Delhi Branch",
+    //             toBranch: "Mumbai Branch",
+    //             items: 5,
+    //             totalAmount: 15000
+    //         }
+    //     },
+    //     {
+    //         id: 4,
+    //         time: "01:00 PM",
+    //         type: "sale",
+    //         invoiceNo: "INV-002",
+    //         party: "Customer 2",
+    //         paymentMode: "Online",
+    //         amount: "₹34,200",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             customerName: "Customer 2",
+    //             items: 3,
+    //             totalAmount: 34200,
+    //             remainingAmount: 5000,
+    //             salesman: "Jane Smith"
+    //         }
+    //     },
+    //     {
+    //         id: 5,
+    //         time: "02:15 PM",
+    //         type: "purchase",
+    //         invoiceNo: "PUR-002",
+    //         party: "XYZ Distributors",
+    //         paymentMode: "Online",
+    //         amount: "₹67,800",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             partyName: "XYZ Distributors",
+    //             items: 5,
+    //             totalAmount: 67800
+    //         }
+    //     },
+    //     {
+    //         id: 6,
+    //         time: "03:30 PM",
+    //         type: "sale",
+    //         invoiceNo: "INV-003",
+    //         party: "Customer 3",
+    //         paymentMode: "Cash",
+    //         amount: "₹12,300",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             customerName: "Customer 3",
+    //             items: 1,
+    //             totalAmount: 12300,
+    //             remainingAmount: 0,
+    //             salesman: "Mike Johnson"
+    //         }
+    //     },
+    //     {
+    //         id: 7,
+    //         time: "04:45 PM",
+    //         type: "transfer",
+    //         invoiceNo: "TRN-002",
+    //         party: "Bangalore Branch",
+    //         paymentMode: "None",
+    //         amount: "₹28,500",
+    //         status: "Pending",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             fromBranch: "Delhi Branch",
+    //             toBranch: "Bangalore Branch",
+    //             items: 8,
+    //             totalAmount: 28500
+    //         }
+    //     },
+    //     {
+    //         id: 8,
+    //         time: "05:20 PM",
+    //         type: "purchase",
+    //         invoiceNo: "PUR-003",
+    //         party: "Tech Wholesale",
+    //         paymentMode: "UPI",
+    //         amount: "₹56,400",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             partyName: "Tech Wholesale",
+    //             items: 4,
+    //             totalAmount: 56400
+    //         }
+    //     },
+    //     {
+    //         id: 9,
+    //         time: "06:00 PM",
+    //         type: "sale",
+    //         invoiceNo: "INV-004",
+    //         party: "Customer 4",
+    //         paymentMode: "Cash",
+    //         amount: "₹18,900",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             customerName: "Customer 4",
+    //             items: 2,
+    //             totalAmount: 18900,
+    //             remainingAmount: 0,
+    //             salesman: "Sarah Lee"
+    //         }
+    //     },
+    //     {
+    //         id: 10,
+    //         time: "06:45 PM",
+    //         type: "transfer",
+    //         invoiceNo: "TRN-003",
+    //         party: "Chennai Branch",
+    //         paymentMode: "None",
+    //         amount: "₹9,200",
+    //         status: "Completed",
+    //         details: {
+    //             company: "ABC Mobile Store",
+    //             fromBranch: "Delhi Branch",
+    //             toBranch: "Chennai Branch",
+    //             items: 3,
+    //             totalAmount: 9200
+    //         }
+    //     },
+    // ]
+
+useEffect(() => {
+  const fetchDayBookData = async () => {
+    try {
+      setLoading(true);
+
+      // 🔗 Build query string
+      const params = new URLSearchParams();
+      if (filters.dateRange) params.append("dateRange", filters.dateRange);
+      if (filters.fromDate && filters.toDate) {
+        params.append("fromDate", dayjs(filters.fromDate).format("YYYY-MM-DD"));
+        params.append("toDate", dayjs(filters.toDate).format("YYYY-MM-DD"));
+      }
+      if (selectedDate && !filters.fromDate) {
+        params.append("date", selectedDate.format("YYYY-MM-DD"));
+      }
+      if (filters.search) params.append("search", filters.search);
+
+      const url = `/admin/daybook?${params.toString()}`;
+      console.log("📤 Fetching:", url);
+
+      const res = await ApiGet(url);
+      const data = res?.data || {};
+
+      const mergedData = [
+        ...(data.purchases || []).map((p) => ({
+          id: p._id,
+          type: "purchase",
+          time: p.billDate ? dayjs(p.billDate).format("hh:mm A") : "-",
+          invoiceNo: p.billNumber || "N/A",
+          party: p.partyId?.partyName || "N/A",
+          paymentMode: p.paymentType || "Cash",
+          amount: p.totalAmount || 0,
+          status: p.unpaidAmount > 0 ? "Pending" : "Completed",
+          details: p,
+        })),
+        ...(data.transfers || []).map((t) => ({
+          id: t._id,
+          type: "transfer",
+          time: t.transferDate ? dayjs(t.transferDate).format("hh:mm A") : "-",
+          invoiceNo: t.billNumber || "N/A",
+          party: `${t.fromBranchId?.branchName || "N/A"} → ${t.toBranchId?.branchName || "N/A"}`,
+          paymentMode: "None",
+          amount: t.totalAmount || 0,
+          status: t.status || "Pending",
+          details: t,
+        })),
+      ];
+
+      setDayBookData(mergedData);
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDayBookData();
+}, [selectedDate, filters]);
+
+
+
 
     // Calculate KPI totals
-    const calculateKPIs = () => {
-        let purchaseTotal = 0
-        let saleTotal = 0
-        let transferTotal = 0
-        let cashTotal = 0
-        let upiTotal = 0
-        let onlineTotal = 0
+const calculateKPIs = () => {
+  // 🛡️ Ensure we always have an array
+  const dataArray = Array.isArray(dayBookData) ? dayBookData : []
 
-        dayBookData.forEach(item => {
-            const amount = parseInt(item.amount.replace(/[₹,]/g, ""))
+  let purchaseTotal = 0
+  let saleTotal = 0
+  let transferTotal = 0
+  let cashTotal = 0
+  let upiTotal = 0
+  let onlineTotal = 0
 
-            if (item.type === "purchase") purchaseTotal += amount
-            if (item.type === "sale") saleTotal += amount
-            if (item.type === "transfer") transferTotal += amount
+  dataArray.forEach(item => {
+    const amount = parseInt(item.totalAmount || item.amount || 0)
 
-            if (item.paymentMode === "Cash") cashTotal += (item.type === "sale" ? amount : 0)
-            if (item.paymentMode === "UPI") upiTotal += (item.type === "sale" ? amount : 0)
-            if (item.paymentMode === "Online") onlineTotal += (item.type === "sale" ? amount : 0)
-        })
+    if (item.type === "purchase") purchaseTotal += amount
+    if (item.type === "sale") saleTotal += amount
+    if (item.type === "transfer") transferTotal += amount
 
-        return {
-            purchaseTotal,
-            saleTotal,
-            transferTotal,
-            cashTotal,
-            upiTotal,
-            onlineTotal,
-            grandTotal: saleTotal - purchaseTotal
-        }
-    }
+    if (item.paymentMode === "Cash") cashTotal += amount
+    if (item.paymentMode === "UPI") upiTotal += amount
+    if (item.paymentMode === "Online") onlineTotal += amount
+  })
+
+  return {
+    purchaseTotal,
+    saleTotal,
+    transferTotal,
+    cashTotal,
+    upiTotal,
+    onlineTotal,
+    grandTotal: saleTotal - purchaseTotal
+  }
+}
+
+
 
     const kpis = calculateKPIs()
 
@@ -308,16 +384,21 @@ export default function DayBookReport() {
                                     </div>
 
                                     {/* Day Book Table */}
-                                    <DayBookTable
-                                        data={dayBookData}
-                                        currentPage={currentPage}
-                                        setCurrentPage={setCurrentPage}
-                                        itemsPerPage={itemsPerPage}
-                                        onViewTransaction={(transaction) => {
-                                            setSelectedTransaction(transaction)
-                                            setModalType(transaction.type)
-                                        }}
-                                    />
+                                    {loading ? (
+  <div className="text-center py-8 text-gray-500">Loading Day Book Data...</div>
+) : (
+  <DayBookTable
+    data={dayBookData}
+    currentPage={currentPage}
+    setCurrentPage={setCurrentPage}
+    itemsPerPage={itemsPerPage}
+    onViewTransaction={(transaction) => {
+      setSelectedTransaction(transaction)
+      setModalType(transaction.type)
+    }}
+  />
+)}
+
 
                                     {/* Modals */}
                                     <AnimatePresence>

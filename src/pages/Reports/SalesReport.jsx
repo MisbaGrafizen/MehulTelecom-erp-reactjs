@@ -79,8 +79,8 @@ const DateRangePickerMUI = ({ label, value, onChange }) => {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <motion.div className=" border rounded-[10px]" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <DatePicker
-            value={value}
-            onChange={onChange}
+  value={value ?? null} // always defined
+  onChange={(newValue) => onChange?.(newValue)}
             slotProps={{
               textField: {
                 fullWidth: true,
@@ -625,9 +625,9 @@ const SalesTable = ({ salesData = [], onViewInvoice, currentPage, setCurrentPage
                 <td className="px-6 py-4 text-sm text-foreground">
                   {row.partyId?.partyName || "—"}
                 </td>
-                <td className="px-6 py-4 text-sm text-foreground">
+                {/* <td className="px-6 py-4 text-sm text-foreground">
                   {row.userId?.name || "—"}
-                </td>
+                </td> */}
                 <td className="px-6 py-4 text-sm">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getPaymentBadgeClass(row.paymentType)}`}>
                     {row.paymentType || "—"}
@@ -983,13 +983,13 @@ const SellInvoiceDetails = ({ invoice, onClose }) => {
 
 export default function SalesReport() {
   const [filters, setFilters] = useState({
-    dateRange: "This Month",
-    firm: "All Firms",
-    user: "All Users",
-    payment: "All",
-    fromDate: dayjs("2024-01-01").toDate(),
-    toDate: dayjs("2024-12-31").toDate(),
-  });
+  dateRange: "This Month",
+  firm: "All Firms",
+  user: "All Users",
+  payment: "All",
+  fromDate: dayjs().startOf("month").toDate(),  // ✅ start of current month
+  toDate: dayjs().endOf("month").toDate(),      // ✅ end of current month
+});
 
   // 📦 API data states
   const [salesData, setSalesData] = useState([]);
@@ -1031,42 +1031,71 @@ export default function SalesReport() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const fetchSalesData = async () => {
-      try {
-        setLoading(true);
+useEffect(() => {
+  const fetchSalesData = async () => {
+    try {
+      setLoading(true);
 
-        const params = {
-          fromDate: filters.fromDate,
-          toDate: filters.toDate,
-          firm: filters.firm !== "All Firms" ? filters.firm : undefined,
-          user: filters.user !== "All Users" ? filters.user : undefined,
-          paymentType: filters.payment !== "All" ? filters.payment : undefined,
-        };
+      const query = new URLSearchParams();
+      let url = "/admin/sales-report";
 
-        const res = await ApiGet("/admin/sales-report", { params });
-        console.log('res', res)
-        const data = res?.data?.data || [];
-        const kpiData = res?.data?.kpi || {
-          paidTotal: 0,
-          unpaidTotal: 0,
-          grandTotal: 0,
-        };
-
-        setSalesData(data);
-        setPaidTotal(kpiData.paidTotal);
-        setUnpaidTotal(kpiData.unpaidTotal);
-        setGrandTotal(kpiData.grandTotal);
-      } catch (err) {
-        console.error("❌ Error fetching sales report:", err);
-        setError("Failed to load sales data");
-      } finally {
-        setLoading(false);
+      // 🧭 Handle Date Filters
+      if (filters.dateRange === "Today") {
+        const today = dayjs().format("YYYY-MM-DD");
+        query.append("fromDate", today);
+        query.append("toDate", today);
+      } else if (filters.dateRange === "This Week") {
+        query.append("fromDate", dayjs().subtract(7, "day").format("YYYY-MM-DD"));
+        query.append("toDate", dayjs().format("YYYY-MM-DD"));
+      } else if (filters.dateRange === "This Month") {
+        query.append("fromDate", dayjs().startOf("month").format("YYYY-MM-DD"));
+        query.append("toDate", dayjs().endOf("month").format("YYYY-MM-DD"));
+      } else if (filters.fromDate && filters.toDate) {
+        // Custom date range (selected by user)
+        query.append("fromDate", dayjs(filters.fromDate).format("YYYY-MM-DD"));
+        query.append("toDate", dayjs(filters.toDate).format("YYYY-MM-DD"));
       }
-    };
 
-    fetchSalesData();
-  }, [filters]);
+      // 🧾 Other filters (Firm, User, Payment)
+      if (filters.firm && filters.firm !== "All Firms") query.append("firm", filters.firm);
+      if (filters.user && filters.user !== "All Users") query.append("user", filters.user);
+      if (filters.payment && filters.payment !== "All") query.append("paymentType", filters.payment);
+
+      // 🔍 Search bar (optional)
+      if (filters.search && filters.search.trim() !== "") {
+        query.append("search", filters.search.trim());
+      }
+
+      // ✅ Final URL — only adds query if filters exist
+      const finalUrl = query.toString() ? `${url}?${query.toString()}` : url;
+
+      console.log("📤 Fetching from:", finalUrl);
+
+        const res = await ApiGet(finalUrl);
+      console.log('res', res)
+      const data = res?.data || [];
+      const kpiData = res?.kpi || {
+        paidTotal: 0,
+        unpaidTotal: 0,
+        grandTotal: 0,
+      };
+
+      setSalesData(data);
+      setPaidTotal(kpiData.paidTotal);
+      setUnpaidTotal(kpiData.unpaidTotal);
+      setGrandTotal(kpiData.grandTotal);
+    } catch (err) {
+      console.error("❌ Error fetching sales report:", err);
+      setError("Failed to load sales data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchSalesData();
+}, [filters]);
+
+
 
 
   return (
@@ -1112,19 +1141,21 @@ export default function SalesReport() {
                     <div className="grid   lg:grid-cols-5 gap-4">
 
 
+<DateRangePickerMUI
+  value={filters.fromDate ? dayjs(filters.fromDate) : dayjs().startOf("month")} // ✅ default to current month start
+  onChange={(date) => {
+    setFilters({ ...filters, fromDate: date ? date.toDate() : null });
+  }}
+/>
 
-                      <DateRangePickerMUI
-                        // label="From Date"
-                        value={fromDate.from}
-                        onChange={(date) => setFromDate({ ...dateRange, from: date })}
-                      />
+<DateRangePickerMUI
+  value={filters.toDate ? dayjs(filters.toDate) : dayjs().endOf("month")} // ✅ default to current month end
+  onChange={(date) => {
+    setFilters({ ...filters, toDate: date ? date.toDate() : null });
+  }}
+/>
 
 
-                      <DateRangePickerMUI
-                        // label="To Date"
-                        value={toDate.to}
-                        onChange={(date) => setToDate({ ...toDate, to: date })}
-                      />
 
                       <AnimatedDropdown
                         // label="Firm"

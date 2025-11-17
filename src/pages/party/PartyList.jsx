@@ -4,6 +4,20 @@ import { Eye, Plus, X, Upload, Search, MoreVertical, Printer, Download } from "l
 import { motion, AnimatePresence } from "framer-motion"
 import SideBar from "../../Component/sidebar/SideBar"
 import Header from "../../Component/header/Header"
+import { ApiGet } from "../../helper/axios"
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+
+  const date = new Date(dateString);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`; // DD-MM-YYYY
+};
+
 
 export default function PartyList() {
     const [parties, setParties] = useState([])
@@ -25,15 +39,26 @@ export default function PartyList() {
     photoPreview: null,
   })
   const [openMenuId, setOpenMenuId] = useState(null)
+useEffect(() => {
+  const fetchParties = async () => {
+    try {
+      const response = await ApiGet("/admin/party");   
+      console.log('response', response)
+      const data = response?.data;
 
-  useEffect(() => {
-    const savedParties = localStorage.getItem("parties")
-    if (savedParties) {
-      const parsedParties = JSON.parse(savedParties)
-      setParties(parsedParties)
-      setFilteredParties(parsedParties)
+      if (response?.status === 200) {
+        setParties(data || []);
+
+        setFilteredParties(data || []);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching parties:", error);
     }
-  }, [])
+  };
+
+  fetchParties();
+}, []);
+
 
   useEffect(() => {
     let filtered = parties
@@ -232,7 +257,7 @@ export default function PartyList() {
                       transition={{ delay: index * 0.05 }}
                       className="border-b border-gray-200 hover:bg-gray-50 transition"
                     >
-                      <td className="px-6 py-4 text-sm text-gray-900">{party.createdAt}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{formatDate(party.createdAt)}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">INV-{party.id}</td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">{party.partyName}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{party.phone}</td>

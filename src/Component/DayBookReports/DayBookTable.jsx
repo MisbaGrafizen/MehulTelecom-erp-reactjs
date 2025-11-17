@@ -6,6 +6,8 @@ import { Eye, Printer, Download, MoreVertical, ChevronDown } from 'lucide-react'
 import Badge from '../DayBookReports/Badge'
 
 export default function DayBookTable({ data, currentPage, setCurrentPage, itemsPerPage, onViewTransaction }) {
+    if (!Array.isArray(data)) data = []
+
   const [selectedRow, setSelectedRow] = useState(null)
 
   const totalPages = Math.ceil(data.length / itemsPerPage)

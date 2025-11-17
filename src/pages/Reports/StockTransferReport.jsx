@@ -8,6 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
 import SideBar from "../../Component/sidebar/SideBar"
 import Header from "../../Component/header/Header"
+import { ApiGet } from "../../helper/axios"
 
 
 
@@ -198,121 +199,124 @@ const KPICard = ({ title, amount, icon: IconComponent, bgColor, lightBgColor, tr
   )
 }
 
-const TransferTable = ({ onViewTransfer, currentPage, setCurrentPage, itemsPerPage }) => {
+const TransferTable = ({ data, onViewTransfer, currentPage, setCurrentPage, itemsPerPage }) => {
   const [selectedRow, setSelectedRow] = useState(null)
 
-  const allTableData = [
-    {
-      id: 1,
-      date: "2024-01-15",
-      transferNo: "TRN-00001",
-      company: "ABC Mobile Store",
-      from: "Delhi Branch",
-      to: "Mumbai Branch",
-      items: 5,
-      total: "₹2,45,000",
-      status: "completed",
-    },
-    {
-      id: 2,
-      date: "2024-01-14",
-      transferNo: "TRN-00002",
-      company: "XYZ Electronics",
-      from: "Mumbai Branch",
-      to: "Bangalore Branch",
-      items: 8,
-      total: "₹3,67,500",
-      status: "pending",
-    },
-    {
-      id: 3,
-      date: "2024-01-13",
-      transferNo: "TRN-00003",
-      company: "Tech Hub",
-      from: "Bangalore Branch",
-      to: "Chennai Branch",
-      items: 3,
-      total: "₹1,23,400",
-      status: "completed",
-    },
-    {
-      id: 4,
-      date: "2024-01-12",
-      transferNo: "TRN-00004",
-      company: "Digital World",
-      from: "Chennai Branch",
-      to: "Hyderabad Branch",
-      items: 12,
-      total: "₹5,67,800",
-      status: "pending",
-    },
-    {
-      id: 5,
-      date: "2024-01-11",
-      transferNo: "TRN-00005",
-      company: "Mobile Hub",
-      from: "Hyderabad Branch",
-      to: "Delhi Branch",
-      items: 6,
-      total: "₹2,89,500",
-      status: "completed",
-    },
-    {
-      id: 6,
-      date: "2024-01-10",
-      transferNo: "TRN-00006",
-      company: "Premium Devices",
-      from: "Delhi Branch",
-      to: "Pune Branch",
-      items: 4,
-      total: "₹1,78,900",
-      status: "failed",
-    },
-    {
-      id: 7,
-      date: "2024-01-09",
-      transferNo: "TRN-00007",
-      company: "Smart Mobiles",
-      from: "Pune Branch",
-      to: "Ahmedabad Branch",
-      items: 7,
-      total: "₹3,45,600",
-      status: "completed",
-    },
-    {
-      id: 8,
-      date: "2024-01-08",
-      transferNo: "TRN-00008",
-      company: "Tech Paradise",
-      from: "Ahmedabad Branch",
-      to: "Kolkata Branch",
-      items: 9,
-      total: "₹4,12,300",
-      status: "pending",
-    },
-    {
-      id: 9,
-      date: "2024-01-07",
-      transferNo: "TRN-00009",
-      company: "Mobile Zone",
-      from: "Kolkata Branch",
-      to: "Delhi Branch",
-      items: 5,
-      total: "₹2,34,700",
-      status: "completed",
-    },
-    {
-      id: 10,
-      date: "2024-01-06",
-      transferNo: "TRN-00010",
-      company: "Gadget Hub",
-      from: "Delhi Branch",
-      to: "Mumbai Branch",
-      items: 11,
-      total: "₹5,89,400",
-      status: "completed",
-    },
-  ]
+  // const allTableData = [
+  //   {
+  //     id: 1,
+  //     date: "2024-01-15",
+  //     transferNo: "TRN-00001",
+  //     company: "ABC Mobile Store",
+  //     from: "Delhi Branch",
+  //     to: "Mumbai Branch",
+  //     items: 5,
+  //     total: "₹2,45,000",
+  //     status: "completed",
+  //   },
+  //   {
+  //     id: 2,
+  //     date: "2024-01-14",
+  //     transferNo: "TRN-00002",
+  //     company: "XYZ Electronics",
+  //     from: "Mumbai Branch",
+  //     to: "Bangalore Branch",
+  //     items: 8,
+  //     total: "₹3,67,500",
+  //     status: "pending",
+  //   },
+  //   {
+  //     id: 3,
+  //     date: "2024-01-13",
+  //     transferNo: "TRN-00003",
+  //     company: "Tech Hub",
+  //     from: "Bangalore Branch",
+  //     to: "Chennai Branch",
+  //     items: 3,
+  //     total: "₹1,23,400",
+  //     status: "completed",
+  //   },
+  //   {
+  //     id: 4,
+  //     date: "2024-01-12",
+  //     transferNo: "TRN-00004",
+  //     company: "Digital World",
+  //     from: "Chennai Branch",
+  //     to: "Hyderabad Branch",
+  //     items: 12,
+  //     total: "₹5,67,800",
+  //     status: "pending",
+  //   },
+  //   {
+  //     id: 5,
+  //     date: "2024-01-11",
+  //     transferNo: "TRN-00005",
+  //     company: "Mobile Hub",
+  //     from: "Hyderabad Branch",
+  //     to: "Delhi Branch",
+  //     items: 6,
+  //     total: "₹2,89,500",
+  //     status: "completed",
+  //   },
+  //   {
+  //     id: 6,
+  //     date: "2024-01-10",
+  //     transferNo: "TRN-00006",
+  //     company: "Premium Devices",
+  //     from: "Delhi Branch",
+  //     to: "Pune Branch",
+  //     items: 4,
+  //     total: "₹1,78,900",
+  //     status: "failed",
+  //   },
+  //   {
+  //     id: 7,
+  //     date: "2024-01-09",
+  //     transferNo: "TRN-00007",
+  //     company: "Smart Mobiles",
+  //     from: "Pune Branch",
+  //     to: "Ahmedabad Branch",
+  //     items: 7,
+  //     total: "₹3,45,600",
+  //     status: "completed",
+  //   },
+  //   {
+  //     id: 8,
+  //     date: "2024-01-08",
+  //     transferNo: "TRN-00008",
+  //     company: "Tech Paradise",
+  //     from: "Ahmedabad Branch",
+  //     to: "Kolkata Branch",
+  //     items: 9,
+  //     total: "₹4,12,300",
+  //     status: "pending",
+  //   },
+  //   {
+  //     id: 9,
+  //     date: "2024-01-07",
+  //     transferNo: "TRN-00009",
+  //     company: "Mobile Zone",
+  //     from: "Kolkata Branch",
+  //     to: "Delhi Branch",
+  //     items: 5,
+  //     total: "₹2,34,700",
+  //     status: "completed",
+  //   },
+  //   {
+  //     id: 10,
+  //     date: "2024-01-06",
+  //     transferNo: "TRN-00010",
+  //     company: "Gadget Hub",
+  //     from: "Delhi Branch",
+  //     to: "Mumbai Branch",
+  //     items: 11,
+  //     total: "₹5,89,400",
+  //     status: "completed",
+  //   },
+  // ]
+
+  const allTableData = data || [];
+
 
   const totalPages = Math.ceil(allTableData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -378,18 +382,44 @@ const TransferTable = ({ onViewTransfer, currentPage, setCurrentPage, itemsPerPa
                 transition={{ duration: 0.2 }}
                 className="border-b border-border hover:bg-gray-100 transition-colors"
               >
-                <td className="px-6 py-4 text-sm text-foreground">{row.date}</td>
-                <td className="px-6 py-4 text-sm font-semibold text-foreground">{row.transferNo}</td>
-                <td className="px-6 py-4 text-sm text-foreground">{row.company}</td>
-                <td className="px-6 py-4 text-sm text-foreground">{row.from}</td>
-                <td className="px-6 py-4 text-sm text-foreground">{row.to}</td>
-                <td className="px-6 py-4 text-sm font-semibold text-foreground">{row.items}</td>
-                <td className="px-6 py-4 text-sm font-semibold text-foreground">{row.total}</td>
-                <td className="px-6 py-4 text-sm">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(row.status)}`}>
-                    {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-                  </span>
-                </td>
+                <td className="px-6 py-4 text-sm text-foreground">
+  {row.transferDate ? dayjs(row.transferDate).format("DD MMM YYYY") : "-"}
+</td>
+
+<td className="px-6 py-4 text-sm font-semibold text-foreground">
+  {row._id ? `TRN-${row._id.slice(-6).toUpperCase()}` : "-"}
+</td>
+
+<td className="px-6 py-4 text-sm text-foreground">
+  {row.companyId?.companyName || "—"}
+</td>
+
+<td className="px-6 py-4 text-sm text-foreground">
+  {row.fromBranchId?._id ? row.fromBranchId._id.slice(-6).toUpperCase() : "-"}
+</td>
+
+<td className="px-6 py-4 text-sm text-foreground">
+  {row.toBranchId?._id ? row.toBranchId._id.slice(-6).toUpperCase() : "-"}
+</td>
+
+<td className="px-6 py-4 text-sm font-semibold text-foreground">
+  {Array.isArray(row.items) ? row.items.length : 0}
+</td>
+
+<td className="px-6 py-4 text-sm font-semibold text-foreground">
+  ₹{row.totalAmount?.toLocaleString("en-IN") || 0}
+</td>
+
+<td className="px-6 py-4 text-sm">
+  <span
+    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+      row.status?.toLowerCase()
+    )}`}
+  >
+    {row.status?.charAt(0).toUpperCase() + row.status?.slice(1) || "-"}
+  </span>
+</td>
+
                 <td className="px-6 py-4 text-sm">
                   <div className="flex items-center gap-2">
                     <motion.button
@@ -777,16 +807,86 @@ const TransferDetailsModal = ({ transfer, onClose }) => {
 
 export default function StockTransferReport() {
   const [filters, setFilters] = useState({
-    dateRange: "This Month",
+    dateRange: "Today", 
     company: "All Companies",
     branch: "All Branches",
     status: "All Status",
-    fromDate: dayjs("2024-01-01"),
-    toDate: dayjs("2024-12-31"),
+    fromDate: null,
+  toDate: null,
+ search: "",
   })
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+
+  const [transferData, setTransferData] = useState([])
+  const [kpi, setKpi] = useState({ completed: 0, pending: 0, total: 0 })
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+  const fetchTransferData = async () => {
+    try {
+      setLoading(true);
+
+      const params = {};
+
+      // 🗓️ Only send from/to date if filters are applied
+      if (filters.dateRange === "Today") {
+  params.fromDate = dayjs().startOf("day").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("day").format("YYYY-MM-DD");
+} else if (filters.dateRange === "This Week") {
+  params.fromDate = dayjs().startOf("week").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("week").format("YYYY-MM-DD");
+} else if (filters.dateRange === "This Month") {
+  params.fromDate = dayjs().startOf("month").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("month").format("YYYY-MM-DD");
+} else if (filters.fromDate && filters.toDate) {
+  params.fromDate = dayjs(filters.fromDate).format("YYYY-MM-DD");
+  params.toDate = dayjs(filters.toDate).format("YYYY-MM-DD");
+}
+
+      // 🏢 Dropdown filters
+      if (filters.company && filters.company !== "All Companies") {
+        params.company = filters.company;
+      }
+      if (filters.branch && filters.branch !== "All Branches") {
+        params.branch = filters.branch;
+      }
+      if (filters.status && filters.status !== "All Status") {
+        params.status = filters.status.toLowerCase();
+      }
+
+      console.log("📤 Fetching from /admin/transfer-report with params:", params);
+
+      const res = await ApiGet("/admin/transfer-report", { params });
+      console.log("✅ Response:", res);
+
+      const data = res?.data || [];
+      const kpiData = res?.kpi || { completed: 0, pending: 0, total: 0 };
+
+      setTransferData(data);
+      setKpi(kpiData);
+      if (filters.search?.trim()) {
+  const keyword = filters.search.toLowerCase();
+  const filtered = data.filter((t) =>
+    t._id?.toLowerCase().includes(keyword) ||
+    t.fromBranchId?.branchName?.toLowerCase().includes(keyword) ||
+    t.toBranchId?.branchName?.toLowerCase().includes(keyword)
+  );
+  setTransferData(filtered);
+}
+
+    } catch (err) {
+      console.error("❌ Error fetching transfer report:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTransferData();
+}, [filters]);
+
+
 
   return (
 
@@ -818,7 +918,12 @@ export default function StockTransferReport() {
                               key={option}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => setFilters({ ...filters, dateRange: option })}
+                              onClick={() => setFilters({
+    ...filters,
+    dateRange: option,
+    fromDate: null,
+    toDate: null,
+  })}
                               className={`px-4 py-2 rounded-lg  shadow-md font-medium transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
                                 ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -878,6 +983,8 @@ export default function StockTransferReport() {
                               type="text"
                               placeholder="Search transfer no, serial no, branch…"
                               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder-muted-foreground"
+                              value={filters.search}
+ onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                             />
                           </div>
 
@@ -891,38 +998,42 @@ export default function StockTransferReport() {
                   {/* KPI Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <KPICard
-                      title="Transferred"
-                      amount="₹15,67,200"
-                      icon={Package}
-                      bgColor="var(--green-paid)"
-                      lightBgColor="var(--green-light)"
-                      trend={12}
-                    />
-                    <KPICard
-                      title="Pending"
-                      amount="₹5,23,400"
-                      icon={MapPin}
-                      bgColor="var(--blue-unpaid)"
-                      lightBgColor="var(--blue-light)"
-                      trend={-3}
-                    />
-                    <KPICard
-                      title="Total"
-                      amount="₹20,90,600"
-                      icon={Package}
-                      bgColor="var(--orange-total)"
-                      lightBgColor="var(--orange-light)"
-                      trend={8}
-                    />
+  title="Transferred"
+  amount={`₹${kpi.completed || 0}`}
+  icon={Package}
+  bgColor="var(--green-paid)"
+  lightBgColor="var(--green-light)"
+  trend={12}
+/>
+<KPICard
+  title="Pending"
+  amount={`₹${kpi.pending || 0}`}
+  icon={MapPin}
+  bgColor="var(--blue-unpaid)"
+  lightBgColor="var(--blue-light)"
+  trend={-3}
+/>
+<KPICard
+  title="Total"
+  amount={`₹${kpi.total || 0}`}
+  icon={Package}
+  bgColor="var(--orange-total)"
+  lightBgColor="var(--orange-light)"
+  trend={8}
+/>
+
                   </div>
 
                   {/* Transfer Table */}
-                  <TransferTable
-                    onViewTransfer={setSelectedTransfer}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                  />
+                  <TransferTable  
+  data={transferData}
+  onViewTransfer={setSelectedTransfer}
+  currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+  itemsPerPage={itemsPerPage}
+/>
+
+
 
                   {/* Transfer Details Modal */}
                   <AnimatePresence>

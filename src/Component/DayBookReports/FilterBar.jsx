@@ -129,15 +129,15 @@ const DatePickerMUI = ({ label, value, onChange }) => {
     )
 }
 
-export default function FilterBar({ selectedDate, setSelectedDate, }) {
-    const [filters, setFilters] = useState({
-        dateRange: "This Month",
-        firm: "All Firms",
-        user: "All Users",
-        payment: "All",
-        fromDate: dayjs("2024-01-01").toDate(),
-        toDate: dayjs("2024-12-31").toDate(),
-    });
+export default function FilterBar({ selectedDate, setSelectedDate, filters, setFilters }) {    
+    // const [filters, setFilters] = useState({
+    //     dateRange: "Today",
+    //     firm: "All Firms",
+    //     user: "All Users",
+    //     payment: "All",
+    //     fromDate: dayjs("2024-01-01").toDate(),
+    //     toDate: dayjs("2024-12-31").toDate(),
+    // });
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -176,9 +176,14 @@ export default function FilterBar({ selectedDate, setSelectedDate, }) {
                                     key={option}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() =>
-                                        setFilters({ ...filters, dateRange: option })
-                                    }
+                                     onClick={() =>
+        setFilters((prev) => ({
+            ...prev,
+            dateRange: option,
+            fromDate: null,
+            toDate: null,
+        }))
+    }
                                     className={`px-4 py-2 rounded-lg shadow-md font-medium text-sm transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
                                         ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
                                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -215,6 +220,9 @@ export default function FilterBar({ selectedDate, setSelectedDate, }) {
                                 type="text"
                                 placeholder="Search invoice, serial no, party name…"
                                 className=" bg-transparent outline-none text-sm text-foreground placeholder-muted-foreground"
+                                onChange={(e) =>
+  setFilters((prev) => ({ ...prev, search: e.target.value }))
+}
                             />
                         </div>
                     </div>
