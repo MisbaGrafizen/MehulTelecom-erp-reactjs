@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 // import StockHeader from './StockHeader';
 // import ModernFilterBar from './ModernFilterBar';
@@ -13,6 +13,7 @@ import ModernFilterBar from '../../Component/stockSummeryReport/ModernFilterBar'
 import KPICardsSum from '../../Component/stockSummeryReport/KPICardsSum';
 import StockListingSection from '../../Component/stockSummeryReport/StockListingSection';
 import TotalStockStrip from '../../Component/stockSummeryReport/TotalStockStrip';
+import { ApiGet } from '../../helper/axios';
 
 export default function StockSummaryReport() {
     const [filters, setFilters] = useState({
@@ -26,6 +27,40 @@ export default function StockSummaryReport() {
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [summary, setSummary] = useState({
+    totalProducts: 0,
+    totalQty: 0,
+    totalStockValue: 0,
+});
+
+const [stockItems, setStockItems] = useState([]);
+
+const fetchStockSummary = async () => {
+    try {
+        const query = new URLSearchParams({
+            fromDate: filters.fromDate || "",
+            toDate: filters.toDate || "",
+            category: filters.category,
+            stockStatus: filters.stockStatus,
+            company: filters.company,
+            search: filters.search,
+        }).toString();
+
+        const res = await ApiGet(`/admin/stock-summary?${query}`);
+
+        setSummary(res.summary || {});
+        setStockItems(res.items || []);
+
+    } catch (error) {
+        console.log("STOCK SUMMARY FETCH ERROR:", error);
+    }
+};
+
+useEffect   (() => {
+    fetchStockSummary();
+}, [filters]);
+
+
 
     const handleFilterChange = (newFilters) => {
         setFilters(newFilters);
@@ -52,10 +87,22 @@ export default function StockSummaryReport() {
 
                             <div className=" w-[100%] space-y-4">
                                 <ModernFilterBar onFilterChange={handleFilterChange} filters={filters} />
-                                <KPICardsSum />
-                                <StockListingSection onViewItem={handleViewItem} filters={filters} />
+                               <KPICardsSum
+    totalProducts={summary.totalProducts}
+    totalQty={summary.totalQty}
+    totalStockValue={summary.totalStockValue}
+/>
+
+<StockListingSection
+    onViewItem={handleViewItem}
+    filters={filters}
+    items={stockItems}
+/>
                             </div>
-                            <TotalStockStrip />
+<TotalStockStrip
+    totalQty={summary.totalQty}
+    totalStockValue={summary.totalStockValue}
+/>
                         </motion.div>
                     </div>
                 </div>

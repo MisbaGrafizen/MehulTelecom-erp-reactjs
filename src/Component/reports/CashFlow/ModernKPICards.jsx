@@ -4,9 +4,11 @@ import { TrendingUp, TrendingDown, DollarSign, Wallet } from 'lucide-react';
 
 
 const ModernKPICards = ({ closingCash, openingCash, moneyIn, moneyOut }) => {
-    const formatAmount = (amount) => {
-        return '₹' + (amount / 100000).toFixed(2) + ' Cr';
-    };
+   const formatAmount = (amount) => {
+    if (!amount || isNaN(amount)) return "₹0.00 Cr";
+    return "₹" + (amount / 10000000).toFixed(2) + " Cr";  // Convert to Crore
+};
+
 
     const kpiData = [
         {
