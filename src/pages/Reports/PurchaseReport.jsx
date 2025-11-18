@@ -7,55 +7,79 @@ import SideBar from '../../Component/sidebar/SideBar'
 import Header from '../../Component/header/Header'
 import { Calendar as ModernCalendar } from "react-modern-calendar-datepicker";
 import "react-modern-calendar-datepicker/lib/DatePicker.css";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { ApiGet } from '../../helper/axios'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 
 
 
 
 // Custom Date Picker Component
-const DateRangePicker = ({ label, defaultValue, onChange }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [selectedDate, setSelectedDate] = useState(defaultValue)
-
-    const handleDateChange = (date) => {
-        setSelectedDate(date)
-        onChange?.(date)
-        setIsOpen(false)
-    }
-
-    return (
-        <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">{label}</label>
-            <motion.div className="relative">
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="w-full flex items-center gap-2 bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground hover:bg-gray-200 transition-colors"
-                >
-                    <Calendar size={16} className="text-primary" />
-                    <span>{selectedDate}</span>
-                    <ChevronDown size={14} className="ml-auto text-muted-foreground" />
-                </button>
-
-                <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={isOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                    className={`absolute top-full left-0 right-0 mt-2 bg-white  border border-border rounded-lg shadow-lg z-50 ${isOpen ? "pointer-events-auto" : "pointer-events-none"
-                        }`}
-                >
-                    <div className="p-4 space-y-3">
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm outline-none"
-                        />
-                    </div>
-                </motion.div>
-            </motion.div>
-        </div>
-    )
+const DateRangePickerMUI = ({ label, value, onChange }) => {
+  return (
+    <div>
+      {/* <label className="text-xs font-semibold text-muted-foreground mb-2 block uppercase tracking-wider">
+        {label}
+      </label> */}
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <motion.div className=" border rounded-[10px]" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <DatePicker
+  value={value ?? null} // always defined
+  onChange={(newValue) => onChange?.(newValue)}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                size: "small",
+                sx: {
+                  '& .MuiOutlinedInput-root': {
+                    color: 'var(--foreground)',
+                    backgroundColor: 'var(--input)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    '&:hover': {
+                      backgroundColor: 'var(--secondary)',
+                    },
+                    '& fieldset': {
+                      border: 'none',
+                    },
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    padding: '0.625rem 0.75rem',
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                },
+              },
+              popper: {
+                sx: {
+                  '& .MuiPaper-root': {
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  },
+                  '& .MuiPickersDay-root': {
+                    color: 'var(--foreground)',
+                    '&:hover': {
+                      backgroundColor: 'var(--secondary)',
+                    },
+                  },
+                  '& .MuiPickersDay-root.Mui-selected': {
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-foreground)',
+                  },
+                },
+              },
+            }}
+          />
+        </motion.div>
+      </LocalizationProvider>
+    </div>
+  )
 }
 
 // Custom Dropdown with Framer Motion
@@ -193,11 +217,12 @@ const [toDate, setToDate] = useState({
                     onClick={() => {
                         const range = getRangeFromQuickFilter(option);  // ← NEW
                         setFilters((prev) => ({
-                            ...prev,
-                            dateRange: option,
-                            fromDate: range.from,
-                            toDate: range.to,
-                        }));
+  ...prev,
+  dateRange: option,
+  fromDate: range.from ? dayjs(range.from) : null,
+  toDate: range.to ? dayjs(range.to) : null,
+}));
+
                     }}
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
                         ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
@@ -209,72 +234,28 @@ const [toDate, setToDate] = useState({
             ))}
 
             {/* 🔹 From Date Picker */}
-            <div className="relative" ref={fromCalendarRef}>
-                <button
-                    onClick={() => {
-                        setShowFromCalendar(!showFromCalendar);
-                        setShowToCalendar(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
-                >
-                    <Calendar size={16} className="text-[#0044ff]" />
-                    From: {filters.fromDate ? new Date(filters.fromDate).toLocaleDateString() : "Select"}
-                </button>
+               <DateRangePickerMUI
+            label="From Date"
+            value={filters.fromDate}
+            onChange={(date) =>
+  setFilters((prev) => ({
+    ...prev,
+    fromDate: date || null, // keep it as dayjs()
+  }))
+}
 
-                {showFromCalendar && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
-                    >
-                      <ModernCalendar
-  value={fromDate}
-  onChange={(date) => {
-    setFromDate(date);
-    const jsDate = new Date(date.year, date.month - 1, date.day);
-    setFilters(prev => ({ ...prev, fromDate: jsDate }));
-  }}
-  shouldHighlightWeekends
-/>
+          />
 
-                    </motion.div>
-                )}
-            </div>
-
-            {/* 🔹 To Date Picker */}
-            <div className="relative" ref={toCalendarRef}>
-                <button
-                    onClick={() => {
-                        setShowToCalendar(!showToCalendar);
-                        setShowFromCalendar(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 text-gray-700"
-                >
-                    <Calendar size={16} className="text-[#ff2688]" />
-                    To: {filters.toDate ? new Date(filters.toDate).toLocaleDateString() : "Select"}
-                </button>
-
-                {showToCalendar && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
-                    >
-                    <ModernCalendar
-  value={toDate}
-  onChange={(date) => {
-    setToDate(date);
-    const jsDate = new Date(date.year, date.month - 1, date.day);
-    setFilters(prev => ({ ...prev, toDate: jsDate }));
-  }}
-  shouldHighlightWeekends
-/>
-
-                    </motion.div>
-                )}
-            </div>
+          <DateRangePickerMUI
+            label="To Date"
+            value={filters.toDate}
+            onChange={(date) =>
+              setFilters({
+                ...filters,
+                toDate: date ? date.toDate() : null
+              })
+            }
+          />
 
             {/* 🔹 Firm Dropdown */}
            <div className="relative" ref={firmRef}>
@@ -825,8 +806,8 @@ const fetchPurchases = async () => {
     setLoading(true);
 
     const params = new URLSearchParams({
-      fromDate: filters.fromDate ? filters.fromDate.toISOString() : "",
-      toDate: filters.toDate ? filters.toDate.toISOString() : "",
+  fromDate: filters.fromDate ? filters.fromDate.toDate().toISOString() : "",
+  toDate: filters.toDate ? filters.toDate.toDate().toISOString() : "",
       partyId: filters.partyId || "",
       userId: filters.userId || "",
       paymentType: filters.payment || "",
