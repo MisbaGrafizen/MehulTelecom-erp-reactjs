@@ -86,7 +86,7 @@ export default function MianItemspage() {
       }
 
       // ✅ Fetch with userId in query
-      const res = await ApiGet(`/admin/transactions?userId=${userId}`);
+      const res = await ApiGet(`/admin/transactions/${userId}`);
       console.log("🔹 Transaction Response:", res);
 
       const txns = res?.transactions || res?.data?.transactions || [];
