@@ -183,7 +183,7 @@ useEffect(() => {
           <Header pageName=" Party List" />
           <div className="flex gap-[10px] w-[100%] h-[100%]">
             <SideBar />
-            <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] gap-[30px] rounded-[10px]">
+            <div className="flex w-[100%] max-h-[90%] pb-[50px] pr-[15px] gap-[30px] overflow-y-auto rounded-[10px]">
               <div className="flex flex-col gap-[15px] w-[100%]">
 {/* 
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -201,7 +201,7 @@ useEffect(() => {
         </div>
       </div> */}
 
-      <div className="bg-white border-b border-gray-200 sticky top-20 z-10">
+      <div className="bg-white border-b border-gray-200  top-20 z-10">
         <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -234,7 +234,7 @@ useEffect(() => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto ">
               <table className="w-full">
                 <thead>
                   <tr className="bg-blue-100 border-b border-gray-300">
