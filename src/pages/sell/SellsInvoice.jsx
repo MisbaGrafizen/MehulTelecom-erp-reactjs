@@ -41,6 +41,8 @@ export default function SellsInvoice() {
   const [creditLimit, setCreditLimit] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [productAttributes, setProductAttributes] = useState({});
+  const [salesManName, setSalesManName] = useState("");
+
 
 
   const options = ["Online", "Card", "Cash"];
@@ -266,6 +268,7 @@ export default function SellsInvoice() {
       ],
       paidAmount,
       unpaidAmount,
+      salesManName: salesManName,
     };
 
     try {
@@ -1169,11 +1172,12 @@ export default function SellsInvoice() {
                               Sales Man Name
                             </label>
                             <div className="flex-1 max-w-[320px]">
-                          <FloatingInput 
-                          label="Name"
+                          <FloatingInput
+  label="Name"
+  value={salesManName}
+  onChange={(e) => setSalesManName(e.target.value)}
+/>
 
-
-                          />
                             </div>
                           </div>
                         </div>

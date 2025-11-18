@@ -828,33 +828,42 @@ export default function StockTransferReport() {
       try {
         setLoading(true);
 
-        const params = {};
+    const params = {};
 
-        // 🗓️ Only send from/to date if filters are applied
-        if (filters.dateRange === "Today") {
-          params.fromDate = dayjs().startOf("day").format("YYYY-MM-DD");
-          params.toDate = dayjs().endOf("day").format("YYYY-MM-DD");
-        } else if (filters.dateRange === "This Week") {
-          params.fromDate = dayjs().startOf("week").format("YYYY-MM-DD");
-          params.toDate = dayjs().endOf("week").format("YYYY-MM-DD");
-        } else if (filters.dateRange === "This Month") {
-          params.fromDate = dayjs().startOf("month").format("YYYY-MM-DD");
-          params.toDate = dayjs().endOf("month").format("YYYY-MM-DD");
-        } else if (filters.fromDate && filters.toDate) {
-          params.fromDate = dayjs(filters.fromDate).format("YYYY-MM-DD");
-          params.toDate = dayjs(filters.toDate).format("YYYY-MM-DD");
-        }
+// 📅 DATE RANGE
+if (filters.dateRange === "Today") {
+  params.fromDate = dayjs().startOf("day").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("day").format("YYYY-MM-DD");
+} else if (filters.dateRange === "This Week") {
+  params.fromDate = dayjs().startOf("week").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("week").format("YYYY-MM-DD");
+} else if (filters.dateRange === "This Month") {
+  params.fromDate = dayjs().startOf("month").format("YYYY-MM-DD");
+  params.toDate = dayjs().endOf("month").format("YYYY-MM-DD");
+} else if (filters.fromDate && filters.toDate) {
+  params.fromDate = dayjs(filters.fromDate).format("YYYY-MM-DD");
+  params.toDate = dayjs(filters.toDate).format("YYYY-MM-DD");
+}
 
-        // 🏢 Dropdown filters
-        if (filters.company && filters.company !== "All Companies") {
-          params.company = filters.company;
-        }
-        if (filters.branch && filters.branch !== "All Branches") {
-          params.branch = filters.branch;
-        }
-        if (filters.status && filters.status !== "All Status") {
-          params.status = filters.status.toLowerCase();
-        }
+// 🏢 COMPANY (Backend key = companyId)
+if (filters.company && filters.company !== "All Companies") {
+  params.companyId = filters.company;
+}
+
+// 🏬 BRANCH (Backend key = branchId)
+if (filters.branch && filters.branch !== "All Branches") {
+  params.branchId = filters.branch;
+}
+
+// ⚙️ STATUS
+if (filters.status && filters.status !== "All Status") {
+  params.status = filters.status.toLowerCase();
+}
+
+// 🔍 SEARCH
+if (filters.search?.trim()) {
+  params.search = filters.search.trim();
+}
 
         console.log("📤 Fetching from /admin/transfer-report with params:", params);
 
@@ -866,15 +875,17 @@ export default function StockTransferReport() {
 
         setTransferData(data);
         setKpi(kpiData);
-        if (filters.search?.trim()) {
-          const keyword = filters.search.toLowerCase();
-          const filtered = data.filter((t) =>
-            t._id?.toLowerCase().includes(keyword) ||
-            t.fromBranchId?.branchName?.toLowerCase().includes(keyword) ||
-            t.toBranchId?.branchName?.toLowerCase().includes(keyword)
-          );
-          setTransferData(filtered);
-        }
+      if (filters.search?.trim()) {
+  const keyword = filters.search.toLowerCase();
+
+  const filtered = data.filter((t) =>
+    t.transferNo?.toLowerCase().includes(keyword) ||
+    t.items?.some(i => i.itemName?.toLowerCase().includes(keyword))
+  );
+
+  setTransferData(filtered);
+}
+
 
       } catch (err) {
         console.error("❌ Error fetching transfer report:", err);

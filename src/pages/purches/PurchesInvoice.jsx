@@ -258,6 +258,8 @@ const finalUserType = loggedUserType?.toLowerCase() === "admin" ? "User" : "Bran
       unpaidAmount,
     };
 
+    console.log('payload', payload)
+
     try {
       const res = await ApiPost("/admin/purchase", payload);
       console.log("✅ Purchase saved:", res.data);

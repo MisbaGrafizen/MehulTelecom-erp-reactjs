@@ -7,13 +7,13 @@ import dayjs from 'dayjs';
 
 const SALESMEN = ['Rajesh Kumar', 'Priya Singh', 'Amit Patel', 'Neha Gupta'];
 
-export default function FilterSection({ onFilter }) {
-  const [filters, setFilters] = useState({
-    fromDate: dayjs().subtract(30, 'days'),
-    toDate: dayjs(),
-    salesman: 'all',
-    search: '',
-  });
+export default function FilterSection({ onFilter, filters, setFilters, salesmanList }) {
+// const [filters, setFilters] = useState({
+//     fromDate: dayjs().subtract(30, 'days'),
+//     toDate: dayjs(),
+//     salesman: 'all',
+//     search: '',
+//   });
 
   const handleChange = (field, value) => {
     const updated = { ...filters, [field]: value };
@@ -88,17 +88,19 @@ export default function FilterSection({ onFilter }) {
             Salesman
           </label> */}
           <select
-            value={filters.salesman}
-            onChange={(e) => handleChange('salesman', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-slate-400 transition-colors bg-white"
-          >
-            <option value="all">All Salesmen</option>
-            {SALESMEN.map((salesman) => (
-              <option key={salesman} value={salesman}>
-                {salesman}
-              </option>
-            ))}
-          </select>
+  value={filters.salesman}
+  onChange={(e) => handleChange('salesman', e.target.value)}
+  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none bg-white"
+>
+  <option value="all">All Salesmen</option>
+
+  {salesmanList.map((s) => (
+    <option key={s?._id} value={s?.name}>
+      {s?.name}
+    </option>
+  ))}
+</select>
+
         </div>
 
         {/* Search Bar */}

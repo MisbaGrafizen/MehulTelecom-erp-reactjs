@@ -282,6 +282,7 @@ const handleCloseModal = () => {
         let userType = "User";
         if (role === "admin") userType = "User  ";
         if (role === "branch") userType = "Branch";
+        console.log('userId', userId)
 
         try {
             setLoading(true);

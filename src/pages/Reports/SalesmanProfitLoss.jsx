@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import FilterSection from '../../Component/reports/salesmanProfit/FilterSection';
@@ -9,6 +9,7 @@ import SalesmanList from '../../Component/reports/salesmanProfit/SalesmanList';
 import ProfitLossModal from '../../Component/reports/salesmanProfit/ProfitLossModal';
 import Header from '../../Component/header/Header';
 import SideBar from '../../Component/sidebar/SideBar';
+import { ApiGet } from '../../helper/axios';
 
 const DUMMY_DATA = [
   {
@@ -89,31 +90,78 @@ const DUMMY_DATA = [
 ];
 
 export default function SalesmanProfitLoss() {
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
-  const [filteredData, setFilteredData] = useState(DUMMY_DATA);
+const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-  const totalSales = filteredData.reduce((sum, item) => sum + (item.salePrice * item.qty), 0);
-  const totalPurchase = filteredData.reduce((sum, item) => sum + (item.purchasePrice * item.qty), 0);
-  const totalProfit = filteredData.reduce((sum, item) => sum + (item.isProfit ? item.profitLoss : 0), 0);
-  const totalLoss = filteredData.reduce((sum, item) => sum + (!item.isProfit ? Math.abs(item.profitLoss) : 0), 0);
+const [filters, setFilters] = useState({
+  salesman: "all",
+  fromDate: null,
+  toDate: null,
+  search: "",
+});
 
-  const handleFilter = (filters) => {
-    let filtered = DUMMY_DATA;
+const [reportData, setReportData] = useState([]);
+const [salesmanList, setSalesmanList] = useState([]);
 
-    if (filters.salesman && filters.salesman !== 'all') {
-      filtered = filtered.filter(item => item.salesmanName === filters.salesman);
-    }
+const [summary, setSummary] = useState({
+  totalSales: 0,
+  totalPurchase: 0,
+  totalProfit: 0,
+  totalLoss: 0,
+});
 
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.productName.toLowerCase().includes(searchLower) ||
-        item.imei.includes(searchLower)
-      );
-    }
 
-    setFilteredData(filtered);
-  };
+  // const totalSales = filteredData.reduce((sum, item) => sum + (item.salePrice * item.qty), 0);
+  // const totalPurchase = filteredData.reduce((sum, item) => sum + (item.purchasePrice * item.qty), 0);
+  // const totalProfit = filteredData.reduce((sum, item) => sum + (item.isProfit ? item.profitLoss : 0), 0);
+  // const totalLoss = filteredData.reduce((sum, item) => sum + (!item.isProfit ? Math.abs(item.profitLoss) : 0), 0);
+
+  // const handleFilter = (filters) => {
+  //   let filtered = DUMMY_DATA;
+
+  //   if (filters.salesman && filters.salesman !== 'all') {
+  //     filtered = filtered.filter(item => item.salesmanName === filters.salesman);
+  //   }
+
+  //   if (filters.search) {
+  //     const searchLower = filters.search.toLowerCase();
+  //     filtered = filtered.filter(item =>
+  //       item.productName.toLowerCase().includes(searchLower) ||
+  //       item.imei.includes(searchLower)
+  //     );
+  //   }
+
+  //   setFilteredData(filtered);
+  // };
+
+  const handleFilter = (newFilters) => {
+  setFilters(newFilters);
+};
+
+const fetchReport = async () => {
+  try {
+    const query = new URLSearchParams({
+      salesman: filters.salesman || "all",
+      fromDate: filters.fromDate || "",
+      toDate: filters.toDate || "",
+      search: filters.search || "",
+    }).toString();
+
+    const res = await ApiGet(`/admin/salesman-profit?${query}`);
+    console.log('res', res)
+
+    setReportData(res.items || []);
+    setSummary(res.summary || {});
+    setSalesmanList(res.salesmanList || []);
+
+  } catch (err) {
+    console.log("REPORT FETCH ERROR:", err);
+  }
+};
+
+useEffect(() => {
+  fetchReport();
+}, [filters]);
+
 
   return (
 
@@ -133,7 +181,12 @@ export default function SalesmanProfitLoss() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <FilterSection onFilter={handleFilter} />
+<FilterSection
+  filters={filters}
+  setFilters={setFilters}
+  salesmanList={salesmanList}
+  onFilter={handleFilter}
+/>
       </motion.div>
 
       <motion.div
@@ -142,11 +195,12 @@ export default function SalesmanProfitLoss() {
         transition={{ delay: 0.2 }}
       >
         <KPICards
-          totalSales={totalSales}
-          totalPurchase={totalPurchase}
-          totalProfit={totalProfit}
-          totalLoss={totalLoss}
-        />
+  totalSales={summary.totalSales}
+  totalPurchase={summary.totalPurchase}
+  totalProfit={summary.totalProfit}
+  totalLoss={summary.totalLoss}
+/>
+
       </motion.div>
 
       <motion.div
@@ -154,10 +208,12 @@ export default function SalesmanProfitLoss() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <SalesmanList
-          data={filteredData}
-          onSelectTransaction={setSelectedTransaction}
-        />
+<SalesmanList
+  data={reportData}
+  onSelectTransaction={setSelectedTransaction}
+/>
+
+
       </motion.div>
 
       {selectedTransaction && (

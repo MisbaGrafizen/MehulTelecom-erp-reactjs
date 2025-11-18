@@ -320,9 +320,10 @@ useEffect(() => {
       }
 
       const res = await ApiGet(url);
+      console.log('res', res)
 
-      if (res?.data?.data) setRows(res.data.data);
-      else if (Array.isArray(res?.data)) setRows(res.data);
+      if (res) setRows(res);
+      else if (Array.isArray(res)) setRows(res);
       else setRows([]);
 
       // 🔹 Fetch Firms and Users (dropdowns)

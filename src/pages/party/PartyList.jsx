@@ -67,7 +67,7 @@ useEffect(() => {
       filtered = filtered.filter(
         (party) =>
           party.partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          party.phone.includes(searchTerm) ||
+          party.phone?.includes(searchTerm) ||
           party.email.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }

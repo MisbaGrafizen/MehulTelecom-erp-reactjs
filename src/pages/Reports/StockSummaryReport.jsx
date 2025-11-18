@@ -32,6 +32,12 @@ export default function StockSummaryReport() {
     totalQty: 0,
     totalStockValue: 0,
 });
+const [filterOptions, setFilterOptions] = useState({
+    categories: [],
+    branches: [],
+    products: [],
+});
+
 
 const [stockItems, setStockItems] = useState([]);
 
@@ -43,20 +49,30 @@ const fetchStockSummary = async () => {
             category: filters.category,
             stockStatus: filters.stockStatus,
             company: filters.company,
+            branch: filters.branch || "all",
             search: filters.search,
         }).toString();
 
         const res = await ApiGet(`/admin/stock-summary?${query}`);
+        console.log("SUMMARY RESPONSE:", res);
 
         setSummary(res.summary || {});
         setStockItems(res.items || []);
+
+        // NEW: set dropdown options
+        setFilterOptions({
+            categories: res.categories || [],
+            branches: res.branches || [],
+            products: res.products || [],
+        });
 
     } catch (error) {
         console.log("STOCK SUMMARY FETCH ERROR:", error);
     }
 };
 
-useEffect   (() => {
+
+useEffect(() => {
     fetchStockSummary();
 }, [filters]);
 
@@ -86,7 +102,12 @@ useEffect   (() => {
                         >
 
                             <div className=" w-[100%] space-y-4">
-                                <ModernFilterBar onFilterChange={handleFilterChange} filters={filters} />
+   <ModernFilterBar
+    onFilterChange={handleFilterChange}
+    filters={filters}
+    options={filterOptions}
+/>
+
                                <KPICardsSum
     totalProducts={summary.totalProducts}
     totalQty={summary.totalQty}
@@ -96,8 +117,12 @@ useEffect   (() => {
 <StockListingSection
     onViewItem={handleViewItem}
     filters={filters}
-    items={stockItems}
+    items={stockItems.map(i => ({
+        ...i,
+        purchaseDate: new Date(i.purchaseDate)
+    }))}
 />
+
                             </div>
 <TotalStockStrip
     totalQty={summary.totalQty}

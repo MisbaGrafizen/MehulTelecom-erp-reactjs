@@ -4,26 +4,29 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ChevronDown,
-    X,
-    Calendar as CalendarIcon,
     Search,
     Layers,
     Box,
-    Factory
+    Factory,
+    Users
 } from 'lucide-react';
 
-// MUI Date Pickers
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 
-export default function ModernFilterBar({ onFilterChange, filters }) {
+export default function ModernFilterBar({ onFilterChange, filters, options }) {
+
     const [openDropdown, setOpenDropdown] = useState(null);
 
-    const categories = ['All Items', 'Mobiles', 'Watches', 'Accessories'];
-    const stockStatuses = ['All', 'Good Stock', 'Low Stock', 'Out of Stock'];
-    const companies = ['All Companies', 'Apple', 'Samsung', 'OnePlus'];
+    // 🔥 DATA FROM BACKEND (passed as props)
+    const categories = ["all", ...(options?.categories || [])];
+    const branches = ["all", ...(options?.branches || []).map(b => ({ label: b.name, value: b._id }))];
+    const companies = ["all", ...(options?.companies || [])];
+    const products = ["all", ...(options?.products || [])];
+
+    const stockStatuses = ["all", "Good", "Low", "Out"];
 
     const toggleDropdown = (key) => {
         setOpenDropdown(openDropdown === key ? null : key);
@@ -32,7 +35,7 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
     const handleSelect = (key, value) => {
         onFilterChange({
             ...filters,
-            [key]: value.toLowerCase().replace(/ /g, '_'),
+            [key]: value
         });
         setOpenDropdown(null);
     };
@@ -45,10 +48,11 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
         onFilterChange({
             fromDate: null,
             toDate: null,
-            category: 'all',
-            stockStatus: 'all',
-            company: 'all',
-            search: '',
+            category: "all",
+            stockStatus: "all",
+            branch: "all",
+            company: "all",
+            search: ""
         });
     };
 
@@ -61,34 +65,28 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
             >
                 <div className="flex items-center gap-3 flex-wrap">
 
-                    {/* ========================== */}
-                    {/* ⭐ MUI DATE PICKERS SECTION ⭐ */}
-                    {/* ========================== */}
+                    {/* DATE FILTER */}
                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-[3px] rounded-lg border border-slate-200">
-                        {/* <CalendarIcon className="w-4 h-4 text-slate-500" /> */}
-                        <div className=' flex w-[100px]'>
-
-
-                            <DatePicker
-                                value={filters.fromDate ? dayjs(filters.fromDate) : null}
-                                onChange={(value) =>
-                                    onFilterChange({ ...filters, fromDate: value ? value.toISOString() : null })
+                        <DatePicker
+                            value={filters.fromDate ? dayjs(filters.fromDate) : null}
+                            onChange={(v) =>
+                                onFilterChange({ ...filters, fromDate: v ? v.toISOString() : null })
+                            }
+                            slotProps={{
+                                textField: {
+                                    variant: "standard",
+                                    InputProps: { disableUnderline: true },
+                                    sx: { minWidth: 110, '& input': { fontSize: "12px" } },
                                 }
-                                slotProps={{
-                                    textField: {
-                                        variant: "standard",
-                                        InputProps: { disableUnderline: true },
-                                        sx: { minWidth: 110, '& input': { fontSize: "12px" } },
-                                    }
-                                }}
-                            />
-                        </div>
-                        <span className="text-slate-400  mx-[60px] text-xs">–</span>
+                            }}
+                        />
+
+                        <span className="text-slate-400 mx-[60px] text-xs">–</span>
 
                         <DatePicker
                             value={filters.toDate ? dayjs(filters.toDate) : null}
-                            onChange={(value) =>
-                                onFilterChange({ ...filters, toDate: value ? value.toISOString() : null })
+                            onChange={(v) =>
+                                onFilterChange({ ...filters, toDate: v ? v.toISOString() : null })
                             }
                             slotProps={{
                                 textField: {
@@ -100,7 +98,7 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
                         />
                     </div>
 
-                    {/* Search */}
+                    {/* SEARCH */}
                     <div className="relative">
                         <Search className="absolute left-3 top-[9px] w-4 h-4 text-slate-400" />
                         <input
@@ -108,52 +106,62 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
                             value={filters.search}
                             onChange={handleSearch}
                             placeholder="Search..."
-                            className="pl-10 pr-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm  outline-none"
+                            className="pl-10 pr-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm outline-none"
                         />
                     </div>
 
-                    {/* Category */}
+                    {/* CATEGORY */}
                     <FilterDropdown
                         icon={<Box className="w-4 h-4 text-slate-600" />}
-                        label={filters.category === 'all' ? 'Category' : filters.category}
-                        open={openDropdown === 'category'}
-                        onToggle={() => toggleDropdown('category')}
+                        label={filters.category === "all" ? "Category" : filters.category}
+                        open={openDropdown === "category"}
+                        onToggle={() => toggleDropdown("category")}
                         items={categories}
-                        onSelect={(v) => handleSelect('category', v)}
+                        onSelect={(v) => handleSelect("category", v)}
                     />
 
-                    {/* Stock Status */}
+                    {/* STOCK STATUS */}
                     <FilterDropdown
                         icon={<Layers className="w-4 h-4 text-slate-600" />}
-                        label={filters.stockStatus === 'all' ? 'Stock' : filters.stockStatus}
-                        open={openDropdown === 'stockStatus'}
-                        onToggle={() => toggleDropdown('stockStatus')}
+                        label={filters.stockStatus === "all" ? "Stock" : filters.stockStatus}
+                        open={openDropdown === "stockStatus"}
+                        onToggle={() => toggleDropdown("stockStatus")}
                         items={stockStatuses}
-                        onSelect={(v) => handleSelect('stockStatus', v)}
+                        onSelect={(v) => handleSelect("stockStatus", v)}
                     />
 
-                    {/* Company */}
+                    {/* BRANCH */}
+                    <FilterDropdown
+    icon={<Users className="w-4 h-4 text-slate-600" />}
+    label={
+        filters.branch === "all"
+            ? "Branch"
+            : (branches.find(b => b.value === filters.branch)?.label || "Branch")
+    }
+    open={openDropdown === "branch"}
+    onToggle={() => toggleDropdown("branch")}
+    items={branches}
+    onSelect={(v) => handleSelect("branch", v)}
+/>
+
+
+                    {/* COMPANY */}
                     <FilterDropdown
                         icon={<Factory className="w-4 h-4 text-slate-600" />}
-                        label={filters.company === 'all' ? 'Company' : filters.company}
-                        open={openDropdown === 'company'}
-                        onToggle={() => toggleDropdown('company')}
+                        label={filters.company === "all" ? "Company" : filters.company}
+                        open={openDropdown === "company"}
+                        onToggle={() => toggleDropdown("company")}
                         items={companies}
-                        onSelect={(v) => handleSelect('company', v)}
+                        onSelect={(v) => handleSelect("company", v)}
                     />
 
-                    {/* Clear All */}
-                    {(filters.search ||
-                        filters.category !== 'all' ||
-                        filters.stockStatus !== 'all' ||
-                        filters.company !== 'all') && (
-                            <button
-                                onClick={clearFilters}
-                                className="text-xs text-red-500 font-medium underline"
-                            >
-                                Clear All
-                            </button>
-                        )}
+                    {/* CLEAR ALL */}
+                    {/* <button
+                        onClick={clearFilters}
+                        className="text-xs ml-2 text-red-500 underline font-medium"
+                    >
+                        Clear All
+                    </button> */}
 
                 </div>
             </motion.div>
@@ -161,9 +169,10 @@ export default function ModernFilterBar({ onFilterChange, filters }) {
     );
 }
 
-/* -----------------------------------------
-   🔽 Minimal Dropdown Component
-------------------------------------------- */
+
+/* ---------------------------------------------------------
+   DROPDOWN COMPONENT
+--------------------------------------------------------- */
 function FilterDropdown({ icon, label, open, onToggle, items, onSelect }) {
     return (
         <div className="relative">
@@ -184,15 +193,20 @@ function FilterDropdown({ icon, label, open, onToggle, items, onSelect }) {
                         exit={{ opacity: 0, y: -8 }}
                         className="absolute top-full mt-2 left-0 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-50"
                     >
-                        {items.map((i) => (
-                            <button
-                                key={i}
-                                onClick={() => onSelect(i)}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50"
-                            >
-                                {i}
-                            </button>
-                        ))}
+                        {items.map((i) => {
+                            const value = typeof i === "object" ? i.value : i;
+                            const label = typeof i === "object" ? i.label : i;
+
+                            return (
+                                <button
+                                    key={value}
+                                    onClick={() => onSelect(value)}
+                                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50"
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </motion.div>
                 )}
             </AnimatePresence>

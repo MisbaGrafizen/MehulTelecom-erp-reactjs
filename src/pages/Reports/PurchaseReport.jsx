@@ -105,14 +105,44 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
 }
 
 const FilterSection = ({ filters, setFilters, getRangeFromQuickFilter }) => {
+    const [firms, setFirms] = useState([]);
+
+    useEffect(() => {
+    const fetchFirms = async () => {
+        try {
+            const res = await ApiGet("/admin/info");
+            setFirms(res.data || []);
+        } catch (err) {
+            console.log("Firm Fetch Error:", err);
+        }
+    };
+
+    fetchFirms();
+}, []);
+
     const dateRangeOptions = ["Today", "This Week", "This Month"];
-    const firmOptions = ["All Firms", "Firm 1", "Firm 2", "Firm 3"];
+const firmOptions = [{ label: "All Firms", value: "all" }, ...firms.map(f => ({
+    label: f.name,
+    value: f._id
+}))];
     const userOptions = ["All Users", "User 1", "User 2", "User 3"];
 
     const [isFirmOpen, setIsFirmOpen] = useState(false);
     const [isUserOpen, setIsUserOpen] = useState(false);
     const [showFromCalendar, setShowFromCalendar] = useState(false);
     const [showToCalendar, setShowToCalendar] = useState(false);
+    const [fromDate, setFromDate] = useState({
+  day: new Date().getDate(),
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+});
+
+const [toDate, setToDate] = useState({
+  day: new Date().getDate(),
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+});
+
 
     // const today = new Date();
     // const [fromDate, setFromDate] = useState({
@@ -198,17 +228,16 @@ const FilterSection = ({ filters, setFilters, getRangeFromQuickFilter }) => {
                         transition={{ duration: 0.2 }}
                         className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
                     >
-                        <ModernCalendar
-                            value={fromDate}
-                            onChange={(date) => {
-                                const jsDate = new Date(date.year, date.month - 1, date.day);
-                                setFilters((prev) => ({ ...prev, fromDate: jsDate }));
-                            }}
+                      <ModernCalendar
+  value={fromDate}
+  onChange={(date) => {
+    setFromDate(date);
+    const jsDate = new Date(date.year, date.month - 1, date.day);
+    setFilters(prev => ({ ...prev, fromDate: jsDate }));
+  }}
+  shouldHighlightWeekends
+/>
 
-                            //   colorPrimary="#0044ff"
-                            //   calendarClassName="custom-calendar"
-                            shouldHighlightWeekends
-                        />
                     </motion.div>
                 )}
             </div>
@@ -233,60 +262,60 @@ const FilterSection = ({ filters, setFilters, getRangeFromQuickFilter }) => {
                         transition={{ duration: 0.2 }}
                         className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg"
                     >
-                        <ModernCalendar
-                            value={toDate}
-                            onChange={(date) => {
-                                const jsDate = new Date(date.year, date.month - 1, date.day);
-                                setFilters((prev) => ({ ...prev, toDate: jsDate }));
-                            }}
+                    <ModernCalendar
+  value={toDate}
+  onChange={(date) => {
+    setToDate(date);
+    const jsDate = new Date(date.year, date.month - 1, date.day);
+    setFilters(prev => ({ ...prev, toDate: jsDate }));
+  }}
+  shouldHighlightWeekends
+/>
 
-                            colorPrimary="#ff2688"
-                            calendarClassName="custom-calendar"
-                            shouldHighlightWeekends
-                        />
                     </motion.div>
                 )}
             </div>
 
             {/* 🔹 Firm Dropdown */}
-            <div className="relative" ref={firmRef}>
-                <button
-                    onClick={() => setIsFirmOpen(!isFirmOpen)}
-                    className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
-                >
-                    {filters.firm}
-                    <ChevronDown
-                        size={16}
-                        className={`transition-transform ${isFirmOpen ? "rotate-180" : "rotate-0"
-                            }`}
-                    />
-                </button>
+           <div className="relative" ref={firmRef}>
+    <button
+        onClick={() => setIsFirmOpen(!isFirmOpen)}
+        className="flex justify-between items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-100 min-w-[140px]"
+    >
+        {firmOptions.find(f => f.value === filters.firm)?.label || "All Firms"}
+        <ChevronDown
+            size={16}
+            className={`transition-transform ${isFirmOpen ? "rotate-180" : "rotate-0"}`}
+        />
+    </button>
 
-                {isFirmOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
-                    >
-                        {firmOptions.map((firm) => (
-                            <button
-                                key={firm}
-                                onClick={() => {
-                                    setFilters((prev) => ({ ...prev, firm }));
-                                    setIsFirmOpen(false);
-                                }}
-                                className={`block w-full text-left px-4 py-2 text-sm ${filters.firm === firm
-                                    ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
-                                    : "hover:bg-gray-100 text-gray-700"
-                                    }`}
-                            >
-                                {firm}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
-            </div>
+    {isFirmOpen && (
+        <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-md w-full mt-1"
+        >
+            {firmOptions.map((firm) => (
+                <button
+                    key={firm.value}
+                    onClick={() => {
+                        setFilters((prev) => ({ ...prev, firm: firm.value }));
+                        setIsFirmOpen(false);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm ${
+                        filters.firm === firm.value
+                            ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white"
+                            : "hover:bg-gray-100 text-gray-700"
+                    }`}
+                >
+                    {firm.label}
+                </button>
+            ))}
+        </motion.div>
+    )}
+</div>
+
 
             {/* 🔹 User Dropdown */}
             <div className="relative" ref={userRef}>
@@ -789,50 +818,39 @@ export default function PurchaseReport() {
     };
 
 
+
     useEffect(() => {
-    const fetchPurchases = async () => {
-        try {
-            setLoading(true);
+const fetchPurchases = async () => {
+  try {
+    setLoading(true);
 
-            const userId = localStorage.getItem("userId");
-            const role = localStorage.getItem("role");
-            const userType = role === "branch" ? "Branch" : "User";
+    const params = new URLSearchParams({
+      fromDate: filters.fromDate ? filters.fromDate.toISOString() : "",
+      toDate: filters.toDate ? filters.toDate.toISOString() : "",
+      partyId: filters.partyId || "",
+      userId: filters.userId || "",
+      paymentType: filters.payment || "",
+      search: filters.search || ""
+    });
 
-            const from = filters.fromDate ? new Date(filters.fromDate) : null;
-            const to = filters.toDate ? new Date(filters.toDate) : null;
+    const res = await ApiGet(`/admin/purchase-report?${params.toString()}`);
 
-            const params = new URLSearchParams({
-                userType,
-                dateRange: filters.dateRange,
-                from: from ? from.toISOString() : "",
-                to: to ? to.toISOString() : "",
-            });
+    setRows(res.data || []);
 
-            const res = await ApiGet(`/admin/purchase/user/${userId}?${params.toString()}`);
+    setKpi({
+      paid: res.kpi?.paidTotal || 0,
+      unpaid: res.kpi?.unpaidTotal || 0,
+      total: res.kpi?.grandTotal || 0,
+    });
 
-            const data = Array.isArray(res?.data) ? res.data : [];
+  } catch (err) {
+    console.error("❌ Purchase Fetch Error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-            console.log("📌 FILTER APPLIED:", {
-                dateRange: filters.dateRange,
-                from,
-                to,
-                results: data.length,
-            });
 
-            setRows(data);
-
-            // KPI UPDATE
-            const paid = data.reduce((s, p) => s + (p.paidAmount || 0), 0);
-            const unpaid = data.reduce((s, p) => s + (p.unpaidAmount || 0), 0);
-            const total = data.reduce((s, p) => s + (p.totalAmount || 0), 0);
-
-            setKpi({ paid, unpaid, total });
-        } catch (err) {
-            console.error("❌ Purchase Fetch Error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // 👇 converting dates to timestamps ensures re-render
     const fromTs = filters.fromDate ? new Date(filters.fromDate).getTime() : null;
