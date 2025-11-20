@@ -23,6 +23,8 @@ import CashflowReport from "./pages/Reports/CashflowReport";
 import StockSummaryReport from "./pages/Reports/StockSummaryReport";
 import { StockAgeingReport } from "./pages/Reports/StockAgeingReport";
 import SalesmanProfitLoss from "./pages/Reports/SalesmanProfitLoss";
+import AllTransactions from "./pages/Reports/AllTransactions";
+import ProfitLossReport from "./pages/Reports/ProfitLossReport";
 
 
 
@@ -37,7 +39,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/purches-list" element={<Purchasemain />} />
           <Route path="/purches-invoice" element={<PurchesInvoice />} />
-          <Route path ="/create-account" element={<CreateCompany />} />
+          <Route path="/create-account" element={<CreateCompany />} />
           <Route path="/company-listing" element={<ComapnyListing />} />
           <Route path="/sells" element={<SellListing />} />
           <Route path="/sells-invoice" element={<SellsInvoice />} />
@@ -47,13 +49,17 @@ function App() {
           <Route path="/party-listing" element={<PartyList />} />
           <Route path="/reports/purchase-report" element={<PurchaseReport />} />
           <Route path="/reports/sales-report" element={<SalesReport />} />
-                    <Route path="/reports/purchase-report" element={<PurchaseReport />} />
+          <Route path="/reports/purchase-report" element={<PurchaseReport />} />
           <Route path="/reports/transfer-report" element={<StockTransferReport />} />
           <Route path="/reports/day-book" element={<DayBookReport />} />
           <Route path="/reports/cash-flow-report" element={<CashflowReport />} />
           <Route path="/reports/stock-summery-report" element={<StockSummaryReport />} />
           <Route path="/reports/stock-ageing-report" element={<StockAgeingReport />} />
           <Route path="/reports/salesman-wise-profit&loss" element={<SalesmanProfitLoss />} />
+          <Route path="/reports/all-transections" element={<AllTransactions />} />
+          <Route path="/reports/profit-loss-report" element={<ProfitLossReport />} />
+
+
 
 
 
