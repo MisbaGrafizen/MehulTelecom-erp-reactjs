@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import FilterSection from '../../Component/reports/allTransections/FilterSection'
@@ -9,108 +9,89 @@ import TransactionList from '../../Component/reports/allTransections/Transaction
 import TransactionModal from '../../Component/reports/modals/TransactionModal'
 import Header from '../../Component/header/Header'
 import SideBar from '../../Component/sidebar/SideBar'
-
-const sampleTransactions = [
-    {
-        id: 1,
-        date: '2024-01-15',
-        time: '10:30 AM',
-        partyName: 'Apple Store Mumbai',
-        type: 'Sale',
-        amount: 45000,
-        invoiceNo: 'INV-2024-001',
-        items: [
-            { product: 'iPhone 15 Pro', imei: '123456789012345', qty: 2, rate: 20000, total: 40000 },
-            { product: 'AirPods Pro', imei: 'N/A', qty: 1, rate: 5000, total: 5000 }
-        ],
-        paymentMode: 'Credit Card',
-        salesman: 'Raj Kumar'
-    },
-    {
-        id: 2,
-        date: '2024-01-15',
-        time: '02:15 PM',
-        partyName: 'Samsung Distributor',
-        type: 'Purchase',
-        amount: 120000,
-        invoiceNo: 'PO-2024-045',
-        items: [
-            { product: 'Galaxy S24', imei: '987654321098765', qty: 5, rate: 20000, total: 100000 },
-            { product: 'Galaxy Tab', imei: '111111111111111', qty: 4, rate: 5000, total: 20000 }
-        ],
-        paymentMode: 'Bank Transfer',
-        supplier: 'Samsung India'
-    },
-    {
-        id: 3,
-        date: '2024-01-15',
-        time: '04:45 PM',
-        partyName: 'Delhi Branch',
-        type: 'Transfer',
-        amount: 35000,
-        invoiceNo: 'TR-2024-012',
-        fromBranch: 'Mumbai HQ',
-        toBranch: 'Delhi Branch',
-        items: [
-            { product: 'iPhone 14', imei: '555555555555555', qty: 3, rate: 10000, total: 30000 },
-            { product: 'OnePlus 12', imei: '666666666666666', qty: 1, rate: 5000, total: 5000 }
-        ]
-    },
-    {
-        id: 4,
-        date: '2024-01-14',
-        time: '11:20 AM',
-        partyName: 'Retail Shop Kolkata',
-        type: 'Sale',
-        amount: 28500,
-        invoiceNo: 'INV-2024-002',
-        items: [
-            { product: 'Xiaomi Redmi', imei: '777777777777777', qty: 3, rate: 8000, total: 24000 },
-            { product: 'Charging Cable', imei: 'N/A', qty: 5, rate: 900, total: 4500 }
-        ],
-        paymentMode: 'Cash',
-        salesman: 'Priya Singh'
-    },
-    {
-        id: 5,
-        date: '2024-01-14',
-        time: '03:30 PM',
-        partyName: 'Vivo Supplier',
-        type: 'Purchase',
-        amount: 85000,
-        invoiceNo: 'PO-2024-046',
-        items: [
-            { product: 'Vivo X100', imei: '888888888888888', qty: 4, rate: 20000, total: 80000 },
-            { product: 'Vivo Case', imei: 'N/A', qty: 10, rate: 500, total: 5000 }
-        ],
-        paymentMode: 'Cheque',
-        supplier: 'Vivo Distribution'
-    }
-]
+import { ApiGet } from '../../helper/axios'
 
 export default function AllTransactions() {
     const [selectedTransaction, setSelectedTransaction] = useState(null)
-    const [transactions, setTransactions] = useState(sampleTransactions)
-    const [filters, setFilters] = useState({
-        fromDate: '',
-        toDate: '',
-        type: 'All Types',
-        party: 'All Parties',
-        search: ''
-    })
+const [transactions, setTransactions] = useState([]);
 
-    const handleFilterChange = (newFilters) => {
-        setFilters(newFilters)
-        // Filter logic would go here
-    }
+const [kpi, setKpi] = useState({
+    totalTransactions: 0,
+    totalAmount: 0,
+    todayTransactions: 0
+});
+
+const [filters, setFilters] = useState({
+    fromDate: "",
+    toDate: "",
+    type: "All Types",
+    party: "All Parties",
+    search: "",
+
+});
+
+const [partyList, setPartyList] = useState(["All Parties"]);
+
+const fetchParties = async () => {
+  try {
+    const res = await ApiGet("/admin/party");
+    const names = res?.data?.map((p) => p.partyName) || [];
+    setPartyList(["All Parties", ...names]);
+  } catch (err) {
+    console.log("❌ Party Fetch Error:", err);
+  }
+};
+
+
+const fetchData = async () => {
+  try {
+    // remove empty/default filters
+    const cleanFilters = {};
+
+    if (filters.fromDate) cleanFilters.fromDate = filters.fromDate;
+    if (filters.toDate) cleanFilters.toDate = filters.toDate;
+
+    if (filters.type !== "All Types") cleanFilters.type = filters.type;
+    if (filters.party !== "All Parties") cleanFilters.party = filters.party;
+
+    if (filters.search.trim() !== "") cleanFilters.search = filters.search;
+
+    const query = new URLSearchParams(cleanFilters).toString();
+
+    const res = await ApiGet(`/admin/transaction-report?${query}`);
+
+    setTransactions(res.transactions || []);
+
+    setKpi({
+      totalTransactions: res.totalTransactions || 0,
+      totalAmount: res.totalAmount || 0,
+      todayTransactions: res.todayCount || 0,
+    });
+
+  } catch (error) {
+    console.log("❌ API Error:", error);
+  }
+};
+
+
+useEffect(() => {
+    fetchParties();
+    fetchData();
+}, [filters]);
+
+
+   const handleFilterChange = (newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+}
+
 
     const filteredTransactions = transactions.filter(tx => {
         if (filters.type !== 'All Types' && tx.type !== filters.type) return false
         if (filters.search) {
             const searchLower = filters.search.toLowerCase()
             return (
-                tx.invoiceNo.toLowerCase().includes(searchLower) ||
-                tx.partyName.toLowerCase().includes(searchLower)
+                tx.invoiceNo?.toLowerCase()?.includes(searchLower) ||
+                tx.partyName?.toLowerCase()?.includes(searchLower)
             )
         }
         return true
@@ -121,6 +102,9 @@ export default function AllTransactions() {
     const todayTransactions = filteredTransactions.filter(
         tx => new Date(tx.date).toDateString() === new Date().toDateString()
     ).length
+
+
+    
 
     return (
         <>
@@ -139,18 +123,24 @@ export default function AllTransactions() {
 
 
             <div className=" space-y-6">
-                <FilterSection filters={filters} onFilterChange={handleFilterChange} />
+                <FilterSection 
+    filters={filters} 
+    onFilterChange={handleFilterChange}
+    partyList={partyList}
+/>
+
 
                 <KpiCards
-                    totalTransactions={totalTransactions}
-                    totalAmount={totalAmount}
-                    todayTransactions={todayTransactions}
-                />
+    totalTransactions={kpi.totalTransactions}
+    totalAmount={kpi.totalAmount}
+    todayTransactions={kpi.todayTransactions}
+/>
 
-                <TransactionList
-                    transactions={filteredTransactions}
-                    onSelectTransaction={setSelectedTransaction}
-                />
+<TransactionList
+    transactions={transactions}
+    onSelectTransaction={setSelectedTransaction}
+/>
+
             </div>
 
             {selectedTransaction && (
@@ -161,7 +151,7 @@ export default function AllTransactions() {
             )}
         </div>
  </div>
-  </div>
+  </div>    
    </div>
     </section>
         </>

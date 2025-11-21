@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Boxes, Wallet, Receipt, Percent } from 'lucid
 import PLRow from './PLRow'
 import PLSectionTitle from './PLSectionTitle'
 
-export default function PLBreakdown() {
+export default function PLBreakdown({ breakdown }) {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -52,13 +52,25 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-blue-100', text: 'text-blue-800' }}
         >
-          <PLRow label="Sale" amount={45200000} positive />
+          {/* <PLRow label="Sale" amount={45200000} positive />
           <PLRow label="Sale FA" amount={8500000} positive />
           <PLRow label="Cr. Note / Sale Return" amount={250000} negative />
           <PLRow label="Purchase" amount={28500000} negative />
           <PLRow label="Purchase FA" amount={5200000} negative />
           <PLRow label="Dr. Note / Purchase Return" amount={320000} positive />
-          <PLRow label="Payment Out Discount" amount={150000} positive />
+          <PLRow label="Payment Out Discount" amount={150000} positive /> */}
+
+{breakdown?.particulars?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
+
         </SectionBox>
 
         <SectionBox
@@ -68,10 +80,21 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-sky-100', text: 'text-sky-800' }}
         >
-          <PLRow label="Opening Stock" amount={5200000} negative />
+          {/* <PLRow label="Opening Stock" amount={5200000} negative />
           <PLRow label="Closing Stock" amount={6100000} positive />
           <PLRow label="Opening FA Stock" amount={800000} negative />
-          <PLRow label="Closing FA Stock" amount={950000} positive />
+          <PLRow label="Closing FA Stock" amount={950000} positive /> */}
+{breakdown?.stock?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+  
+
         </SectionBox>
       </div>
 
@@ -84,8 +107,19 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-pink-100', text: 'text-pink-800' }}
         >
-          <PLRow label="Other Direct Expense" amount={450000} negative />
-          <PLRow label="Payment In Discount" amount={75000} negative />
+          {/* <PLRow label="Other Direct Expense" amount={450000} negative />
+          <PLRow label="Payment In Discount" amount={75000} negative /> */}
+{breakdown?.directExpenses?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
+
         </SectionBox>
 
         <SectionBox
@@ -95,9 +129,20 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-amber-100', text: 'text-amber-800' }}
         >
-          <PLRow label="GST Payable" amount={280000} negative />
+          {/* <PLRow label="GST Payable" amount={280000} negative />
           <PLRow label="TCS Payable" amount={45000} negative />
-          <PLRow label="TDS Payable" amount={120000} negative />
+          <PLRow label="TDS Payable" amount={120000} negative /> */}
+{breakdown?.taxPayable?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
+
         </SectionBox>
       </div>
 
@@ -110,9 +155,19 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-emerald-100', text: 'text-emerald-800' }}
         >
-          <PLRow label="GST Receivable" amount={95000} positive />
+          {/* <PLRow label="GST Receivable" amount={95000} positive />
           <PLRow label="TCS Receivable" amount={28000} positive />
-          <PLRow label="TDS Receivable" amount={52000} positive />
+          <PLRow label="TDS Receivable" amount={52000} positive /> */}
+{breakdown?.taxReceivable?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
         </SectionBox>
 
         <SectionBox
@@ -122,7 +177,18 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-lime-100', text: 'text-lime-800' }}
         >
-          <PLRow label="Other Income" amount={85000} positive />
+          {/* <PLRow label="Other Income" amount={85000} positive /> */}
+{breakdown?.otherIncome?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
+
         </SectionBox>
       </div>
 
@@ -133,7 +199,8 @@ export default function PLBreakdown() {
       >
         <div className="flex justify-between items-center">
           <span className="uppercase text-sm font-semibold opacity-90">Gross Profit</span>
-          <span className="text-2xl md:text-3xl font-bold">₹18,45,000</span>
+          {/* <span className="text-2xl md:text-3xl font-bold">₹18,45,000</span> */}
+          <span className="text-2xl md:text-3xl font-bold">₹{breakdown?.grossProfit || 0}</span>
         </div>
       </motion.div>
 
@@ -146,10 +213,21 @@ export default function PLBreakdown() {
           }}
           color={{ bg: 'bg-rose-100', text: 'text-rose-800' }}
         >
-          <PLRow label="Other Expense" amount={250000} negative />
+          {/* <PLRow label="Other Expense" amount={250000} negative />
           <PLRow label="Loan Interest Expense" amount={180000} negative />
           <PLRow label="Loan Processing Fee Expense" amount={35000} negative />
-          <PLRow label="Charges on Loan Expenses" amount={25000} negative />
+          <PLRow label="Charges on Loan Expenses" amount={25000} negative /> */}
+{breakdown?.indirectExpenses?.map((row, i) => (
+  <PLRow
+    key={i}
+    label={row.label}
+    amount={row.amount}
+    positive={row.amount >= 0}
+    negative={row.amount < 0}
+  />
+))}
+
+
         </SectionBox>
 
         <div className="bg-white rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm">
@@ -164,7 +242,8 @@ export default function PLBreakdown() {
       >
         <div className="flex justify-between items-center">
           <span className="text-sm uppercase font-bold tracking-wide">Net Profit</span>
-          <span className="text-3xl font-bold">₹17,95,000</span>
+          {/* <span className="text-3xl font-bold">₹17,95,000</span> */}
+          <span className="text-3xl font-bold">₹{breakdown?.netProfit || 0}</span>
         </div>
       </motion.div>
     </motion.div>

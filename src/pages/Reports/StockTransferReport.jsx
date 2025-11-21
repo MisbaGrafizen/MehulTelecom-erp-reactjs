@@ -108,9 +108,12 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
               className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-lg shadow-xl z-50 overflow-hidden"
             >
               <div className="py-2 max-h-48 overflow-y-auto">
-                {options.map((option) => (
+                {options.map((option) => {
+  const val = typeof option === "string" ? option : option.label;
+  return (
+
                   <motion.button
-                    key={option}
+                    key={value}
                     onClick={() => {
                       onChange(option)
                       setIsOpen(false)
@@ -123,7 +126,8 @@ const AnimatedDropdown = ({ label, options, value, onChange }) => {
                   >
                     {option}
                   </motion.button>
-                ))}
+  );
+})}
               </div>
             </motion.div>
           )}
@@ -807,7 +811,7 @@ const TransferDetailsModal = ({ transfer, onClose }) => {
 
 export default function StockTransferReport() {
   const [filters, setFilters] = useState({
-    dateRange: "Today",
+    dateRange: "This Month",
     company: "All Companies",
     branch: "All Branches",
     status: "All Status",
@@ -817,11 +821,69 @@ export default function StockTransferReport() {
   })
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [companies, setCompanies] = useState([]);
+const [branches, setBranches] = useState([]);
+
   const itemsPerPage = 5
 
   const [transferData, setTransferData] = useState([])
   const [kpi, setKpi] = useState({ completed: 0, pending: 0, total: 0 })
   const [loading, setLoading] = useState(false)
+
+  const generateDateRange = (type) => {
+  const now = dayjs();
+
+  switch (type) {
+    case "Today":
+      return {
+        fromDate: now.startOf("day"),
+        toDate: now.endOf("day"),
+      };
+
+    case "This Week":
+      return {
+        fromDate: now.startOf("week"),
+        toDate: now.endOf("week"),
+      };
+
+    case "This Month":
+      return {
+        fromDate: now.startOf("month"),
+        toDate: now.endOf("month"),
+      };
+
+    default:
+      return { fromDate: null, toDate: null };
+  }
+};
+
+useEffect(() => {
+  const fetchDropdownData = async () => {
+    try {
+      const compRes = await ApiGet("/admin/info");
+      const branchRes = await ApiGet("/admin/branch");
+      console.log('comRes', compRes)
+      console.log('branchRes', branchRes)
+
+      setCompanies(["All Companies", ...compRes.data.map(c => ({
+        id: c._id,
+        label: c.companyName
+      }))]);
+
+      setBranches(["All Branches", ...branchRes.data.map(b => ({
+        id: b._id,
+        label: b.branchName
+      }))]);
+
+      console.log("Fetched Companies:", compRes.data);
+      console.log("Fetched Branches:", branchRes.data);
+    } catch (err) {
+      console.error("Error loading dropdown data:", err);
+    }
+  };
+
+  fetchDropdownData();
+}, []);
 
   useEffect(() => {
     const fetchTransferData = async () => {
@@ -865,10 +927,14 @@ if (filters.search?.trim()) {
   params.search = filters.search.trim();
 }
 
-        console.log("📤 Fetching from /admin/transfer-report with params:", params);
+        console.log("Fetching from /admin/transfer-report with params:", params);
 
-        const res = await ApiGet("/admin/transfer-report", { params });
-        console.log("✅ Response:", res);
+const queryString = new URLSearchParams(params).toString();
+const res = await ApiGet(`/admin/transfer-report?${queryString}`);
+
+console.log("Final URL:", `/admin/transfer-report?${queryString}`);
+console.log("Response:", res);
+        console.log("Response:", res);
 
         const data = res?.data || [];
         const kpiData = res?.kpi || { completed: 0, pending: 0, total: 0 };
@@ -896,6 +962,10 @@ if (filters.search?.trim()) {
 
     fetchTransferData();
   }, [filters]);
+
+  useEffect(() => {
+  setCurrentPage(1);
+}, [filters]);
 
 
 
@@ -929,12 +999,17 @@ if (filters.search?.trim()) {
                               key={option}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => setFilters({
-                                ...filters,
-                                dateRange: option,
-                                fromDate: null,
-                                toDate: null,
-                              })}
+                              onClick={() => {
+  const range = generateDateRange(option);
+
+  setFilters({
+    ...filters,
+    dateRange: option,
+    fromDate: range.fromDate,
+    toDate: range.toDate,
+  });
+}}
+
                               className={`px-4 py-2 rounded-lg  shadow-md font-medium transition-all duration-200 whitespace-nowrap ${filters.dateRange === option
                                 ? "bg-gradient-to-r from-[#0044ff] to-[#ff70b0] text-white shadow-md"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -946,16 +1021,30 @@ if (filters.search?.trim()) {
                         </div>
 
                         <div className=" flex gap-[10px] ">
-                          <DateRangePickerMUI
-                            label="From Date"
-                            value={filters.fromDate}
-                            onChange={(date) => setFilters({ ...filters, fromDate: date })}
-                          />
-                          <DateRangePickerMUI
-                            label="To Date"
-                            value={filters.toDate}
-                            onChange={(date) => setFilters({ ...filters, toDate: date })}
-                          />
+                        <DateRangePickerMUI
+  label="From Date"
+  value={filters.fromDate ? dayjs(filters.fromDate) : null}
+  onChange={(date) =>
+    setFilters({
+      ...filters,
+      fromDate: date,
+      dateRange: "Custom",
+    })
+  }
+/>
+
+<DateRangePickerMUI
+  label="To Date"
+  value={filters.toDate ? dayjs(filters.toDate) : null}
+  onChange={(date) =>
+    setFilters({
+      ...filters,
+      toDate: date,
+      dateRange: "Custom",
+    })
+  }
+/>
+
                         </div>
 
                       </div>
@@ -968,13 +1057,23 @@ if (filters.search?.trim()) {
                             label="Companies"
                             options={["All Companies", "ABC Mobile Store", "XYZ Electronics", "Tech Hub"]}
                             value={filters.company}
-                            onChange={(company) => setFilters({ ...filters, company })}
+onChange={(company) =>
+  setFilters({
+    ...filters,
+    company: company === "All Companies" ? "All Companies" : company.id
+  })
+}
                           />
                           <AnimatedDropdown
                             label="Branch"
                             options={["All Branches", "Delhi Branch", "Mumbai Branch", "Bangalore Branch"]}
                             value={filters.branch}
-                            onChange={(branch) => setFilters({ ...filters, branch })}
+onChange={(branch) =>
+  setFilters({
+    ...filters,
+    branch: branch === "All Branches" ? "All Branches" : branch.id
+  })
+}
                           />
                           <AnimatedDropdown
                             label="Status"

@@ -8,7 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
 
-export default function FilterSection({ filters, onFilterChange }) {
+export default function FilterSection({ filters, onFilterChange, partyList }) {
   const [openDropdown, setOpenDropdown] = useState(null)
 
   const transactionTypes = ['All Types', 'Sale', 'Purchase', 'Transfer']
@@ -168,15 +168,16 @@ export default function FilterSection({ filters, onFilterChange }) {
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto"
               >
-                {parties.map((party) => (
-                  <button
-                    key={party}
-                    onClick={() => handlePartySelect(party)}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm transition"
-                  >
-                    {party}
-                  </button>
-                ))}
+                {partyList?.map((party) => (
+  <button
+    key={party}
+    onClick={() => handlePartySelect(party)}
+    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm transition"
+  >
+    {party}
+  </button>
+))}
+
               </motion.div>
             )}
           </div>

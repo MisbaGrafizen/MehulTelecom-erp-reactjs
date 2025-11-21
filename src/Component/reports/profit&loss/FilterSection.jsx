@@ -8,7 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
 
-export default function FilterSection({ filters, setFilters }) {
+export default function FilterSection({ filters, setFilters, branches }) {
   const [openDropdown, setOpenDropdown] = useState(null)
 
   const handleDateChange = (field, value) => {
@@ -125,15 +125,16 @@ export default function FilterSection({ filters, setFilters }) {
                   exit={{ opacity: 0, y: -8 }}
                   className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-lg z-10"
                 >
-                  {['all', 'Main', 'North', 'South'].map((branch) => (
-                    <button
-                      key={branch}
-                      onClick={() => handleBranchChange(branch)}
-                      className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 transition-colors border-b border-slate-200 last:border-b-0"
-                    >
-                      {branch === 'all' ? 'All Branches' : branch}
-                    </button>
-                  ))}
+                  {[{ _id: "all", name: "All Branches" }, ...branches]?.map((b) => (
+  <button
+    key={b._id}
+    onClick={() => handleBranchChange(b._id)}
+    className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 transition-colors border-b border-slate-200 last:border-b-0"
+  >
+    {b._id === "all" ? "All Branches" : b.name}
+  </button>
+))}
+
                 </motion.div>
               )}
             </AnimatePresence>
