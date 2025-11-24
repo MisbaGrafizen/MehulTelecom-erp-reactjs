@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -11,7 +11,7 @@ const containerVariants = {
       delayChildren: 0.2,
     },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -20,38 +20,46 @@ const itemVariants = {
     y: 0,
     transition: { duration: 0.4 },
   },
-}
+};
 
 export default function KPISection({ selectedParty }) {
-  if (!selectedParty) return null
+  if (!selectedParty) return null;
 
-  const totalProfit = selectedParty.sales - selectedParty.purchases
-  const isProfit = totalProfit >= 0
+  // Mapped values from backend response
+  const totalSales = selectedParty.totalSales || 0;
+  const totalPurchases = selectedParty.totalPurchases || 0;
+  const balance = selectedParty.balance || 0;
+
+  const isProfit = balance >= 0;
 
   const kpis = [
     {
       label: "Total Sales",
-      value: `₹${selectedParty.sales.toLocaleString()}`,
+      value: `₹${totalSales.toLocaleString()}`,
       gradient: "from-emerald-400 to-green-600",
       bgGradient: "from-emerald-50 to-green-50",
       icon: "trending-up",
     },
     {
       label: "Total Purchase Cost",
-      value: `₹${selectedParty.purchases.toLocaleString()}`,
+      value: `₹${totalPurchases.toLocaleString()}`,
       gradient: "from-orange-400 to-red-600",
       bgGradient: "from-orange-50 to-red-50",
       icon: "trending-down",
     },
     {
       label: "Profit / Loss",
-      value: `${isProfit ? "+" : ""}₹${Math.abs(totalProfit).toLocaleString()}`,
-      gradient: isProfit ? "from-indigo-400 to-blue-600" : "from-red-400 to-pink-600",
-      bgGradient: isProfit ? "from-indigo-50 to-blue-50" : "from-red-50 to-pink-50",
+      value: `${isProfit ? "+" : "-"}₹${Math.abs(balance).toLocaleString()}`,
+      gradient: isProfit
+        ? "from-indigo-400 to-blue-600"
+        : "from-red-400 to-pink-600",
+      bgGradient: isProfit
+        ? "from-indigo-50 to-blue-50"
+        : "from-red-50 to-pink-50",
       textColor: isProfit ? "text-green-600" : "text-red-600",
       icon: "wallet",
     },
-  ]
+  ];
 
   return (
     <motion.div
@@ -74,18 +82,21 @@ export default function KPISection({ selectedParty }) {
             </svg>
           </div>
 
-          <div className="relative w-[100%]  justify-between flex  z-10">
+          <div className="relative w-full flex justify-between z-10">
+            {/* Icon Circle */}
             <div className={`inline-block p-3 bg-gradient-to-br ${kpi.gradient} rounded-lg mb-4`}>
               {kpi.icon === "trending-up" && (
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8L7 17" />
                 </svg>
               )}
+
               {kpi.icon === "trending-down" && (
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0v-8m0 8L7 7" />
                 </svg>
               )}
+
               {kpi.icon === "wallet" && (
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -97,15 +108,17 @@ export default function KPISection({ selectedParty }) {
                 </svg>
               )}
             </div>
+
+            {/* Text */}
             <div>
-
-
               <p className="text-slate-600 text-sm font-medium mb-1">{kpi.label}</p>
-              <p className={`text-2xl font-bold ${kpi.textColor || "text-slate-900"}`}>{kpi.value}</p>
+              <p className={`text-2xl font-bold ${kpi.textColor || "text-slate-900"}`}>
+                {kpi.value}
+              </p>
             </div>
           </div>
         </motion.div>
       ))}
     </motion.div>
-  )
+  );
 }

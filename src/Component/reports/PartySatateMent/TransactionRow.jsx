@@ -1,9 +1,11 @@
-import React from 'react'
-
-
+import React from "react"
+import dayjs from "dayjs"
 
 export default function TransactionRow({ transaction, onViewClick }) {
   const isPositive = transaction.type === "Sale"
+
+  // ✅ Format date (convert ISO → DD/MM/YYYY)
+  const formattedDate = dayjs(transaction.date).format("DD/MM/YYYY")
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:bg-slate-50 transition-colors">
@@ -11,7 +13,7 @@ export default function TransactionRow({ transaction, onViewClick }) {
         <div className="flex items-center gap-4 flex-1">
           <div>
             <p className="text-sm font-medium text-slate-900">
-              {transaction.date} • {transaction.time}
+              {formattedDate} • {transaction.time}
             </p>
             <p className="text-xs text-slate-500 mt-1">{transaction.invoiceNo}</p>
           </div>
@@ -19,12 +21,18 @@ export default function TransactionRow({ transaction, onViewClick }) {
 
         <div className="flex items-center gap-4">
           <div
-            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+              isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            }`}
           >
             {transaction.type}
           </div>
 
-          <div className={`text-right font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
+          <div
+            className={`text-right font-semibold ${
+              isPositive ? "text-green-600" : "text-red-600"
+            }`}
+          >
             {isPositive ? "+" : "-"}₹{transaction.amount.toLocaleString()}
           </div>
 

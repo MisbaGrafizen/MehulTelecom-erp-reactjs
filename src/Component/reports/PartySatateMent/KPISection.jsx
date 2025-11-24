@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 export default function KPISection({ totalSales, totalPurchases, balance }) {
   const data = [
@@ -10,7 +10,7 @@ export default function KPISection({ totalSales, totalPurchases, balance }) {
       id: 1,
       title: "Total Sales",
       amount: totalSales,
-      trend: 8, // positive %
+      trend: 8, 
       bgColor: "#16a34a",
       lightBgColor: "#dcfce7",
       gradient: "from-green-100 to-emerald-100",
@@ -38,7 +38,7 @@ export default function KPISection({ totalSales, totalPurchases, balance }) {
       id: 3,
       title: "Net Balance",
       amount: balance,
-      trend: balance >= 0 ? 3 : -2,
+      trend: balance >= 0 ? 3 : -3,
       bgColor: balance >= 0 ? "#2563eb" : "#dc2626",
       lightBgColor: balance >= 0 ? "#dbeafe" : "#fee2e2",
       gradient: "from-blue-100 to-indigo-100",
@@ -48,7 +48,7 @@ export default function KPISection({ totalSales, totalPurchases, balance }) {
         </svg>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -56,27 +56,29 @@ export default function KPISection({ totalSales, totalPurchases, balance }) {
         <AnimatedKPI key={kpi.id} kpi={kpi} index={index} />
       ))}
     </div>
-  )
+  );
 }
 
 function AnimatedKPI({ kpi, index }) {
-  const [displayValue, setDisplayValue] = useState(0)
+  const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    const target = Number(kpi.amount)
-    const increment = target / 50
-    let current = 0
+    const target = Number(kpi.amount) || 0;
+    const increment = target / 40;
+    let current = 0;
+
     const timer = setInterval(() => {
-      current += increment
+      current += increment;
       if (current >= target) {
-        setDisplayValue(target)
-        clearInterval(timer)
+        setDisplayValue(target);
+        clearInterval(timer);
       } else {
-        setDisplayValue(Math.floor(current))
+        setDisplayValue(Math.floor(current));
       }
-    }, 20)
-    return () => clearInterval(timer)
-  }, [kpi.amount])
+    }, 20);
+
+    return () => clearInterval(timer);
+  }, [kpi.amount]);
 
   return (
     <motion.div
@@ -86,19 +88,23 @@ function AnimatedKPI({ kpi, index }) {
       whileHover={{ y: -6, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
       className="relative overflow-hidden rounded-xl p-6 shadow-lg bg-white border border-slate-200 cursor-default"
     >
-      {/* background circular accent */}
-      <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-br ${kpi.gradient} rounded-full -mr-10 -mt-10 opacity-40`} />
+      {/* background accent */}
+      <div
+        className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-br ${kpi.gradient} rounded-full -mr-10 -mt-10 opacity-40`}
+      />
 
       <div className="relative z-10 flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">
             {kpi.title}
           </p>
+
           <div className="flex items-baseline gap-3">
             <h3 className="text-3xl font-bold text-slate-900">
               ₹{displayValue.toLocaleString("en-IN")}
             </h3>
 
+            {/* Trend Badge */}
             {kpi.trend !== undefined && (
               <motion.span
                 initial={{ scale: 0, opacity: 0 }}
@@ -126,5 +132,5 @@ function AnimatedKPI({ kpi, index }) {
         </motion.div>
       </div>
     </motion.div>
-  )
+  );
 }

@@ -134,7 +134,6 @@ export default function FilterSection({ filters, setFilters, branches }) {
     {b._id === "all" ? "All Branches" : b.name}
   </button>
 ))}
-
                 </motion.div>
               )}
             </AnimatePresence>
