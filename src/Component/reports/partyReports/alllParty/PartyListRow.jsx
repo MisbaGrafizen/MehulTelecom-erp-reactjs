@@ -3,26 +3,46 @@
 import { motion } from "framer-motion"
 
 export default function PartyListRow({ party, index, onView }) {
+
+  const name = party?.name || "Unknown"
+  const contact = party?.contact || "N/A"
+  const address = party?.address || "N/A"
+  const creditLimit = party?.creditLimit ?? 0
+
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
       className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center">
+
+        {/* Serial Number */}
         <div className="text-sm font-medium text-slate-900">{index}</div>
+
+        {/* Party Name + contact (mobile only) */}
         <div>
-          <p className="text-sm font-semibold text-slate-900">{party.name}</p>
-          <p className="text-xs text-slate-500 sm:hidden">{party.contact}</p>
+          <p className="text-sm font-semibold text-slate-900">{name}</p>
+          <p className="text-xs text-slate-500 sm:hidden">{contact}</p>
         </div>
+
+        {/* Contact (desktop visible) */}
         <div className="hidden sm:block">
-          <p className="text-sm text-slate-700">{party.contact}</p>
+          <p className="text-sm text-slate-700">{contact}</p>
         </div>
+
+        {/* Address */}
         <div className="hidden lg:block">
-          <p className="text-sm text-slate-600 truncate">{party.address}</p>
+          <p className="text-sm text-slate-600 truncate">{address}</p>
         </div>
+
+        {/* Credit Limit */}
         <div className="hidden lg:block">
-          <p className="text-sm font-medium text-slate-900">₹{party.creditLimit.toLocaleString()}</p>
+          <p className="text-sm font-medium text-slate-900">
+            ₹{Number(creditLimit).toLocaleString()}
+          </p>
         </div>
+
+        {/* View Button */}
         <div className="flex justify-end">
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -41,6 +61,7 @@ export default function PartyListRow({ party, index, onView }) {
             </svg>
           </motion.button>
         </div>
+
       </div>
     </motion.div>
   )

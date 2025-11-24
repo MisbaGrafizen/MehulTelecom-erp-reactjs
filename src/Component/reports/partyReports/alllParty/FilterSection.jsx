@@ -29,6 +29,9 @@ export default function FilterSection({
 
   const dateOptions = ["Today", "This Week", "This Month", "Last Month", "Custom"]
 
+  // ⭐ Add "All Parties" option
+  const finalPartyOptions = [{ value: "all", label: "All Parties" }, ...partyOptions]
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
@@ -45,7 +48,10 @@ export default function FilterSection({
             >
               <label
                 className={`absolute left-[13px] bg-white px-[5px] font-Poppins transition-all duration-200
-                  ${openParty || selectedParty ? "top-[-9px] text-[12px] text-[#083aef]" : "top-[9px] text-[14px] text-[#43414199]"}`}
+                ${openParty || selectedParty
+                  ? "top-[-9px] text-[12px] text-[#083aef]"
+                  : "top-[9px] text-[14px] text-[#43414199]"}
+                `}
               >
                 Select Party
               </label>
@@ -53,7 +59,11 @@ export default function FilterSection({
               <input
                 ref={partyRef}
                 type="text"
-                value={queryParty || partyOptions.find(p => p.value === selectedParty)?.label || ""}
+                value={
+                  queryParty ||
+                  finalPartyOptions.find(p => p.value === selectedParty)?.label ||
+                  ""
+                }
                 onFocus={() => setOpenParty(true)}
                 onBlur={() => setTimeout(() => setOpenParty(false), 200)}
                 onChange={(e) => setQueryParty(e.target.value)}
@@ -71,7 +81,7 @@ export default function FilterSection({
                 animate={{ opacity: 1, y: 0 }}
                 className="absolute top-[45px] w-full bg-white border border-[#dedede] rounded-lg shadow-md z-10 max-h-[200px] overflow-y-auto"
               >
-                {partyOptions
+                {finalPartyOptions
                   .filter(p => p.label.toLowerCase().includes(queryParty.toLowerCase()))
                   .map(p => (
                     <button
@@ -101,7 +111,10 @@ export default function FilterSection({
             >
               <label
                 className={`absolute left-[13px] bg-white px-[5px] font-Poppins transition-all duration-200
-                  ${openDate || dateRange ? "top-[-9px] text-[12px] text-[#083aef]" : "top-[9px] text-[14px] text-[#43414199]"}`}
+                ${openDate || dateRange
+                  ? "top-[-9px] text-[12px] text-[#083aef]"
+                  : "top-[9px] text-[14px] text-[#43414199]"}
+                `}
               >
                 Date Range
               </label>
@@ -146,7 +159,6 @@ export default function FilterSection({
             )}
           </div>
 
-          {/* From Date */}
           <DatePicker
             label="From Date"
             value={fromDate ? dayjs(fromDate) : null}
@@ -155,19 +167,10 @@ export default function FilterSection({
               textField: {
                 size: "small",
                 fullWidth: true,
-                sx: {
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "8px",
-                    backgroundColor: "white",
-                    "& fieldset": { borderColor: "#dedede" },
-                    "&:hover fieldset": { borderColor: "#305af3" },
-                  },
-                },
               },
             }}
           />
 
-          {/* To Date */}
           <DatePicker
             label="To Date"
             value={toDate ? dayjs(toDate) : null}
@@ -176,14 +179,6 @@ export default function FilterSection({
               textField: {
                 size: "small",
                 fullWidth: true,
-                sx: {
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "8px",
-                    backgroundColor: "white",
-                    "& fieldset": { borderColor: "#dedede" },
-                    "&:hover fieldset": { borderColor: "#305af3" },
-                  },
-                },
               },
             }}
           />
