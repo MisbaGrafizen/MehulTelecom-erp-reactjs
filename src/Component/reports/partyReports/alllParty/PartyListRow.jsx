@@ -12,7 +12,7 @@ export default function PartyListRow({ party, index, onView }) {
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
+      className="bg-white border border-slate-200 rounded-lg px-4 py-[8px] shadow-sm hover:shadow-md transition-all"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center">
 

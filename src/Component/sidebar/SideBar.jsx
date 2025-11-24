@@ -170,6 +170,7 @@
 //     </div>
 //   );
 // }
+
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -253,7 +254,7 @@ export default function SideBar() {
     { name: "Party Statement", path: "/reports/party-statement", icon: faUsers },
     { name: "Party Wise Profit & Loss", path: "/reports/party-wise-profit-loss", icon: faUserTie },
     { name: "All Parties Report", path: "/reports/all-party-report", icon: faUsers },
-    { name: "Party Report by Items", path: "/reports/party-report-items", icon: faBoxes },
+
     { name: "Sale/Purchase by Party", path: "/reports/sale-purchase-party", icon: faIndustry },
   ];
 
@@ -302,7 +303,7 @@ export default function SideBar() {
           className="absolute left-[115px] top-0 w-[220px] font-Poppins h-[85vh] bg-white text-gray-800 shadow-xl rounded-r-[10px] overflow-y-auto transition-all duration-300 z-50"
         >
           {/* Transaction Reports */}
-          <div className="p-3 border-b border-gray-200 font-semibold text-[#F68D18] text-sm">
+          <div className="p-3 border-b border-gray-200 font-semibold text-[#000000] text-sm">
             Transaction
           </div>
           <div className="flex flex-col">
@@ -326,7 +327,7 @@ export default function SideBar() {
           </div>
 
           {/* Party Reports */}
-          <div className="p-3 border-b border-gray-200 font-semibold text-[#F68D18]  bg-[#ececec45] text-sm mt-2">
+          <div className="p-3 border-b border-gray-200 font-semibold text-[#000000]  bg-[#ececec45] text-sm mt-2">
             Party Reports
           </div>
           <div className="flex flex-col">
@@ -335,9 +336,9 @@ export default function SideBar() {
               return (
                 <div
                   key={i}
-                  className={`flex items-center border-b gap-2 px-2 py-[8px] text-sm cursor-pointer border-l-4 ${
+                  className={`flex items-center border-b gap-2  rounded-[5px] px-2 py-[8px] text-sm cursor-pointer border-l-4 ${
                     active
-                      ? "border-[#F68D18] bg-orange-50 text-[#F68D18] font-semibold"
+                          ? "border-[#F68D18] border-b-[0px] shadow-md bg-orange-50 text-[#F68D18] font-semibold"
                       : "border-l-transparent text-gray-600 hover:bg-blue-50 hover:text-[#F68D18]"
                   }`}
                   onClick={() => navigate(report.path)}
@@ -348,6 +349,46 @@ export default function SideBar() {
               );
             })}
           </div>
+
+{/* Item/Stock Reports */}
+<div className="p-3 border-b border-gray-200 font-semibold text-[#000000] bg-[#ececec45] text-sm mt-2">
+  Item/Stock Reports
+</div>
+<div className="flex flex-col">
+  {[
+    { name: "Stock Summary Report", path: "/reports/stock-summary-report", icon: faBoxes },
+    { name: "Item Report by Party", path: "/reports/item-report-by-party", icon: faUsers },
+    { name: "Item Wise Profit & Loss", path: "/reports/item-wise-profit-loss", icon: faChartPie },
+    { name: "Low Stock Summary Report", path: "/reports/low-stock-summary-report", icon: faChartBar },
+    { name: "Item Detail Report", path: "/reports/item-detail-report", icon: faFileAlt },
+    { name: "Stock Detail Report", path: "/reports/stock-detail-report", icon: faFileAlt },
+    { name: "Sale/Purchase By Item Category", path: "/reports/sale-purchase-item-category", icon: faIndustry },
+    { name: "Stock Summary By Item Category", path: "/reports/stock-summary-item-category", icon: faBoxes },
+    { name: "Item Batch Report", path: "/reports/item-batch-report", icon: faFileInvoiceDollar },
+    { name: "Item Serial Report", path: "/reports/item-serial-report", icon: faFileAlt },
+    { name: "Item Wise Discount", path: "/reports/item-wise-discount", icon: faChartBar },
+  ].map((report, i) => {
+    const active = isActive(report.path);
+    return (
+      <div
+        key={i}
+        className={`flex items-center border-b gap-2 px-2 py-[8px] text-sm cursor-pointer border-l-4 ${
+          active
+            ? "border-[#F68D18] border-b-none bg-orange-50 text-[#F68D18] font-semibold"
+            : "border-l-transparent text-gray-600 hover:bg-blue-50 hover:text-[#F68D18]"
+        }`}
+        onClick={() => navigate(report.path)}
+      >
+        <FontAwesomeIcon icon={report.icon} className="w-3 h-3" />
+        <span className="text-[12px]">{report.name}</span>
+      </div>
+    );
+  })}
+</div>
+
+
+
+
         </div>
       )}
 

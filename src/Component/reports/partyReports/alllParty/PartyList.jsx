@@ -21,10 +21,10 @@ export default function PartyList({ parties = [] }) {
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-2 pt-[20px]">
 
         {/* Header Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 px-4 py-3 bg-slate-100 rounded-lg border border-slate-200">
           <div className="text-xs font-semibold text-slate-600 uppercase">S.No</div>
           <div className="text-xs font-semibold text-slate-600 uppercase">Name</div>
           <div className="hidden sm:block text-xs font-semibold text-slate-600 uppercase">Contact</div>

@@ -28,6 +28,8 @@ import ProfitLossReport from "./pages/Reports/ProfitLossReport";
 import PartyStatement from "./pages/Reports/Party Report/PartyStatement";
 import PartyWisePLReport from "./pages/Reports/Party Report/PartyWisePLReport";
 import AllPartyReport from "./pages/Reports/Party Report/AllPartyReport";
+import PartySalePurchase from "./pages/Reports/Party Report/PartySalePurchase";
+import StockSummaryReportItem from "./pages/Reports/Items/StockSummaryReportItem";
 
 
 
@@ -64,6 +66,11 @@ function App() {
           <Route path="/reports/party-statement" element={<PartyStatement />} />
           <Route path="/reports/party-wise-profit-loss" element={<PartyWisePLReport />} />
           <Route path="/reports/all-party-report" element={<AllPartyReport />} />
+          <Route path="/reports/sale-purchase-party" element={<PartySalePurchase />} />
+
+
+{/* Items */}
+          <Route path="/reports/stock-summary-report" element={<StockSummaryReportItem />} />
 
 
 

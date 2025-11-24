@@ -9,6 +9,8 @@ import KPISection from "../../../Component/reports/partyReports/alllParty/KPISec
 import PartyList from "../../../Component/reports/partyReports/alllParty/PartyList"
 
 import { ApiGet } from "../../../helper/axios"
+import Header from "../../../Component/header/Header"
+import SideBar from "../../../Component/sidebar/SideBar"
 
 export default function AllPartyReport() {
   const [selectedParty, setSelectedParty] = useState(null)
@@ -78,33 +80,47 @@ export default function AllPartyReport() {
   }, [selectedParty, searchQuery, fromDate, toDate, dateRange])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-        {/* FILTER */}
-<FilterSection
-  selectedParty={selectedParty}
-  setSelectedParty={setSelectedParty}
-  dateRange={dateRange}
-  setDateRange={setDateRange}
-  fromDate={fromDate}
-  setFromDate={setFromDate}
-  toDate={toDate}
-  setToDate={setToDate}
-  partyOptions={partyOptions}     // ONLY MASTER PARTY LIST
-  searchQuery={searchQuery}
-  setSearchQuery={setSearchQuery}
-/>
 
 
-        <KPISection data={kpiData} />
 
-        {parties.length ? <PartyList parties={parties} /> : (
-          <div className="text-center text-slate-500 py-8">
-            No parties found matching filters.
+    <section className="flex w-full font-Poppins h-full select-none p-[15px] pr-0 overflow-hidden">
+      <div className="flex w-full flex-col overflow-hidden gap-[14px] h-[96vh]">
+        <Header pageName="All Party Report" />
+        <div className="flex gap-[10px] w-full h-full">
+          <SideBar />
+          <div className="flex w-full max-h-[90%] pb-[50px] md:pr-[12px] overflow-y-auto gap-[30px] rounded-[10px]">
+
+            <div className=" w-[100%] h-[100%]">
+              <div className="">
+
+                {/* FILTER */}
+                <FilterSection
+                  selectedParty={selectedParty}
+                  setSelectedParty={setSelectedParty}
+                  dateRange={dateRange}
+                  setDateRange={setDateRange}
+                  fromDate={fromDate}
+                  setFromDate={setFromDate}
+                  toDate={toDate}
+                  setToDate={setToDate}
+                  partyOptions={partyOptions}     // ONLY MASTER PARTY LIST
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+
+
+                <KPISection data={kpiData} />
+
+                {parties.length ? <PartyList parties={parties} /> : (
+                  <div className="text-center text-slate-500 py-8">
+                    No parties found matching filters.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
