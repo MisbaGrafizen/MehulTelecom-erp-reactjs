@@ -467,7 +467,7 @@ import { useState } from "react";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 import GridDistortion from "../../Component/reactBits/GridDistortion";
 import { ApiPost } from "../../helper/axios"; // ✅ your axios helper
-import backImage from "../../../public/imges/BackImage.jpg";
+import backImage from "../../../public/imges/BackNewImages.jpg";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -556,11 +556,12 @@ const handleLogin = async (e) => {
           imageSrc={backImage}
           grid={18}
           mouse={0.15}
-          strength={0.18}
+          // strength={0.18}
           relaxation={0.88}
-          className="w-full h-full object-contain"
+          className="w-full  h-full object-contain"
         />
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+        {/* <img className=" w-[100%] h-[100%] object-contain" src={backImage} /> */}
+        {/* <div className="absolute inset-0 bg-black/30 " /> */}
       </div>
 
       {/* 🔹 Login Card */}

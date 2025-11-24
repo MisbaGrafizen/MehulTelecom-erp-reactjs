@@ -246,13 +246,13 @@ export default function SideBar() {
     { name: "Bill Wise Profit", path: "/reports/bill-wise-profit", icon: faChartPie },
     { name: "Profit & Loss", path: "/reports/profit-loss-report", icon: faChartPie },
     { name: "Cashflow", path: "/reports/cash-flow-report", icon: faFileAlt },
-    { name: "Balance Sheet", path: "/reports/balance-sheet", icon: faChartBar },
+    // { name: "Balance Sheet", path: "/reports/balance-sheet", icon: faChartBar },
   ];
 
   const partyReports = [
     { name: "Party Statement", path: "/reports/party-statement", icon: faUsers },
     { name: "Party Wise Profit & Loss", path: "/reports/party-wise-profit-loss", icon: faUserTie },
-    { name: "All Parties Report", path: "/reports/all-parties", icon: faUsers },
+    { name: "All Parties Report", path: "/reports/all-party-report", icon: faUsers },
     { name: "Party Report by Items", path: "/reports/party-report-items", icon: faBoxes },
     { name: "Sale/Purchase by Party", path: "/reports/sale-purchase-party", icon: faIndustry },
   ];
