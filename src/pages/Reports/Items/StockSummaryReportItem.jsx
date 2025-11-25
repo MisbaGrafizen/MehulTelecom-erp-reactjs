@@ -41,7 +41,7 @@ export default function StockSummaryReportItem() {
                         <Header pageName="Stock Summary Report" />
                         <div className="flex gap-[10px] w-full h-full">
                             <SideBar />
-                            <div className="flex w-full max-h-[90%] pb-[50px] md:pr-[12px] overflow-y-auto gap-[30px] rounded-[10px]">
+                            <div className="flex w-full max-h-[95%] pb-[50px] md:pr-[12px] overflow-y-auto gap-[30px] rounded-[10px]">
     
     <motion.div
       initial={{ opacity: 0 }}

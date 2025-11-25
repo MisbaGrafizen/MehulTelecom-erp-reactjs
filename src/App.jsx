@@ -30,6 +30,7 @@ import PartyWisePLReport from "./pages/Reports/Party Report/PartyWisePLReport";
 import AllPartyReport from "./pages/Reports/Party Report/AllPartyReport";
 import PartySalePurchase from "./pages/Reports/Party Report/PartySalePurchase";
 import StockSummaryReportItem from "./pages/Reports/Items/StockSummaryReportItem";
+import ItemWisePLReport from "./pages/Reports/Items/ItemWisePLReport";
 
 
 
@@ -71,6 +72,8 @@ function App() {
 
 {/* Items */}
           <Route path="/reports/stock-summary-report" element={<StockSummaryReportItem />} />
+          <Route path="/reports/item-wise-profit-loss" element={<ItemWisePLReport />} />
+
 
 
 

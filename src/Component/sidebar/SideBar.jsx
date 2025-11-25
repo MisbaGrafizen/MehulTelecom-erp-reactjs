@@ -357,7 +357,7 @@ export default function SideBar() {
 <div className="flex flex-col">
   {[
     { name: "Stock Summary Report", path: "/reports/stock-summary-report", icon: faBoxes },
-    { name: "Item Report by Party", path: "/reports/item-report-by-party", icon: faUsers },
+    
     { name: "Item Wise Profit & Loss", path: "/reports/item-wise-profit-loss", icon: faChartPie },
     { name: "Low Stock Summary Report", path: "/reports/low-stock-summary-report", icon: faChartBar },
     { name: "Item Detail Report", path: "/reports/item-detail-report", icon: faFileAlt },
