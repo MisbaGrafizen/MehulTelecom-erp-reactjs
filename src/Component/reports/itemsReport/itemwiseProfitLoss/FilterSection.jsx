@@ -1,22 +1,18 @@
-"use client"
-import { Autocomplete, TextField } from "@mui/material"
-import { motion } from "framer-motion"
+"use client";
 
-export default function FilterSection({ filters, setFilters }) {
-  const items = ["All Items", "iPhone 15 Pro", "Samsung Galaxy S24", "Apple Watch Series 9", "Airpods Pro 2"]
-  const categories = ["All Categories", "Mobile", "Watch", "Accessories"]
+import { Autocomplete, TextField } from "@mui/material";
+import { motion } from "framer-motion";
 
-  const handleItemChange = (value) => {
-    setFilters({ ...filters, selectedItem: value })
-  }
+export default function FilterSection({
+  filters,
+  setFilters,
+  itemList = [],
+  categoryList = [],
+}) {
+  // ⭐ Always ensure "All Items" is permanently first
+  const dynamicItems = [...new Set(itemList)];
 
-  const handleCategoryChange = (value) => {
-    setFilters({ ...filters, category: value })
-  }
-
-  const handleSearchChange = (e) => {
-    setFilters({ ...filters, search: e.target.value })
-  }
+  const dynamicCategories = ["All Categories", ...new Set(categoryList)];
 
   return (
     <motion.div
@@ -25,26 +21,33 @@ export default function FilterSection({ filters, setFilters }) {
       className="bg-white rounded-xl border border-slate-200 shadow-sm p-4"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Item Autocomplete */}
+        {/* ⭐ Correct Dynamic Item Dropdown */}
         <Autocomplete
-          options={items}
-          defaultValue="All Items"
-          renderInput={(params) => <TextField {...params} label="Item" variant="outlined" size="small" />}
-          onChange={(e, value) => handleItemChange(value)}
+          options={dynamicItems}
+          value={filters.selectedItem || "All Items"}
+          onChange={(e, value) => {
+            setFilters({
+              ...filters,
+              selectedItem: value || "All Items",
+            });
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Item" size="small" />
+          )}
           sx={{
-            "& .MuiOutlinedInput-root": {
-              fontSize: "14px",
-            },
+            "& .MuiInputBase-root": { fontSize: "14px" },
           }}
         />
 
-        {/* Category Dropdown */}
+        {/* ⭐ Correct Dynamic Category Dropdown */}
         <select
           value={filters.category}
-          onChange={(e) => handleCategoryChange(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e) =>
+            setFilters({ ...filters, category: e.target.value })
+          }
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         >
-          {categories.map((cat) => (
+          {dynamicCategories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
             </option>
@@ -54,15 +57,21 @@ export default function FilterSection({ filters, setFilters }) {
         {/* From Date */}
         <input
           type="date"
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+          value={filters.fromDate || ""}
+          onChange={(e) =>
+            setFilters({ ...filters, fromDate: e.target.value })
+          }
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         />
 
         {/* To Date */}
         <input
           type="date"
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+          value={filters.toDate || ""}
+          onChange={(e) =>
+            setFilters({ ...filters, toDate: e.target.value })
+          }
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         />
       </div>
 
@@ -70,25 +79,14 @@ export default function FilterSection({ filters, setFilters }) {
       <div className="mt-4 relative">
         <input
           type="text"
-          placeholder="Search IMEI, model, product name…"
+          placeholder="Search item, IMEI, model…"
           value={filters.search}
-          onChange={handleSearchChange}
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e) =>
+            setFilters({ ...filters, search: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"
         />
-        <svg
-          className="absolute right-3 top-2.5 w-5 h-5 text-slate-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
       </div>
     </motion.div>
-  )
+  );
 }
